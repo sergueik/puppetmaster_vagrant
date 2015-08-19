@@ -24,4 +24,24 @@ apt-get update >/dev/null
 echo 'Installing Puppet'
 apt-get install -y puppet >/dev/null
 
-echo "Puppet " $(puppet --version) " installed!"
+echo "Puppet " $(puppet --version) " installed"
+
+echo 'Installing git'
+apt-get install -y git >/dev/null
+
+if which r10k > /dev/null
+then
+echo 'r10k is already installed'
+else
+# http://terrarum.net/blog/puppet-infrastructure-with-r10k.html
+echo 'Installing r10k'
+gem install r10k -y >/dev/null
+fi
+
+if [ -f '/vagrant/Puppetfile' ]
+then
+echo 'fetch modules for puppet provisioner via r10k'
+cp '/vagrant/Puppetfile' .
+r10k puppetfile install
+fi
+echo 'All done'

@@ -73,6 +73,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 # http://www.vagrantbox.es/
 # http://dev.modern.ie/tools/vms/linux/
 # TODO: make precise the default
+config.vm.hostname = 'puppet.vagrantbox.local'
 case box_name 
    when /centos6/ 
      config.vm.box = 'centos/65'
@@ -103,7 +104,10 @@ case box_name
     end
     config.vm.network 'forwarded_port', guest: 5901, host: 5901, id: 'vnc', auto_correct: true
     config.vm.host_name = 'vagrant-chef'
-    config.vm.synced_folder './' , '/vagrant', disabled: true
+    config.vm.synced_folder './' , '/vagrant'
+   # config.vm.synced_folder 'puppet/manifests', '/etc/puppet/manifests'
+   # config.vm.synced_folder 'puppet/modules', '/etc/puppet/modules'
+   # config.vm.synced_folder 'puppet/hieradata', '/etc/puppet/hieradata'
   else
     # have to clear HTTP_PROXY to prevent
     # WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (503) 
@@ -144,8 +148,12 @@ case box_name
 
   # Provision software
     # Use shell provisioner to install latest puppet
-    config.vm.provision 'shell', path: 'puppet_master.sh'
+    config.vm.provision 'shell', path: 'bootstrap.sh'
     # Use puppet provisioner
-    config.vm.provision :puppet 
+    config.vm.provision :puppet do |puppet|
+        puppet.manifests_path = 'manifests'
+        puppet.manifest_file  = 'default.pp'
+        puppet.options        = '--verbose --modulepath /home/vagrant/modules'
+    end 
 end
 
