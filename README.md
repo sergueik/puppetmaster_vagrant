@@ -16,4 +16,4 @@ Based on the `BOX_NAME` environment the following guest is created
 
 Note
 ----
-Some of the configuration ported from [Building a Test Puppet Master With Vagrant](http://grahamgilbert.com/blog/2013/02/13/building-a-test-puppet-master-with-vagrant/)
+Some of the configuration ported from [Building a Test Puppet Master With Vagrant](http://grahamgilbert.com/blog/2013/02/13/building-a-test-puppet-master-with-vagrant/) . See also [A modern Puppet Master from scratch](http://stdout.no/a-modern-puppet-master-from-scratch/)

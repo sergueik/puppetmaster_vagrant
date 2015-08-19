@@ -99,9 +99,7 @@ case box_name
   end
   # Configure guest-specific port forwarding
   if config.vm.box !~ /windows/ 
-    if config.vm.box =~ /centos/ 
-      config.vm.network 'forwarded_port', guest: 8080, host: 8080, id: 'artifactory', auto_correct:true
-    end
+      config.vm.network 'forwarded_port', guest: 80, host: 8080, id: 'apache', auto_correct:true
     config.vm.network 'forwarded_port', guest: 5901, host: 5901, id: 'vnc', auto_correct: true
     config.vm.host_name = 'vagrant-chef'
     config.vm.synced_folder './' , '/vagrant'
@@ -151,6 +149,7 @@ case box_name
     config.vm.provision 'shell', path: 'bootstrap.sh'
     # Use puppet provisioner
     config.vm.provision :puppet do |puppet|
+        puppet.module_path = '/home/sergueik/.puppet/modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'default.pp'
         puppet.options        = '--verbose --modulepath /home/vagrant/modules'
