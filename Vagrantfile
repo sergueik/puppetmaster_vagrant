@@ -38,12 +38,14 @@ unless box_name =~ /\S/
     # TODO: throw an error
   end
 end 
+
 if debug
   puts "box_name=#{box_name}"
   puts "box_gui=#{box_gui}"
   puts "box_cpus=#{box_cpus}"
   puts "box_memory=#{box_memory}"
 end
+
 basedir =  ENV.fetch('USERPROFILE', '')  
 basedir  = ENV.fetch('HOME', '') if basedir == ''
 basedir = basedir.gsub('\\', '/')
@@ -69,56 +71,48 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end 
   end
 
-# Localy cached images from
-# http://www.vagrantbox.es/
-# http://dev.modern.ie/tools/vms/linux/
-# TODO: make precise the default
-config.vm.hostname = 'puppet.vagrantbox.local'
-case box_name 
-   when /centos6/ 
-     config.vm.box = 'centos/65'
-     config.vm.box_url = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
-   when /centos7/ 
-     config.vm.box = 'centos/7'
-     config.vm.box_url = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
-   when /trusty32/ 
-     config.vm.box = 'ubuntu/trusty32'
-     config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
-   when /trusty64/ 
-     config.vm.box = 'ubuntu/trusty64'   
-     config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-     when /precise64/ 
-     config.vm.box = 'ubuntu/precise64'
-     config.vm.box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
-  else 
-     # tweak modern.ie image into a vagrant manageable box
-     # https://gist.github.com/uchagani/48d25871e7f306f1f8af
-     # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
-     config.vm.box = 'windows7'
-     config.vm.box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
+  # Localy cached images from
+  # http://www.vagrantbox.es/
+  # http://dev.modern.ie/tools/vms/linux/
+  # TODO: make precise the default
+  config.vm.hostname = 'puppet.vagrantbox.local'
+  case box_name 
+    when /trusty32/ 
+      config.vm.box = 'ubuntu/trusty32'
+      config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
+    when /trusty64/ 
+      config.vm.box = 'ubuntu/trusty64'   
+      config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+    when /precise64/ 
+      config.vm.box = 'ubuntu/precise64'
+      config.vm.box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
+    else 
+      # tweak modern.ie image into a vagrant manageable box
+      # https://gist.github.com/uchagani/48d25871e7f306f1f8af
+      # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
+      config.vm.box = 'windows7'
+      config.vm.box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
   end
   # Configure guest-specific port forwarding
   if config.vm.box !~ /windows/ 
-      config.vm.network 'forwarded_port', guest: 80, host: 8080, id: 'apache', auto_correct:true
+    config.vm.network 'forwarded_port', guest: 80, host: 8080, id: 'apache', auto_correct:true
     config.vm.network 'forwarded_port', guest: 5901, host: 5901, id: 'vnc', auto_correct: true
     config.vm.host_name = 'vagrant-chef'
-    config.vm.synced_folder './' , '/vagrant'
-   # config.vm.synced_folder 'puppet/manifests', '/etc/puppet/manifests'
-   # config.vm.synced_folder 'puppet/modules', '/etc/puppet/modules'
-   # config.vm.synced_folder 'puppet/hieradata', '/etc/puppet/hieradata'
+    # config.vm.synced_folder 'puppet/manifests', '/etc/puppet/manifests'
+    # config.vm.synced_folder 'puppet/modules', '/etc/puppet/modules'
+    # config.vm.synced_folder 'puppet/hieradata', '/etc/puppet/hieradata'
   else
     # have to clear HTTP_PROXY to prevent
     # WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (503) 
     # https://github.com/chef/knife-windows/issues/143
     ENV.delete('HTTP_PROXY')
-    # Note Windows Product Activation dialog  appears to block chef solo from doing anything and result in Vagrant failing with 
-    # Chef never successfully completed!
-
+    # NOTE: WPA dialog blocks chef solo and makes Vagrant fail on modern.ie box
     config.vm.communicator = 'winrm'
     config.winrm.username = 'vagrant'
     config.winrm.password = 'vagrant'
     config.vm.guest = :windows
     config.windows.halt_timeout = 15
+    # Port forward WinRM and RDP
     config.vm.network :forwarded_port, guest: 3389, host: 3389, id: 'rdp', auto_correct: true
     config.vm.network :forwarded_port, guest: 5985, host: 5985, id: 'winrm', auto_correct:true
     config.vm.host_name = 'windows7'
@@ -127,6 +121,8 @@ case box_name
     config.windows.set_work_network = true
     # on Windows, use default data_bags share
   end
+  # Configure common synced folder
+  config.vm.synced_folder './' , '/vagrant'
   # Configure common port forwarding
   config.vm.network 'forwarded_port', guest: 4444, host: 4444, id: 'selenium', auto_correct:true
   config.vm.network 'forwarded_port', guest: 3000, host: 3000, id: 'reactor', auto_correct:true
@@ -145,14 +141,33 @@ case box_name
   # config.berkshelf.enabled = true
 
   # Provision software
-    # Use shell provisioner to install latest puppet
-    config.vm.provision 'shell', path: 'bootstrap.sh'
-    # Use puppet provisioner
-    config.vm.provision :puppet do |puppet|
+  # Provision software
+  case config.vm.box.to_s 
+    when /ubuntu|debian/
+      # Use shell provisioner to install latest puppet
+      config.vm.provision 'shell', path: 'bootstrap.sh'
+      # Use puppet provisioner
+      config.vm.provision :puppet do |puppet|
         puppet.module_path = '/home/sergueik/.puppet/modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'default.pp'
         puppet.options        = '--verbose --modulepath /home/vagrant/modules'
-    end 
+      end 
+    else
+      # Use shell provisioner to install .Net 4 and chocolatey
+      config.vm.provision :shell, :path => 'bootstrap.cmd'
+      # use chocolatey to install puppet
+      config.vm.provision :shell, inline: <<-END_SCRIPT1
+$env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+cinst.exe --yes nano
+cinst.exe --yes java.jdk
+cinst.exe --yes puppet
+      END_SCRIPT1
+      config.vm.provision :shell, inline: <<-END_SCRIPT2
+$env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+puppet.bat module install --force rismoney/chocolatey
+facter.bat
+      END_SCRIPT2
+  end 
 end
 
