@@ -11,17 +11,6 @@ exec { 'apt-update':
 class { 'apache::mod::php':
   require => Exec['apt-update'],
   notify  => Service['apache2'],
-#  NOTE:
-#  notify  => Class['apache'],
-# Could not apply complete catalog: 
-# Found 1 dependency cycle:==> 
-# default: 
-# (Exec[mkdir /etc/apache2/mods-available] => 
-# File[php5.conf] => 
-# Class[Apache::Mod::Php] => 
-# Class[Apache] => 
-# Exec[mkdir /etc/apache2/mods-available])
-
 }
 
 file { 'site-config':

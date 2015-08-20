@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
 # https://github.com/grahamgilbert/vagrant-puppetmaster/tree/master/puppet
-
-set +e
-LSB_RELEASE=$(/usr/bin/lsb_release -a 2>&1 | grep -i 'release')
 set -e
-if [[ "$LSB_RELEASE" =~ '12.' ]]
-then
-   PACKAGE_URL='http://apt.puppetlabs.com/puppetlabs-release-precise.deb'
-else
-   PACKAGE_URL='http://apt.puppetlabs.com/puppetlabs-release-trusty.deb'
-fi
+source /etc/lsb-release
+PACKAGE_URL="http://apt.puppetlabs.com/puppetlabs-release-${DISTRIB_CODENAME}.deb"
 
 if [ "$EUID" -ne '0' ]
 then
@@ -17,7 +10,7 @@ then
    exit 1
 fi
 
-if [[ "$LSB_RELEASE" =~ '12.' ]]
+if [[ "$DISTRIB_CODENAME" =~ 'precise' ]]
 then
    apt-get remove -y puppet puppet-common
    apt-get autoremove -y
@@ -37,7 +30,7 @@ echo "Puppet " $(puppet --version) " installed"
 echo 'Installing git'
 apt-get install -y git >/dev/null
 
-if [[ "$LSB_RELEASE" =~ '12.' ]]
+if [[ "$DISTRIB_CODENAME" =~ 'precise' ]]
 then
    apt-get update >/dev/null
    echo "Installing ruby 1.9.3..."

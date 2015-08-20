@@ -147,6 +147,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # Use shell provisioner to install latest puppet
       config.vm.provision 'shell', path: 'bootstrap.sh'
       # Use puppet provisioner
+      config.vm.provision :shell, :path=> '/usr/bin/facter'
       config.vm.provision :puppet do |puppet|
         puppet.module_path = '/home/sergueik/.puppet/modules'
         puppet.manifests_path = 'manifests'
@@ -159,8 +160,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # use chocolatey to install puppet
       config.vm.provision :shell, inline: <<-END_SCRIPT1
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-cinst.exe --yes nano
-cinst.exe --yes java.jdk
 cinst.exe --yes puppet
       END_SCRIPT1
       config.vm.provision :shell, inline: <<-END_SCRIPT2
@@ -168,6 +167,13 @@ $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVar
 puppet.bat module install --force rismoney/chocolatey
 facter.bat
       END_SCRIPT2
+      # Use puppet provisioner
+      config.vm.provision :puppet do |puppet|
+        puppet.module_path = '/home/sergueik/.puppet/modules'
+        puppet.manifests_path = 'manifests'
+        puppet.manifest_file  = 'windows.pp'
+        puppet.options        = '--verbose'
+      end 
   end 
 end
 
