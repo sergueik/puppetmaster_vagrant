@@ -107,16 +107,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # https://github.com/chef/knife-windows/issues/143
     ENV.delete('HTTP_PROXY')
     # NOTE: WPA dialog blocks chef solo and makes Vagrant fail on modern.ie box
-    config.vm.communicator = 'winrm'
-    config.winrm.username = 'vagrant'
-    config.winrm.password = 'vagrant'
-    config.vm.guest = :windows
+    config.vm.communicator      = 'winrm'
+    config.winrm.username       = 'vagrant'
+    config.winrm.password       = 'vagrant'
+    config.vm.guest             = :windows
     config.windows.halt_timeout = 15
     # Port forward WinRM and RDP
     config.vm.network :forwarded_port, guest: 3389, host: 3389, id: 'rdp', auto_correct: true
     config.vm.network :forwarded_port, guest: 5985, host: 5985, id: 'winrm', auto_correct:true
-    config.vm.host_name = 'windows7'
-    config.vm.boot_timeout = 120
+    config.vm.host_name         = 'windows7'
+    config.vm.boot_timeout      = 120
     # Ensure that all networks are set to 'private'
     config.windows.set_work_network = true
     # on Windows, use default data_bags share
@@ -146,13 +146,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     when /ubuntu|debian/
       # Use shell provisioner to install latest puppet
       config.vm.provision 'shell', path: 'bootstrap.sh'
-      # Use puppet provisioner
       config.vm.provision :shell, :path=> '/usr/bin/facter'
+      # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
-        puppet.module_path = '/home/sergueik/.puppet/modules'
+        puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'default.pp'
-        puppet.options        = '--verbose --modulepath /home/vagrant/modules'
+        puppet.options        = '--verbose --modulepath /vagrant/modules'
       end 
     else
       # Use shell provisioner to install .Net 4 and chocolatey
@@ -164,15 +164,14 @@ cinst.exe --yes puppet
       END_SCRIPT1
       config.vm.provision :shell, inline: <<-END_SCRIPT2
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-puppet.bat module install --force rismoney/chocolatey
 facter.bat
       END_SCRIPT2
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
-        puppet.module_path = '/home/sergueik/.puppet/modules'
+        puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'windows.pp'
-        puppet.options        = '--verbose'
+        puppet.options        = '--verbose --modulepath=/vagrant/modules'
       end 
   end 
 end
