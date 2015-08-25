@@ -5,12 +5,9 @@ node 'windows7' {
   }
 
   exec { 'connect to WMI':
-     command   => 'Get-WMIObject "cim_operatingsystem"',
+     # file will be written to c:/Windows/System32/
+     command   => 'write-output (Get-WMIObject "cim_operatingsystem") | out-file -filepath "puppet_powershell_run.txt"',
      provider  => powershell,
-  }
-
-  notify { 'log_message2' :
-    message => 'completed powershell command',
   }
 
   package { 'git' :
@@ -18,11 +15,7 @@ node 'windows7' {
     provider => 'chocolatey',
   }
 
-  notify { 'log_message3' :
-    message => 'completed git install',
-  }
-
-  notify { 'test_message' :
+  notify { 'log_message2' :
     message => 'completed execution',
   }
 }

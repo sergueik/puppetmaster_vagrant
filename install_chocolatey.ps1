@@ -1,18 +1,21 @@
 # https://github.com/tzehon/vagrant-windows
-$ChocoInstallPath = "$env:SystemDrive\ProgramData\chocolateybin"
+$ChocoInstallPath = "$env:ProgramData\chocolateybin"
+if ([Environment]::GetEnvironmentVariable('chocolateyinstall', [System.EnvironmentVariableTarget]::Machine) -ne $null) { 
+write-output 'Chocolatey already installed.'
+exit 0
+}
 
 # Put chocolatey on the MACHINE path, vagrant does not have access to user environment variables
-$envPath = $env:PATH
-if (!$envPath.ToLower().Contains($ChocoInstallPath.ToLower())) {
+$currentEnvPath = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+if (!$currentEnvPath.ToLower().Contains($ChocoInstallPath.ToLower())) {
 
-  Write-Host "PATH environment variable does not have `'$ChocoInstallPath`' in it. Adding..."
-  $ActualPath = [environment]::GetEnvironmentVariable('Path',[System.EnvironmentVariableTarget]::Machine)
-  $StatementTerminator = ";"
-  $HasStatementTerminator = $ActualPath -ne $null -and $ActualPath.EndsWith($StatementTerminator)
-  if (!$HasStatementTerminator -and $ActualPath -ne $null) { $ChocoInstallPath = $StatementTerminator + $ChocoInstallPath }
+  Write-Host "MACHINE PATH environment variable does not have `'$ChocoInstallPath`' in it. Adding..."
+  $StatementTerminator = ';'
+  $HasStatementTerminator = $currentEnvPath -ne $null -and $currentEnvPath.EndsWith($StatementTerminator)
+  if (!$HasStatementTerminator -and $currentEnvPath -ne $null) { $ChocoInstallPath = $StatementTerminator + $ChocoInstallPath }
   if (!$ChocoInstallPath.EndsWith($StatementTerminator)) { $ChocoInstallPath += $StatementTerminator }
 
-  [environment]::SetEnvironmentVariable('Path',$ActualPath + $ChocoInstallPath,[System.EnvironmentVariableTarget]::Machine)
+  [environment]::SetEnvironmentVariable('Path',$currentEnvPath + $ChocoInstallPath,[System.EnvironmentVariableTarget]::Machine)
 }
 
 $env:Path += ";$ChocoInstallPath"
