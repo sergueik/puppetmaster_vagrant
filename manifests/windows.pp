@@ -10,10 +10,7 @@ node 'windows7' {
      provider  => powershell,
   }
 
-  package { 'git' :
-    ensure => 'latest',
-    provider => 'chocolatey',
-  }
+include 'mywebsite'
 
   notify { 'log_message2' :
     message => 'completed execution',
