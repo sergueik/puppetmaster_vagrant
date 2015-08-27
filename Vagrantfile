@@ -143,7 +143,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Provision software
   # Provision software
   case config.vm.box.to_s 
-    when /ubuntu|debian/
+    when /ubuntu/
       # Use shell provisioner to install latest puppet
       config.vm.provision 'shell', path: 'bootstrap.sh'
       config.vm.provision :shell, :path=> '/usr/bin/facter'
@@ -151,7 +151,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.provision :puppet do |puppet|
         puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
-        puppet.manifest_file  = 'default.pp'
+        puppet.manifest_file  = 'linux.pp'
         puppet.options        = '--verbose --modulepath /vagrant/modules'
       end 
     else
