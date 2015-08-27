@@ -77,6 +77,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # TODO: make precise the default
   config.vm.hostname = 'puppet.vagrantbox.local'
   case box_name 
+   when /centos6/ 
+     config.vm.box = 'centos/65'
+     config.vm.box_url = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
+   when /centos7/ 
+     config.vm.box = 'centos/7'
+     config.vm.box_url = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
     when /trusty32/ 
       config.vm.box = 'ubuntu/trusty32'
       config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
@@ -95,7 +101,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
   # Configure guest-specific port forwarding
   if config.vm.box !~ /windows/ 
-    config.vm.network 'forwarded_port', guest: 80, host: 8080, id: 'apache', auto_correct:true
+    if config.vm.box =~ /centos/ 
+      config.vm.network 'forwarded_port', guest: 8080, host: 8080, id: 'artifactory', auto_correct:true
+    end
     config.vm.network 'forwarded_port', guest: 5901, host: 5901, id: 'vnc', auto_correct: true
     config.vm.host_name = 'vagrant-chef'
     # config.vm.synced_folder 'puppet/manifests', '/etc/puppet/manifests'
@@ -143,16 +151,33 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Provision software
   # Provision software
   case config.vm.box.to_s 
-    when /ubuntu/
+    when /ubuntu|centos/
       # Use shell provisioner to install latest puppet
-      config.vm.provision 'shell', path: 'bootstrap.sh'
+      config.vm.provision 'shell', inline: <<-EOF 
+/usr/bin/env python -mplatform | grep -qi ubuntu
+if [  "$?" -eq "0" ]
+then
+IS_UBUNTU=true
+/vagrant/bootstrap.sh
+else
+echo ''
+## this is for cpan module which is not supported on RH anyway
+## yum -y install expat-devel
+## yum -y install perl-CPAN
+## https://tickets.puppetlabs.com/si/jira.issueviews:issue-html/PUP-2940/PUP-2940.html
+## gem install puppet --version 3.8.1 --bindir /usr/bin
+fi
+     EOF
       config.vm.provision :shell, :path=> '/usr/bin/facter'
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
         puppet.module_path    = 'modules'
-        puppet.manifests_path = 'manifests'
-        puppet.manifest_file  = 'linux.pp'
-        puppet.options        = '--verbose --modulepath /vagrant/modules'
+        # Could not parse application options: invalid option: --manifestdir
+        # on CentOS7
+        # puppet.manifests_path = 'manifests'
+        # puppet.manifest_file  = 'linux.pp'
+        # puppet.options        = '--verbose --modulepath /vagrant/modules '
+        puppet.options        = '--verbose --modulepath /vagrant/modules /vagrant/manifests/default.pp'
       end 
     else
       # Use shell provisioner to install .Net 4 and chocolatey

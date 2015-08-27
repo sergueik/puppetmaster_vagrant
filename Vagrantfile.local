@@ -1,8 +1,8 @@
 # ubuntu  14.04 x86
- box_name = 'trusty32'
- box_memory = 512
- box_cpus = 1
- box_gui = false
+# box_name = 'trusty32'
+# box_memory = 512
+# box_cpus = 1
+# box_gui = false
 
 # ubuntu 14.04 x64
 # box_name = 'trusty64'
@@ -21,6 +21,18 @@
 # box_memory = 512
 # box_cpus = 1
 # box_gui = false
+
+# centos 6.5
+# box_name = 'centos65'
+# box_memory = 512
+# box_cpus = 1
+# box_gui = false
+
+# centos 7.1
+ box_name = 'centos7'
+ box_memory = 512
+ box_cpus = 1
+ box_gui = false
 
 # windows 7 
 # box_name = 'windows7'
