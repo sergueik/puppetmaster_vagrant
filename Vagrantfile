@@ -1,35 +1,34 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Custom environment settings to enable this Vagrantfile to boot various flavours of Linux or Windows from Linux or Windows host
+basedir = ENV.fetch('USERPROFILE', '')  
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
 vagrant_use_proxy = ENV.fetch('VAGRANT_USE_PROXY', nil)
-http_proxy = ENV.fetch('HTTP_PROXY', nil) 
-# Found that on some hosts ENV.fetch does not work 
-box_name = ENV.fetch('BOX_NAME', '') 
-debug = ENV.fetch('DEBUG', 'false') 
-box_memory = ENV.fetch('BOX_MEMORY', '') 
-box_cpus = ENV.fetch('BOX_CPUS', '') 
-box_gui = ENV.fetch('BOX_GUI', '') 
-debug = (debug =~ (/^(true|t|yes|y|1)$/i))
+http_proxy        = ENV.fetch('HTTP_PROXY', nil) 
+box_name          = ENV.fetch('BOX_NAME', '') 
+debug             = ENV.fetch('DEBUG', 'false') 
+box_memory        = ENV.fetch('BOX_MEMORY', '') 
+box_cpus          = ENV.fetch('BOX_CPUS', '') 
+box_gui           = ENV.fetch('BOX_GUI', '') 
+debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
 
 unless box_name =~ /\S/
-  # Load custom vagrant config
   custom_vagrantfile = 'Vagrantfile.local'
   if File.exist?(custom_vagrantfile) 
     puts "Loading '#{custom_vagrantfile}'"
-    # shorti-circuit for single-entry configs
     # config = Hash[File.read(File.expand_path(custom_vagrantfile)).scan(/(.+?) *= *(.+)/)]
     config = {}
     File.read(File.expand_path(custom_vagrantfile)).split(/\n/).each do |line| 
-       if line !~ /^#/
-         key_val = line.scan(/^ *(.+?) *= *(.+) */)
-         config.merge!(Hash[key_val])
-       end
+      if line !~ /^#/
+        key_val = line.scan(/^ *(.+?) *= *(.+) */)
+        config.merge!(Hash[key_val])
+      end
     end
     if debug
       puts config.inspect
     end
-    # Load configuration 
     box_name = config['box_name']
     box_gui = config['box_gui'] != nil && config['box_gui'].match(/(true|t|yes|y|1)$/i) != nil
     box_cpus = config['box_cpus'].to_i
@@ -45,10 +44,6 @@ if debug
   puts "box_cpus=#{box_cpus}"
   puts "box_memory=#{box_memory}"
 end
-
-basedir =  ENV.fetch('USERPROFILE', '')  
-basedir  = ENV.fetch('HOME', '') if basedir == ''
-basedir = basedir.gsub('\\', '/')
 
 VAGRANTFILE_API_VERSION = '2'
  
@@ -71,32 +66,30 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end 
   end
 
-  # Localy cached images from
-  # http://www.vagrantbox.es/
-  # http://dev.modern.ie/tools/vms/linux/
-  # TODO: make precise the default
   config.vm.hostname = 'puppet.vagrantbox.local'
+
+  # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   case box_name 
    when /centos6/ 
-     config.vm.box = 'centos/65'
-     config.vm.box_url = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
+     config.vm.box      = 'centos/65'
+     config.vm.box_url  = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
    when /centos7/ 
-     config.vm.box = 'centos/7'
-     config.vm.box_url = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
+     config.vm.box      = 'centos/7'
+     config.vm.box_url  = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
     when /trusty32/ 
-      config.vm.box = 'ubuntu/trusty32'
+      config.vm.box     = 'ubuntu/trusty32'
       config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
     when /trusty64/ 
-      config.vm.box = 'ubuntu/trusty64'   
+      config.vm.box     = 'ubuntu/trusty64'   
       config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-amd64-vagrant-disk1.box"
     when /precise64/ 
-      config.vm.box = 'ubuntu/precise64'
+      config.vm.box     = 'ubuntu/precise64'
       config.vm.box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
     else 
       # tweak modern.ie image into a vagrant manageable box
       # https://gist.github.com/uchagani/48d25871e7f306f1f8af
       # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
-      config.vm.box = 'windows7'
+      config.vm.box     = 'windows7'
       config.vm.box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
   end
   # Configure guest-specific port forwarding
