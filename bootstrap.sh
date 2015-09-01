@@ -25,7 +25,7 @@ apt-get update >/dev/null
 echo 'Installing Puppet'
 apt-get install -y puppet >/dev/null
 
-echo "Puppet " $(puppet --version) " installed"
+echo 'Puppet ' $(puppet --version) ' installed'
 
 echo 'Installing git'
 apt-get install -y git >/dev/null
@@ -43,17 +43,17 @@ then
    update-alternatives --set gem /usr/bin/gem1.9.1
 fi
 
-if which r10k > /dev/null
-then
-   echo 'r10k is already installed'
-else
-   # http://terrarum.net/blog/puppet-infrastructure-with-r10k.html
-   echo 'Installing r10k'
-   gem install r10k -y >/dev/null
-fi
-
+# http://terrarum.net/blog/puppet-infrastructure-with-r10k.html
 if [ -f '/vagrant/Puppetfile' ]
 then
+   if which r10k > /dev/null
+   then
+      echo 'r10k is already installed'
+   else
+      echo 'Installing r10k'
+      gem install r10k -y >/dev/null
+   fi
+   
    echo 'fetch modules for puppet provisioner via r10k'
    cp '/vagrant/Puppetfile' .
    r10k puppetfile install
