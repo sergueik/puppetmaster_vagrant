@@ -141,46 +141,39 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # config.berkshelf.berksfile_path = 'cookbooks/wrapper_java/Berksfile'
   # config.berkshelf.enabled = true
 
-  # Provision software
-  # Provision software
-  case config.vm.box.to_s 
+  # Provision software  
+case config.vm.box.to_s 
     when /ubuntu|centos/
       # Use shell provisioner to install latest puppet
-      config.vm.provision 'shell', inline: <<-EOF 
+      config.vm.provision 'shell', path: 'bootstrap.sh'
+      config.vm.provision 'shell', inline: <<-EOF
 /usr/bin/env python -mplatform | grep -qi ubuntu
 if [  "$?" -eq "0" ]
 then
 IS_UBUNTU=true
-/vagrant/bootstrap.sh
-else
-echo ''
-## this is for cpan module which is not supported on RH anyway
-## yum -y install expat-devel
-## yum -y install perl-CPAN
-## https://tickets.puppetlabs.com/si/jira.issueviews:issue-html/PUP-2940/PUP-2940.html
-## gem install puppet --version 3.8.1 --bindir /usr/bin
 fi
-     EOF
+EOF
       config.vm.provision :shell, :path=> '/usr/bin/facter'
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
         puppet.module_path    = 'modules'
+        puppet.manifests_path = 'manifests'
+        puppet.manifest_file  = 'linux.pp'
+        puppet.options        = '--verbose'
         # Could not parse application options: invalid option: --manifestdir
         # on CentOS7
-        # puppet.manifests_path = 'manifests'
-        # puppet.manifest_file  = 'linux.pp'
-        # puppet.options        = '--verbose --modulepath /vagrant/modules '
-        puppet.options        = '--verbose --modulepath /vagrant/modules /vagrant/manifests/default.pp'
+        # puppet.options        = '--verbose --modulepath /vagrant/modules /vagrant/manifests/default.pp'
       end 
     else
-      # Use shell provisioner to install .Net 4 and chocolatey
+      # install .Net 4 and chocolatey
       config.vm.provision :shell, :path => 'bootstrap.cmd'
-      # use chocolatey to install puppet
-#  NOTE: chocolatey detects that puppet is installed, faster 
+      # install puppet using chocolatey
       config.vm.provision :shell, inline: <<-END_SCRIPT1
 
-
+# NOTE: chocolatey detects that puppet is installed, faster than the home-brewed script below
 # iterate over installed producs 
+
+$package_name = 'Puppet'
 
 function read_registry {
   param(
@@ -257,7 +250,7 @@ if (-not [environment]::Is64BitProcess) {
 
 # Finging install info for Puppet
 $Debugpreference = 'Continue'
-$package_name = 'Puppet'
+
 $install_path = read_registry -subfolder 'bin' -registry_path $registry_path -package_name $package_name -Debug $true
 if ($install_path -ne $null -and $install_path -ne '' -and (test-path -path $install_path)) { 
   write-output ('{0} is already installed to {1}' -f $package_name, $install_path )
@@ -266,6 +259,7 @@ if ($install_path -ne $null -and $install_path -ne '' -and (test-path -path $ins
   cinst.exe --yes puppet 
 }
       END_SCRIPT1
+      # run facter
       config.vm.provision :shell, inline: <<-END_SCRIPT2
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
 facter.bat
@@ -275,7 +269,7 @@ facter.bat
         puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'windows.pp'
-        puppet.options        = '--verbose --modulepath=/vagrant/modules'
+        puppet.options        = '--verbose'
       end 
   end 
 end
