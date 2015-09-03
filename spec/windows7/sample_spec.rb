@@ -12,6 +12,7 @@ end
 context 'mysite' do
   describe iis_app_pool('my_application_pool') do
     it{ should exist }
+    it{ should have_dotnet_version('4.0') }
   end
   describe iis_website('www.mysite.com') do
     it{ should exist }
