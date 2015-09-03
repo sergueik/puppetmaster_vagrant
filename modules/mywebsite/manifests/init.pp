@@ -8,7 +8,7 @@ class mywebsite {
 
     iis::manage_site {'www.mysite.com':
       site_path     => 'C:\inetpub\wwwroot\mysite',
-      port          => '80',
+      port          => '8080',
       ip_address    => '*',
       host_header   => 'www.mysite.com',
       app_pool      => 'my_application_pool'
