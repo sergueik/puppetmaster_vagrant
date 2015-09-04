@@ -1,8 +1,8 @@
 # http://serverspec.org/resource_types.html
 # https://github.com/mizzy/specinfra/blob/master/lib/specinfra/command/windows/base/iis_app_pool.rb
+# specinfra-2.36.15/lib/specinfra/backend/powershell/script_helper.rb
 
 require_relative '../windows_spec_helper'
-
 context 'Default Site' do
   describe windows_feature('IIS-Webserver') do
     it{ should be_installed.by("dism") }
@@ -34,21 +34,23 @@ context 'mysite' do
     it { should be_directory }
   end
   describe file( 'c:/windows/system32/inetsrv/config/applicationHost.config') do
+    # let(:pre_command) { 'start-sleep -seconds 120 '  }
     it { should be_file  }
     it { should contain('www.mysite.com')  }
   end
- 
   describe port(8080) do
     it { should be_listening }
   end
 end
 context 'World Wide Web Publishing Service' do
   describe service('W3SVC') do
+    # comment slow command
     it { should be_running }
   end
 end
 context 'Windows Process Activation Service' do
   describe service('WAS') do
+    # comment slow command
     it { should be_running }
   end
 end 
