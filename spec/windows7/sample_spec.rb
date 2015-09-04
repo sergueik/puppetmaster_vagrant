@@ -53,4 +53,25 @@ context 'Windows Process Activation Service' do
     # comment slow command
     it { should be_running }
   end
-end 
+end
+context 'environment' do
+  # note non-standard syntax
+  describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
+    let(:value_check) do
+      { :name  => 'Path',
+        :type  => :type_string,
+        :value => '' 
+     }
+    end
+    it { should exist }
+    it { should have_property('Path', :type_string) }
+    xit { should have_property( value_check ) } 
+    # passes the hash into GetValueKind
+    xit { should have_value( 'Path', :type_string, 'PATH_VALUE' ) } 
+    # wrong argument count
+    xit { should have_value( value_check ) } 
+    # applies :split to value_check
+  end
+end
+
+
