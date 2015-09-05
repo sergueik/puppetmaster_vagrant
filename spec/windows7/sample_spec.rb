@@ -3,6 +3,13 @@
 # specinfra-2.36.15/lib/specinfra/backend/powershell/script_helper.rb
 
 require_relative '../windows_spec_helper'
+context 'Commands' do
+  describe command ('ipconfig ') do
+    its(:stdout) { should match /^Windows IP Configuration/ }
+    its(:stderr) { should be_empty }
+    its(:exit_status) {should eq 0 }
+  end
+end 
 context 'Default Site' do
   describe windows_feature('IIS-Webserver') do
     it{ should be_installed.by("dism") }
