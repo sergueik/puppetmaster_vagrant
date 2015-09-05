@@ -65,12 +65,13 @@ context 'environment' do
     end
     it { should exist }
     it { should have_property('Path', :type_string) }
-    xit { should have_property( value_check ) } 
-    # passes the hash into GetValueKind
-    xit { should have_value( 'Path', :type_string, 'PATH_VALUE' ) } 
-    # wrong argument count
-    xit { should have_value( value_check ) } 
-    # applies :split to value_check
+    it { should have_property_value( 'PROCESSOR_ARCHITECTURE', :type_string_converted, 'x86' ) }
+
+    xit { should have_property_value( 'TEST', :type_string_converted, 'c:\windows' ) }
+    # 
+    xit { should have_property_valuecontaining( 'Path', :type_string_converted, 'c:\\\\windows' ) }
+    # expected Windows registry key "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" to respond to `has_property_valuecontaining?`
+    it { should have_property_value( 'Path', :type_string_converted, 'c:\\\\windows' ) }
   end
 end
 
