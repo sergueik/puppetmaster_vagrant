@@ -18,6 +18,28 @@ context 'Commands' do
   end
 end
 
+context 'Writing Files' do
+  describe command 'Add-Content -Path "C:\\temp\\a.txt" -Value @(1,2,3)' do
+    its(:exit_status) {should eq 0 }
+  end
+  describe command 'write-output "123" | out-file -filepath "c:\\temp\\a.txt" -append' do
+    its(:exit_status) {should eq 0 }
+  end
+end
+
+context 'Command Output' do
+  # Pre-command does not work - invalid Powershell sytnax in generated command
+  # let(:pre_command) { 'write-output "123" | out-file -filepath "c:\\temp\\a.txt" -append' }
+  # let(:pre_command) { '(Add-Content -Path "C:\\temp\\a.txt" -Value @(4,5,6))'  }
+
+  describe file( "c:\\temP\\a.txt") do
+
+    it { should be_file  }
+    it { should contain('/1|2|3/')  }
+  end
+end
+
+
 context 'Inspecting registry key created by the installer' do
   describe command (<<-EOF 
 $version = '2.6.4'
@@ -256,5 +278,6 @@ end
 # describe 'test' do
 #  include_examples 'iis::init'
 # end
+
 
 
