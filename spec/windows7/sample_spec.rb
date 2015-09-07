@@ -1,8 +1,5 @@
-# http://serverspec.org/resource_types.html
-# https://github.com/mizzy/specinfra/blob/master/lib/specinfra/command/windows/base/iis_app_pool.rb
-# specinfra-2.36.15/lib/specinfra/backend/powershell/script_helper.rb
-
 require_relative '../windows_spec_helper'
+
 context 'Commands' do
   describe command ('ipconfig ') do
     its(:stdout) { should match /^Windows IP Configuration/ }
@@ -99,6 +96,67 @@ public class ClassTest : Form
     its(:exit_status) {should eq 0 }
   end
 end 
+
+context 'Environment' do
+  # note non-standard syntax
+  describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
+    it { should exist }
+    it { should have_property('Path', :type_string) }
+    it { should have_property_value( 'OS', :type_string_converted, 'Windows_NT' ) }
+  end
+  describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
+
+    let(:value_check) do
+      { :name  => 'OS',
+        :type  => :type_string_converted,
+        :value => 'x86' 
+     }
+    end
+    # it { should have_property_value( value_check ) }
+
+    # xit { should have_property_valuecontaining( 'Path', :type_string_converted, 'c:\\\\windows' ) }
+    # error: expected Windows registry key to respond to `has_property_valuecontaining?`
+  end
+
+end
+
+context 'NUnit msi installer creates registry key' do
+  describe command (<<-EOF 
+$version = '2.6.4'
+$nunit_registry_key = "HKCU:\\Software\\nunit.org\\NUnit\\${version}"
+if (-not (Get-ChildItem $nunit_registry_key -ErrorAction 'SilentlyContinue')){
+  throw 'Nunit is not installed.'
+}
+$item = (Get-ItemProperty -Path $nunit_registry_key ).InstallDir
+$nunit_install_dir = [System.IO.Path]::GetDirectoryName($item)
+
+$assembly_list = @{
+  'nunit.core.dll' = 'bin\\lib';
+  'nunit.framework.dll' = 'bin\\framework';
+}
+
+pushd $nunit_install_dir
+foreach ($assembly in $assembly_list.Keys)
+{
+  $assembly_path = $assembly_list[$assembly]
+  pushd ${assembly_path}
+  Write-Debug ('Loading {0} from {1}' -f $assembly,$assembly_path )
+  if (-not (Test-Path -Path $assembly)) {
+    throw ('Assembly "{0}" not found in "{1}"' -f $assembly, $assembly_path )
+  }
+  Add-Type -Path $assembly
+  popd
+}
+
+[NUnit.Framework.Assert]::IsTrue($true)
+
+EOF
+) do
+    its(:exit_status) {should eq 0 }
+    its(:stderr) { should be_empty }
+  end
+end
+
 context 'Default Site' do
   describe windows_feature('IIS-Webserver') do
     it{ should be_installed.by("dism") }
@@ -151,23 +209,14 @@ context 'Windows Process Activation Service' do
   end
 end
 context 'environment' do
-  # note non-standard syntax
-  describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
-    let(:value_check) do
-      { :name  => 'Path',
-        :type  => :type_string,
-        :value => '' 
-     }
-    end
-    it { should exist }
-    it { should have_property('Path', :type_string) }
-    it { should have_property_value( 'PROCESSOR_ARCHITECTURE', :type_string_converted, 'x86' ) }
+  describe command (<<-EOF 
+$environment_path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment' 
+write-output ((Get-ItemProperty -Path $environment_path ).'Path')
 
-    xit { should have_property_value( 'TEST', :type_string_converted, 'c:\windows' ) }
-    # 
-    xit { should have_property_valuecontaining( 'Path', :type_string_converted, 'c:\\\\windows' ) }
-    # expected Windows registry key "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" to respond to `has_property_valuecontaining?`
-    it { should have_property_value( 'Path', :type_string_converted, 'c:\\\\windows' ) }
+EOF
+) do
+    its(:stdout) { should match /^c:\\Windows\\/io }
+
   end
 end
 
