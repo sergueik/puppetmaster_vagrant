@@ -17,23 +17,8 @@ context 'Commands' do
     its(:exit_status) {should eq 0 }
   end
 end
-
+# TODO :VBA 
 context 'Junctions ans Reparse Points' do
-
-  describe command( <<-EOF
-  $test_path = 'c:\\temp\\test'
-  $file_object = Get-Item $test_path -Force -ErrorAction Continue
-  write-output ([bool]( $file_object.Attributes `
-                       -band `
-                       [IO.FileAttributes]::ReparsePoint ))
-
-EOF
-) do
-    its(:exit_status) {should eq 0 }
-    its(:stdout) { should match /true/i  }
-  end
-
-
 
   describe command( <<-EOF
 # Confirm that a given path is a Windows NT symlink
@@ -44,37 +29,6 @@ function Test-SymLink([string]$test_path) {
          [bool]($file_object.Attributes -band [IO.FileAttributes]::ReparsePoint )
 }
 
-# What is the API to read symlink target ? 
-function Get-SymlinkTarget([string]$test_path) {
-
-  $command = ('cmd /c dir /L /-C "{0}"' -f [System.IO.Directory]::GetParent($test_path ))
-  $capturing_match_expression = ( '<SYMLINK>\\s+{0}\\s+\\[(?<TARGET>.+)\\]' -f 
-                                  [System.IO.Path]::GetFileName($test_path ))
-  $result = $null
-  (invoke-expression -command $command ) | 
-    where { $_ -match $capturing_match_expression } |
-      select-object -first 1 | 
-        forEach-object { 
-          $result =  $matches['TARGET'] 
-        }
-  return $result
-
-}
-
-$is_symlink = Test-Symlink -test_path 'c:\\temp\\specinfra'
-write-output ('is symlink: {0}' -f $is_symlink )
-
-$symlink_target = Get-SymlinkTarget  -test_path 'c:\\temp\\specinfra'
-write-output ('symlink target: {0}' -f $symlink_target )
-
-EOF
-) do
-    its(:exit_status) {should eq 0 }
-    its(:stdout) { should match /is symlink: True/  }
-    its(:stdout) { should match /symlink target: specinfra-2.43.5.gem/i   }
-  end
-
-  describe command( <<-EOF
 # Confirm that a given path is a Windows NT directory junction 
 function Test-DirectoryJunction([string]$test_path) {
   $file_object = Get-Item $test_path -Force -ErrorAction Continue
@@ -101,15 +55,41 @@ function Get-DirectoryJunctionTarget([string]$test_path) {
 
 }
 
+# What is the API to read symlink target ? 
+function Get-SymlinkTarget([string]$test_path) {
+
+  $command = ('cmd /c dir /L /-C "{0}"' -f [System.IO.Directory]::GetParent($test_path ))
+  $capturing_match_expression = ( '<SYMLINK>\\s+{0}\\s+\\[(?<TARGET>.+)\\]' -f 
+                                  [System.IO.Path]::GetFileName($test_path ))
+  $result = $null
+  (invoke-expression -command $command ) | 
+    where { $_ -match $capturing_match_expression } |
+      select-object -first 1 | 
+        forEach-object { 
+          $result =  $matches['TARGET'] 
+        }
+  return $result
+
+}
+
+
 $is_junction = Test-DirectoryJunction -test_path 'c:\\temp\\test'
 write-output ('is junction: {0}' -f $is_junction )
 
 $junction_target = Get-DirectoryJunctionTarget  -test_path 'c:\\temp\\test'
 write-output ('junction target: {0}' -f $junction_target )
 
+$is_symlink = Test-Symlink -test_path 'c:\\temp\\specinfra'
+write-output ('is symlink: {0}' -f $is_symlink )
+
+$symlink_target = Get-SymlinkTarget  -test_path 'c:\\temp\\specinfra'
+write-output ('symlink target: {0}' -f $symlink_target )
+
 EOF
 ) do
     its(:exit_status) {should eq 0 }
+    its(:stdout) { should match /is symlink: True/  }
+    its(:stdout) { should match /symlink target: specinfra-2.43.5.gem/i   }
     its(:stdout) { should match /is junction: True/  }
     its(:stdout) { should match /junction target: c:\\windows\\softwareDistribution/i   }
   end
@@ -211,17 +191,29 @@ foreach-object {
   end
 
   describe command (<<-EOF
+$verify_assemblies = @(
+  @{
+   'Name' = 'System.Windows.Forms';
+   'FullName' = 'System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089';
+  }
+)
+$verify_assemblies | foreach-object {
+  $assembly_name = $_['Name']
+  $assembly_full_name = $_['FullName']
 
-[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-$assemblies = [System.Threading.Thread]::GetDomain().GetAssemblies()
-$assemblies | where-object {$_.GetName().Name -match 'System.Windows.Forms' } | 
-  foreach-object {
-    write-output $_.GetName().FullName
+  [void][System.Reflection.Assembly]::LoadWithPartialName($assembly_name)
+  $loaded_assemblies = [System.Threading.Thread]::GetDomain().GetAssemblies()
+  $loaded_assemblies | where-object {$_.GetName().Name -match $assembly_name } | 
+    foreach-object {
+      if ( $_.GetName().FullName -ne $assembly_full_name ){
+        Write-Error ('Wrong assembly for "{0}": "{1x}"' -f $assembly_name, $_.GetName().FullName)
+      }
+  }
 }
-
  EOF
 ) do
-    its(:stdout) { should match /System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089/ }
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should be_empty }
   end
 
   describe command (<<-EOF 
