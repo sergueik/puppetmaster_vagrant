@@ -117,6 +117,7 @@ EOF
 end
 
 
+
 context 'Writing Files' do
   describe command 'Add-Content -Path "C:\\temp\\a.txt" -Value @(1,2,3)' do
     its(:exit_status) {should eq 0 }
