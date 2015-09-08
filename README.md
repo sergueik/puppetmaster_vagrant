@@ -14,6 +14,15 @@ Based on the `BOX_NAME` environment the following guest is created
  - centos7
  - windows7
 
+ServerSpec
+----------
+Currently only on Windows (Linux servesrpec is well covered elsewhere). 
+
+  - Command Execution
+  - GAC Assembly loadfing / assertion
+  - ReparsePoint (Symlink and Directory Junction) validation
+  - Loading Nunt.Core for adding Asserts into the Powershell snippets
+
 Note
 ----
 Some of the configuration ported from [Building a Test Puppet Master With Vagrant](http://grahamgilbert.com/blog/2013/02/13/building-a-test-puppet-master-with-vagrant/) . See also [A modern Puppet Master from scratch](http://stdout.no/a-modern-puppet-master-from-scratch/)
