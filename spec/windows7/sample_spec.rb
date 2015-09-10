@@ -17,7 +17,29 @@ context 'Commands' do
     its(:exit_status) {should eq 0 }
   end
 end
+context 'WinNT Groups' do
+  
+    describe command (<<-EOF
+get-CIMInstance -Computername '.' -Query 'select * from win32_group where name like "ora%"' |
+    select-object -property Name |
+    convertto-json
+EOF
+) do
+    # groups oracleuser does not belong 
+    its(:stdout) { should match /"Name":  "ORA_ASMDBA"/io }
+    its(:stdout) { should match /"Name":  "ORA_OPER"/io }
+    its(:stdout) { should match /"Name":  "ora_dba"/io } 
+    its(:stdout) { should match /"Name":  "ORA_CLIENT_LISTENERS"/io }
+    its(:stdout) { should match /"Name":  "ORA_GRID_LISTENERS"/io }
+    its(:stdout) { should match /"Name":  "ORA_INSTALL"/io }
+    its(:stdout) { should match /"Name":  "ORA_OPER"/io }
+    # installation specific Windows groups oracleuser would belong  
+    its(:stdout) { should match /"Name":  "ORA_OraDB12Home1_DBA"/io }
+    its(:stderr) { should be_empty }
+    its(:exit_status) {should eq 0 }
+  end
 
+end  
 context 'Services' do
   describe command (<<-EOF
 
