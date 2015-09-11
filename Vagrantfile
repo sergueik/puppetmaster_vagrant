@@ -66,24 +66,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end 
   end
 
-  config.vm.hostname = 'puppet.vagrantbox.local'
 
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   case box_name 
    when /centos6/ 
-     config.vm.box      = 'centos/65'
+     config.vm.box      = 'centos'
      config.vm.box_url  = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
    when /centos7/ 
-     config.vm.box      = 'centos/7'
+     config.vm.box      = 'centos'
      config.vm.box_url  = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
     when /trusty32/ 
-      config.vm.box     = 'ubuntu/trusty32'
+      config.vm.box     = 'ubuntu'
       config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
     when /trusty64/ 
-      config.vm.box     = 'ubuntu/trusty64'   
+      config.vm.box     = 'ubuntu'   
       config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-amd64-vagrant-disk1.box"
     when /precise64/ 
-      config.vm.box     = 'ubuntu/precise64'
+      config.vm.box     = 'ubuntu'
       config.vm.box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
     else 
       # tweak modern.ie image into a vagrant manageable box
@@ -98,10 +97,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.network 'forwarded_port', guest: 8080, host: 8080, id: 'artifactory', auto_correct:true
     end
     config.vm.network 'forwarded_port', guest: 5901, host: 5901, id: 'vnc', auto_correct: true
-    config.vm.host_name = 'vagrant-chef'
-    # config.vm.synced_folder 'puppet/manifests', '/etc/puppet/manifests'
-    # config.vm.synced_folder 'puppet/modules', '/etc/puppet/modules'
-    # config.vm.synced_folder 'puppet/hieradata', '/etc/puppet/hieradata'
+    config.vm.host_name = 'linux.example.com'
+    config.vm.hostname = 'linux.example.com'
   else
     # have to clear HTTP_PROXY to prevent
     # WinRM::WinRMHTTPTransportError: Bad HTTP response returned from server (503) 
@@ -138,21 +135,41 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     vb.customize ['modifyvm', :id, '--usb', 'off']
   end
 
-  # config.berkshelf.berksfile_path = 'cookbooks/wrapper_java/Berksfile'
-  # config.berkshelf.enabled = true
-
   # Provision software  
 case config.vm.box.to_s 
-    when /ubuntu|centos/
+    when /centos/
       # Use shell provisioner to install latest puppet
-      config.vm.provision 'shell', path: 'bootstrap.sh'
       config.vm.provision 'shell', inline: <<-EOF
-/usr/bin/env python -mplatform | grep -qi ubuntu
-if [  "$?" -eq "0" ]
+if true
+# This installs Puppet 3.1 and Ruby 1.8.7. These may have issue with package(rpm) resource
 then
-IS_UBUNTU=true
+  yum -y install ntp
+  chkconfig ntpd on
+  service ntpd start
+  setenforce 0
+  rpm -ivh 'http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm'
+  yum -y install puppet-server
+else
+# this installs Puppet 3.8.1 and Ruby 2.4.7. This is very slow
+cd /tmp
+wget 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
+rpm -Uvh 'epel-release-6-8.noarch.rpm'
+  yum -y update
+  yum -y groupinstall 'Development Tools'
+  yum -y install libxslt-devel libyaml-devel libxml2-devel zlib-devel openssl-devel libyaml-devel readline-devel curl-devel openssl-devel git
+  yum -y install rubygems
+  gem install puppet --no-ri --no-rdoc --version 3.8.1 --bindir /usr/bin
 fi
 EOF
+      config.vm.provision :puppet do |puppet|
+         puppet.module_path    = 'modules'
+         puppet.manifests_path = 'manifests'
+         puppet.manifest_file  = 'linux.pp'
+         puppet.options        = '--verbose --modulepath /vagrant/modules '
+      end
+    when /ubuntu/
+      # Use shell provisioner to install latest puppet
+      config.vm.provision 'shell', path: 'bootstrap.sh'
       config.vm.provision :shell, :path=> '/usr/bin/facter'
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
@@ -160,105 +177,12 @@ EOF
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'linux.pp'
         puppet.options        = '--verbose'
-        # Could not parse application options: invalid option: --manifestdir
-        # on CentOS7
-        # puppet.options        = '--verbose --modulepath /vagrant/modules /vagrant/manifests/default.pp'
-      end 
+      end
     else
       # install .Net 4 and chocolatey
       config.vm.provision :shell, :path => 'bootstrap.cmd'
       # install puppet using chocolatey
-      config.vm.provision :shell, inline: <<-END_SCRIPT1
-
-# NOTE: chocolatey detects that puppet is installed, faster than the home-brewed script below
-# iterate over installed producs 
-
-$package_name = 'Puppet'
-
-function read_registry {
-  param(
-    [string]$registry_hive = 'HKLM',
-    [string]$registry_path,
-    [string]$package_name,
-    [string]$subfolder = '',
-    [bool]$debug = $false
-
-  )
-
-  $install_location_result = $null
-  switch ($registry_hive) {
-    'HKLM' {
-      pushd HKLM:
-    }
-
-    'HKCU' {
-      pushd HKCU:
-    }
-
-    default: {
-      throw ('Unrecognized registry hive: {0}' -f $registry_hive)
-    }
-  }
-
-  cd $registry_path
-  $apps = Get-ChildItem -Path .
-  $apps | ForEach-Object {
-    $registry_key = $_
-    pushd $registry_key.Path
-    $values = $registry_key.GetValueNames()
-
-    if (-not ($values.GetType().BaseType.Name -match 'Array')) {
-      throw 'Unexpected result type'
-    }
-
-
-    $values | Where-Object { $_ -match '^DisplayName$' } | ForEach-Object {
-
-      try {
-        $displayname_result = $registry_key.GetValue($_).ToString()
-
-      } catch [exception]{
-        Write-Debug $_
-      }
-
-
-      if ($displayname_result -ne $null -and $displayname_result -match "\\b${package_name}\\b") {
-        $values2 = $registry_key.GetValueNames()
-        $install_location_result = $null
-        $values2 | Where-Object { $_ -match '\\bInstallLocation\\b' } | ForEach-Object {
-          $install_location_result = $registry_key.GetValue($_).ToString()
-          Write-Debug (($displayname_result,$registry_key.Name,$install_location_result) -join "`r`n")
-        }
-      }
-    }
-    popd
-  }
-  popd
-  if ($subfolder -ne '') {
-    return ('{0}{1}' -f $install_location_result,$subfolder)
-  } else {
-    return $install_location_result
-  }
-}
-
-# The following seems to queryy the host environment, instead of guest
-if (-not [environment]::Is64BitProcess) {
-   $registry_path  = '/SOFTWARE/Microsoft/Windows/CurrentVersion/Uninstall'
-} else {
-   $registry_path = '/SOFTWARE/Wow6432Node/Microsoft/Windows/CurrentVersion/Uninstall'
-}
-
-# Finging install info for Puppet
-$Debugpreference = 'Continue'
-
-$install_path = read_registry -subfolder 'bin' -registry_path $registry_path -package_name $package_name -Debug $true
-if ($install_path -ne $null -and $install_path -ne '' -and (test-path -path $install_path)) { 
-  write-output ('{0} is already installed to {1}' -f $package_name, $install_path )
-} else {
-  $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-  cinst.exe --yes puppet 
-}
-      END_SCRIPT1
+      config.vm.provision :shell, :path => 'install_puppet.ps1'
       # run facter
       config.vm.provision :shell, inline: <<-END_SCRIPT2
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
