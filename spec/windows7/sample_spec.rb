@@ -594,7 +594,8 @@ context 'Windows Process Activation Service' do
   
 
 context 'Inspecting Netstat' do
-
+  # The command below is the equivalent of a linux shell command
+  # ps -p $(sudo netstat -oanpt | grep $connected_port|awk '{print $7}' | sed 's|/.*||')
   describe command (<<-EOF 
 $netstat_output = invoke-expression -command "cmd.exe /c netstat -ano -p TCP" ;
 $connected_port = 1521
