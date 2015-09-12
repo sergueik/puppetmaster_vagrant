@@ -17,7 +17,29 @@ context 'Commands' do
     its(:exit_status) {should eq 0 }
   end
 end
+context 'WinNT Groups' do
+  
+    describe command (<<-EOF
+get-CIMInstance -Computername '.' -Query 'select * from win32_group where name like "ora%"' |
+    select-object -property Name |
+    convertto-json
+EOF
+) do
+    # groups oracleuser does not belong 
+    its(:stdout) { should match /"Name":  "ORA_ASMDBA"/io }
+    its(:stdout) { should match /"Name":  "ORA_OPER"/io }
+    its(:stdout) { should match /"Name":  "ora_dba"/io } 
+    its(:stdout) { should match /"Name":  "ORA_CLIENT_LISTENERS"/io }
+    its(:stdout) { should match /"Name":  "ORA_GRID_LISTENERS"/io }
+    its(:stdout) { should match /"Name":  "ORA_INSTALL"/io }
+    its(:stdout) { should match /"Name":  "ORA_OPER"/io }
+    # installation specific Windows groups oracleuser would belong  
+    its(:stdout) { should match /"Name":  "ORA_OraDB12Home1_DBA"/io }
+    its(:stderr) { should be_empty }
+    its(:exit_status) {should eq 0 }
+  end
 
+end  
 context 'Services' do
   describe command (<<-EOF
 
@@ -569,6 +591,30 @@ context 'Windows Process Activation Service' do
     # comment slow command
     it { should be_running }
   end
+  
+
+context 'Inspecting Netstat' do
+  # The command below is the equivalent of a linux shell command
+  # ps -p $(sudo netstat -oanpt | grep $connected_port|awk '{print $7}' | sed 's|/.*||')
+  describe command (<<-EOF 
+$netstat_output = invoke-expression -command "cmd.exe /c netstat -ano -p TCP" ;
+$connected_port = 1521
+$oracle_port_listening_pid = (
+$netstat_output |
+  where-object  { $_ -match ":${connected_port}" } | 
+    select-object -first 1 | 
+      foreach-object { $fields = $_.split(" ") ; write-output ('{0}' -f $fields[-1]) })
+
+$oracle_port_listening_pid
+$oracle_port_listening_process = get-CIMInstance win32_process | where-object { $_.Processid -eq  $oracle_port_listening_pid}
+
+write-output  $oracle_port_listening_process.commandLine
+
+EOF
+) do
+    its(:stdout) { should match /TNSLSNR/io }
+  end
+
 end
 
 
