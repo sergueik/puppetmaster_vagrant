@@ -70,36 +70,27 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   case box_name 
    when /centos6/ 
-     config_vm_box      = 'centos'
-     config_vm_default  = 'linux'
-     config_vm_box_url  = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
+     config.vm.box      = 'centos'
+     config.vm.box_url  = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
    when /centos7/ 
-     config_vm_box      = 'centos'
-     config_vm_default  = 'linux'
-     config_vm_box_url  = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
-   when /trusty32/ 
-     config_vm_box     = 'ubuntu'
-     config_vm_box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
-   when /trusty64/ 
-     config_vm_box     = 'ubuntu'   
-     config_vm_default = 'linux'
-     config_vm_box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-   when /precise64/ 
-     config_vm_box     = 'ubuntu'
-     config_vm_default = 'linux'
-     config_vm_box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
-   else 
-     # tweak modern.ie image into a vagrant manageable box
-     # https://gist.github.com/uchagani/48d25871e7f306f1f8af
-     # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
-     config_vm_box     = 'windows7'
-     config_vm_default = 'windows'
-     config_vm_box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
+     config.vm.box      = 'centos'
+     config.vm.box_url  = "file://#{basedir}/Downloads/centos-7.0-x86_64.box"
+    when /trusty32/ 
+      config.vm.box     = 'ubuntu'
+      config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-i386-vagrant-disk1.box"
+    when /trusty64/ 
+      config.vm.box     = 'ubuntu'   
+      config.vm.box_url = "file://#{basedir}/Downloads/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+    when /precise64/ 
+      config.vm.box     = 'ubuntu'
+      config.vm.box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
+    else 
+      # tweak modern.ie image into a vagrant manageable box
+      # https://gist.github.com/uchagani/48d25871e7f306f1f8af
+      # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
+      config.vm.box     = 'windows7'
+      config.vm.box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
   end
-config.vm.define config_vm_default do |config|
-    config.vm.box = config_vm_box
-    config.vm.box_url  = config_vm_box_url
-    puts "Configuring '#{config.vm.box}'"
   # Configure guest-specific port forwarding
   if config.vm.box !~ /windows/ 
     if config.vm.box =~ /centos/ 
@@ -145,8 +136,7 @@ config.vm.define config_vm_default do |config|
   end
 
   # Provision software  
-    puts "Provision software for '#{config.vm.box}'"
-case config_vm_box 
+case config.vm.box.to_s 
     when /centos/
       # Use shell provisioner to install latest puppet
       config.vm.provision 'shell', inline: <<-EOF
@@ -201,7 +191,6 @@ facter.bat
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
         puppet.binary_path    = 'C:\PROGRA~1\PUPPET~1\PUPPET\bin'
-        # puppet.binary_path    = 'C:/Program Files/Puppet Labs/Puppet/bin'
         puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'windows.pp'
@@ -209,4 +198,5 @@ facter.bat
       end 
   end 
 end
-end
+
+

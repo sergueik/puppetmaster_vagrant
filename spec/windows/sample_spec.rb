@@ -592,7 +592,7 @@ context 'Windows Process Activation Service' do
     it { should be_running }
   end
   
-
+end
 context 'Inspecting Netstat' do
   # The command below is the equivalent of a linux shell command
   # ps -p $(sudo netstat -oanpt | grep $connected_port|awk '{print $7}' | sed 's|/.*||')
