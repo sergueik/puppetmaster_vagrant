@@ -1,5 +1,6 @@
-node /.*ubuntu.*/ { 
-# https://github.com/meltwater/puppet-cpan
+node 'xx_default' { 
+# on precise, apt-get fails with 404
+## https://github.com/meltwater/puppet-cpan
 # module is not supported on RedHat 
 package {'libexpat1-dev':
    ensure => present,

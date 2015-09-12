@@ -69,7 +69,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   case box_name 
-   when /centos6/ 
+
+   when /centos65_i386/ 
+     config_vm_box      = 'centos'
+     config_vm_default  = 'linux'
+     config_vm_box_url  = "file://#{basedir}/Downloads/centos_6-5_i386.box"
+   when /centos66_x64/ 
+     config_vm_box      = 'centos'
+     config_vm_default  = 'linux'
+     # https://github.com/tommy-muehle/puppet-vagrant-boxes/releases/download/1.0.0/centos-6.6-x86_64.box
+     config_vm_box_url  = "file://#{basedir}/Downloads/centos-6.6-x86_64.box"
+   when /centos65_x64/  # Puppet not preinstalled
      config_vm_box      = 'centos'
      config_vm_default  = 'linux'
      config_vm_box_url  = "file://#{basedir}/Downloads/centos-6.5-x86_64.box"
@@ -87,7 +97,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
    when /precise64/ 
      config_vm_box     = 'ubuntu'
      config_vm_default = 'linux'
-     config_vm_box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
+     # config_vm_box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
+     config_vm_box_url = "file://#{basedir}/Downloads/ubuntu-server-12042-x64-vbox4210.box"
    else 
      # tweak modern.ie image into a vagrant manageable box
      # https://gist.github.com/uchagani/48d25871e7f306f1f8af
@@ -150,25 +161,33 @@ case config_vm_box
     when /centos/
       # Use shell provisioner to install latest puppet
       config.vm.provision 'shell', inline: <<-EOF
-if true
-# This installs Puppet 3.1 and Ruby 1.8.7. These may have issue with package(rpm) resource
+yum list puppet > /dev/null
+if [ "$?" == "0" ]
 then
-  yum -y install ntp
-  chkconfig ntpd on
-  service ntpd start
-  setenforce 0
-  rpm -ivh 'http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm'
-  yum -y install puppet-server
+   echo "Puppet $(puppet --version) is already installed"
 else
-# this installs Puppet 3.8.1 and Ruby 2.4.7. This is very slow
-cd /tmp
-wget 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
-rpm -Uvh 'epel-release-6-8.noarch.rpm'
-  yum -y update
-  yum -y groupinstall 'Development Tools'
-  yum -y install libxslt-devel libyaml-devel libxml2-devel zlib-devel openssl-devel libyaml-devel readline-devel curl-devel openssl-devel git
-  yum -y install rubygems
-  gem install puppet --no-ri --no-rdoc --version 3.8.1 --bindir /usr/bin
+   if true
+   then
+      # echo 'Install Puppet'
+      yum -y install puppet
+      # echo "Install Puppet 3.1 server"
+      # yum -y install ntp
+      # chkconfig ntpd on
+      # service ntpd start
+      # setenforce 0
+      # rpm -ivh 'http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm'
+      # yum -y install puppet-server
+   else
+      # this installs Puppet 3.8.1 and Ruby 2.4.7. This is very slow
+      cd /tmp
+      wget 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
+      rpm -Uvh 'epel-release-6-8.noarch.rpm'
+      yum -y update
+      yum -y groupinstall 'Development Tools'
+      yum -y install libxslt-devel libyaml-devel libxml2-devel zlib-devel openssl-devel libyaml-devel readline-devel curl-devel openssl-devel git
+      yum -y install rubygems
+      gem install puppet --no-ri --no-rdoc --version 3.8.1 --bindir /usr/bin
+   fi
 fi
 EOF
       config.vm.provision :puppet do |puppet|
@@ -179,7 +198,7 @@ EOF
       end
     when /ubuntu/
       # Use shell provisioner to install latest puppet
-      config.vm.provision 'shell', path: 'bootstrap.sh'
+      # config.vm.provision 'shell', path: 'bootstrap.sh'
       config.vm.provision :shell, :path=> '/usr/bin/facter'
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
