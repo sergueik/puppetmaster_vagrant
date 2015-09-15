@@ -16,7 +16,7 @@ package {'libexpat1-dev':
 node 'default' { 
   # TODO: without explicitly removing certain packages the node provisixon is not idempotent:
   exec { 'Remove perl-libwww-perl':
-     command => '/bin/rpm -e perl-libwww-perl-5.833 || /bin/true' ,
+     command => '/bin/rpm -e perl-libwww-perl-5.833 --nodeps  || /bin/true' ,
      onlyif  => '/bin/rpm -q perl-libwww-perl-5.833',
    }
   exec { 'Remove perl-Time-Hires':
@@ -27,7 +27,8 @@ node 'default' {
     ensure => 'present',
   }
   rpm::local_file { 'perl-Time-Hires':
-    source => 'puppet:///modules/rpm/perl-Time-HiRes-1.9726-1.x86_64.rpm',
+    source  => 'puppet:///modules/rpm/perl-Time-HiRes-1.9726-1.x86_64.rpm',
+    require => Exec[ 'Remove perl-Time-Hires'],
   }
   rpm::local_file { 'perl-IPC-ShareLite':
     source => 'puppet:///modules/rpm/perl-IPC-ShareLite-0.17-1.x86_64.rpm',
@@ -55,7 +56,8 @@ node 'default' {
     source => 'puppet:///modules/rpm/perl-HTML-Parser-3.64-2.el6.x86_64.rpm',
   } ->
   rpm::local_file {  'perl-libwwwLWP-perl-5.833':
-    source => 'puppet:///modules/rpm/perl-libwww-perl-5.833-2.el6.noarch.rpm',
+    source  => 'puppet:///modules/rpm/perl-libwww-perl-5.833-2.el6.noarch.rpm',
+    require => Exec['Remove perl-libwww-perl'],
   } ->
   rpm::local_file {  'perl-XML-Parser':
     source => 'puppet:///modules/rpm/perl-XML-Parser-2.44-1.x86_64.rpm',
