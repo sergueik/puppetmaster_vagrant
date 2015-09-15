@@ -1,3 +1,6 @@
+# -*- mode: puppet -*-
+# vi: set ft=puppet :
+
 # NOTE: https://github.com/meltwater/puppet-cpan is ubuntu-only provider
 node 'ubuntu-only' { 
 # NOTE: on precise, apt-get fails with 404 - need to update sources
@@ -14,55 +17,77 @@ package {'libexpat1-dev':
 }
 
 node 'default' { 
-  # TODO: without explicitly removing certain packages the node provisixon is not idempotent:
-  exec { 'Remove perl-libwww-perl':
-     command => '/bin/rpm -e perl-libwww-perl-5.833 --nodeps  || /bin/true' ,
-     onlyif  => '/bin/rpm -q perl-libwww-perl-5.833',
-   }
-  exec { 'Remove perl-Time-Hires':
-     command => '/bin/rpm -e perl-Time-HiRes-1.9726-1 || /bin/true',
-     onlyif  => '/bin/rpm -q perl-Time-HiRes-1.9726-1',
-   }
+  # NOTE use http://rpmfind.net/linux/rpm2html for rpm-packaged CPAN modules
+  
+  package { 'perl-Time-HiRes':
+    ensure   => '1.9726-1',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-Time-HiRes-1.9726-1.x86_64.rpm',
+  }
+  package { 'perl-IPC-ShareLite':
+    ensure   => '0.17-1',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-IPC-ShareLite-0.17-1.x86_64.rpm'
+  }
   package { 'mailcap':
     ensure => 'present',
+  } ->
+  package { 'perl-Compress-Raw-Zlib':
+    ensure          => '2.021-141.el6',
+    provider        => 'rpm',
+    source          => '/vagrant/modules/rpm/files/perl-Compress-Raw-Zlib-2.021-141.el6.x86_64.rpm',
+    install_options => '--nodeps',
+    # perl = 4:5.10.1-141.el6 is needed by perl-Compress-Raw-Zlib-1:2.021-141.el6.x86_64
+  } ->
+  package { 'perl-IO-Compress-Zlib':
+    ensure          => '2.021-141.el6',
+    provider        => 'rpm',
+    source          => '/vagrant/modules/rpm/files/perl-IO-Compress-Zlib-2.021-141.el6.x86_64.rpm',
+    install_options => '--nodeps',
+    # perl = 4:5.10.1-141.el6 is needed by perl-IO-Compress-Zlib-0:2.021-141.el6.x86_64
+  } ->
+  package { 'perl-IO-Compress-Base':
+    ensure          => '2.021-141.el6',
+    provider        => 'rpm',
+    source          => '/vagrant/modules/rpm/files/perl-IO-Compress-Base-2.021-141.el6.x86_64.rpm',
+    install_options => '--nodeps',
+  # perl = 4:5.10.1-141.el6 is needed by perl-IO-Compress-Base-0:2.021-141.el6.x86_64
+  } ->
+  package { 'perl-Compress-Zlib':
+    ensure          => '2.021-141.el6',
+    provider        => 'rpm',
+    source          => '/vagrant/modules/rpm/files/perl-Compress-Zlib-2.021-141.el6.x86_64.rpm',
+    install_options => '--nodeps',
+    # perl = 4:5.10.1-141.el6 is needed by perl-Compress-Zlib-0:2.021-141.el6.x86_64
+  } ->
+  package { 'perl-URI':
+    ensure   => '1.40-2.el6',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-URI-1.40-2.el6.noarch.rpm'
+  } ->
+  package { 'perl-HTML-Tagset':
+    ensure   => '3.20-4.el6',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-HTML-Tagset-3.20-4.el6.noarch.rpm'
+  } ->
+  package { 'perl-HTML-Parser':
+    ensure   => '3.64-2.el6',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-HTML-Parser-3.64-2.el6.x86_64.rpm'
+  } ->
+  package { 'perl-libwww-perl':
+    ensure   => '5.833-2.el6',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-libwww-perl-5.833-2.el6.noarch.rpm'
+  } ->
+  package { 'perl-XML-Parser':
+    ensure   => '2.44-1',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-XML-Parser-2.44-1.x86_64.rpm'
+  } ->
+  package { 'perl-XML-XPath':
+    ensure   => '1.13-1',
+    provider => 'rpm',
+    source   => '/vagrant/modules/rpm/files/perl-XML-XPath-1.13-1.x86_64.rpm'
   }
-  rpm::local_file { 'perl-Time-Hires':
-    source  => 'puppet:///modules/rpm/perl-Time-HiRes-1.9726-1.x86_64.rpm',
-    require => Exec[ 'Remove perl-Time-Hires'],
-  }
-  rpm::local_file { 'perl-IPC-ShareLite':
-    source => 'puppet:///modules/rpm/perl-IPC-ShareLite-0.17-1.x86_64.rpm',
-  }
-  # NOTE use http://rpmfind.net/linux/rpm2html search for RPM wpapped CPAN modules
-  rpm::local_file { 'perl-Compress-Raw-Zlib':
-    source => 'puppet:///modules/rpm/perl-Compress-Raw-Zlib-2.021-141.el6.x86_64.rpm',    
-  } ->
-  rpm::local_file { 'perl-IO-Compress-Zlib':
-    source => 'puppet:///modules/rpm/perl-IO-Compress-Zlib-2.021-141.el6.x86_64.rpm',
-  } ->
-  rpm::local_file { 'perl-IO-Compress-Base':
-    source => 'puppet:///modules/rpm/perl-IO-Compress-Base-2.021-141.el6.x86_64.rpm',
-  } ->
-  rpm::local_file { 'perl-Compress-Zlib':
-    source => 'puppet:///modules/rpm/perl-Compress-Zlib-2.021-141.el6.x86_64.rpm',
-  } ->
-  rpm::local_file {  'perl-URI':
-    source => 'puppet:///modules/rpm/perl-URI-1.40-2.el6.noarch.rpm',
-  } ->
-  rpm::local_file { 'perl-HTML-Tagset':
-    source => 'puppet:///modules/rpm/perl-HTML-Tagset-3.20-4.el6.noarch.rpm',
-  } ->
-  rpm::local_file {  'perl-HTML-Parser':
-    source => 'puppet:///modules/rpm/perl-HTML-Parser-3.64-2.el6.x86_64.rpm',
-  } ->
-  rpm::local_file {  'perl-libwwwLWP-perl-5.833':
-    source  => 'puppet:///modules/rpm/perl-libwww-perl-5.833-2.el6.noarch.rpm',
-    require => Exec['Remove perl-libwww-perl'],
-  } ->
-  rpm::local_file {  'perl-XML-Parser':
-    source => 'puppet:///modules/rpm/perl-XML-Parser-2.44-1.x86_64.rpm',
-  } ->
-  rpm::local_file {  'perl-XML-XPath':
-    source => 'puppet:///modules/rpm/perl-XML-XPath-1.13-1.x86_64.rpm',
-  } 
 }
