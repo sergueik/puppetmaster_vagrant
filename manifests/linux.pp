@@ -8,9 +8,10 @@ node 'default' {
   # http://rpmfind.net/linux/rpm2html for rpm-packaged CPAN modules
 
   package { 'perl-XML-Simple':
-      ensure   => '2.18-6.el6',
+      ensure   => 'present',
       provider => 'rpm',
       source   => '/vagrant/modules/rpm/files/perl-XML-Simple-2.18-6.el6.noarch.rpm',
+      require  => Package['perl-XML-Parser'],
   }
  
   # Net::Ping is with Perl 5.10
