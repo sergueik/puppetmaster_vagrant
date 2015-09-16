@@ -6,6 +6,12 @@ node 'default' {
   # rpm -q --requires '<rpm syntax>'
   # rpm -q --whatprovides '<CPAN syntax>'
   # http://rpmfind.net/linux/rpm2html for rpm-packaged CPAN modules
+
+  package { 'perl-XML-Simple':
+      ensure   => '2.18-6.el6',
+      provider => 'rpm',
+      source   => '/vagrant/modules/rpm/files/perl-XML-Simple-2.18-6.el6.noarch.rpm',
+  }
   
   package { 'perl-Time-HiRes':
     ensure   => '1.9726-1',

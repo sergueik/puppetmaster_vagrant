@@ -15,6 +15,10 @@ node 'default' {
   package { 'mailcap':
     ensure => 'present',
   }
+  rpm::local_file { 'perl-XML-Simple':
+      source   => 'puppet:///modules/rpm/perl-XML-Simple-2.18-6.el6.noarch.rpm',
+  }
+  
   rpm::local_file { 'perl-Time-Hires':
     source  => 'puppet:///modules/rpm/perl-Time-HiRes-1.9726-1.x86_64.rpm',
     require => Exec[ 'Remove perl-Time-Hires'],

@@ -3,7 +3,7 @@ context 'Perl Packages' do
   @cpan_modules = { 
     'Time::HiRes'        => '1.9726',
     'IPC::ShareLite'     => '0.17',
-   # 'XML::Simple'        => '?',
+    'XML::Simple'        => '2.18',
    # 'Net::Ping'          => '?',
    # 'Data::Validate::IP' => '?',
    # 'DBI'                => '?',
