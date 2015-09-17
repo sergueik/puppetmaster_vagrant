@@ -2,8 +2,8 @@ require 'spec_helper'
 context 'Perl Packages' do
   @cpan_modules = { 
     'Data::Validate::IP' => '0.10',
-   # 'DBD::MySql'         => '?',
-   # 'DBI'                => '?',
+    'DBD::mysql'         => '4.013',
+    'DBI'                => '1.609',
     'IPC::ShareLite'     => '0.17',
     'Net::hostent'       => '1.01',
     'Net::Netmask'       => '1.9015',
@@ -15,6 +15,8 @@ context 'Perl Packages' do
   }
  @cpan_rpm_modules = [
    'perl-Data-Validate-IP',
+   'perl-DBI',
+   'perl-DBD-MySQL',
    'perl-IPC-ShareLite',
    # NOTE: 'perl-Net-hostent', 'perl-Net-Netmask', 'perl-Net-Ping' comes installed with perl itself
    'perl-Time-HiRes',

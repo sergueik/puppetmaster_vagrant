@@ -7,6 +7,21 @@ node 'default' {
   # rpm -q --whatprovides '<CPAN syntax>'
   # http://rpmfind.net/linux/rpm2html for rpm-packaged CPAN modules
 
+  package { 'perl-DBI':
+      ensure   => 'present',
+      provider => 'rpm',
+      source   => '/vagrant/modules/rpm/files/perl-DBI-1.609-4.el6.x86_64.rpm',
+      # TODO confirm require list is empty,
+  }
+
+  package { 'perl-DBD-MySQL':
+      ensure   => 'present',
+      provider => 'rpm',
+      source   => '/vagrant/modules/rpm/files/perl-DBD-MySQL-4.013-3.el6.x86_64.rpm',
+      # TODO confirm require list is empty,
+      # require  => Package['perl-Dynaloader'],
+  }
+
   package { 'perl-XML-Simple':
       ensure   => 'present',
       provider => 'rpm',
