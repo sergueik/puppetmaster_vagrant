@@ -2,28 +2,12 @@
 # vi: set ft=puppet :
 
 node 'default' { 
- # $x = regsubst($ipaddress, '([0-9]+)', '<\1>', 'G')
-  $platform_specific_params_string_from_hiera = "a:'1' b:'2' c:'3'"
-  $x = regsubst($platform_specific_params_string_from_hiera, " +", ',', 'G')
+  $platform_specific_params_string = "a:'1' b:'2' c:'3'"
 
-  notify {'platform_specific_params test 1':
-    message => "${x}"
-  }
-  $y = regsubst(regsubst($platform_specific_params_string_from_hiera, " +", ',', 'G'), "([^,:]+):'([^']+)'", '"\1":"\2"', 'G')
-  notify {'platform_specific_params test 2':
-    message => "${y}"
-  }
-  # $platform_specific_params_string ='{"a":"1","b":"2"}'
+  $dummy = regsubst(regsubst($platform_specific_params_string, " +", ',', 'G'), "([^,:]+):'([^']+)'", '"\1":"\2"', 'G')
   
-  $platform_specific_params_string = "{ ${y} }"
-  notify {'platform_specific_params test 3':
-    message => "${platform_specific_params_string}"
-  }
-  $platform_specific_params = parsejson($platform_specific_params_string)
-  notify {'platform_specific_params test 4':
-    message => "${platform_specific_params}"
-  }
-  notify {'platform_specific_params test 5':
+  $platform_specific_params = parsejson("{ ${dummy} }")
+  notify {'platform_specific_params test':
     message => inline_template("<% @platform_specific_params.each do |key,val| -%> <%= key -%> = <%= val -%><% end -%>")
   }
   # NOTE:
