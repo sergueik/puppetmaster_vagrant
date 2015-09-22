@@ -1,0 +1,6 @@
+---
+product_name: 'linux product name'
+product_package_name: 'linux package name'
+product_specific_params: 
+  param_flag: 'false'
+  param_linux_only_setting: 'linux-only'

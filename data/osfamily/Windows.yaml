@@ -1,0 +1,7 @@
+---
+product_name: 'windows product name'
+product_package_name: 'windows package name'
+product_specific_params: 
+  param_flag: 'true'
+  param_empty_setting: ''
+  param_numeric_setting: 42

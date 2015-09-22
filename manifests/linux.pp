@@ -3,6 +3,11 @@
 
 node 'default' { 
 
+# $product_name = hiera('product_name')
+# validate_string($product_name)
+# $product_specific_params  = hiera_hash('product_specific_params')
+# validate_hash($product_specific_params)
+
   class { 'staging':
     path  => '/var/staging',
     owner => 'puppet',
