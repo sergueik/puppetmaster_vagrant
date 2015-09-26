@@ -31,7 +31,7 @@ class custom_command(
   # notify { 'Execute script that will create and run scheduled task':} ->
   # Execute script that will create and run scheduled task
   exec { "Execute script that will create and run scheduled task ${title}": 
-    path    => 'C:/Windows/System32/WindowsPowerShell/v1.0',
+    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     command => "powershell -executionpolicy remotesigned -file ${script_path}",
     require  => File['launcher.ps1'],
 #    provider => powershell,

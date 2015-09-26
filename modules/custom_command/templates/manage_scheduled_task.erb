@@ -3,32 +3,49 @@ $schedule = 'ONCE'
 $time = '00:00' # required, irrrevant
 $run_command = "<%= @run_command -%>"
 $taskname = '<%= @taskname -%>'
+$run_command = 'notepad.exe'
 $delete_existing_schedules = $true
+write-output 'Started' | out-file 'c:\temp\a.log' -encoding ascii
+$env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+write-output "PATH is ${env:PATH}" | out-file 'c:\temp\a.log' -encoding ascii
+write-output 'doing step 1' | out-file 'c:\temp\a.log' -append -encoding ascii
 if ($delete_existing_schedules) {
   $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}"
   write-output $status
+  write-output $status  | out-file 'c:\temp\a.log' -append -encoding ascii
   if ($status -ne $null){
     write-host "${taskname} is present, deleting..."
-   & SchTasks.exe /Delete /TN $taskname /F
+  write-output  "${taskname} is present, deleting..." | out-file 'c:\temp\a.log' -append -encoding ascii
+   & schtasks /Delete /TN $taskname /F
   } else { 
     write-host "No ${taskname} is present...ignoring"
   }
 }
-& SchTasks.exe /Create  /TN $taskname /RL $level /TR $run_command /SC $schedule /ST $time
-& SchTasks.exe /Run /TN $taskname
-
-while($true){
+write-output 'doing step 2' | out-file 'c:\temp\a.log' -append -encoding ascii
+& schtasks /Create  /TN $taskname /RL $level /TR $run_command /SC $schedule /ST $time
+write-output 'doing step 3' | out-file 'c:\temp\a.log' -append -encoding ascii
+& schtasks /Run /TN $taskname
+write-output 'doing step 4' | out-file 'c:\temp\a.log' -append -encoding ascii
+$count = 1
+$max_count = 100
+while($count -le $max_count ){
+  $count ++
+  write-output "doing step 5[${count}]" | out-file 'c:\temp\a.log' -append -encoding ascii
   $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}"
-  write-output $status
-  if ($status.tostring() -match '(Could not start)'){
-    write-host "${taskname} has failed..."
+  write-output $status | out-file 'c:\temp\a.log' -append -encoding ascii
+  if ($status.tostring() -match '(Could not)'){
+    write-host "WARNING: ${taskname} has failed..."
+    write-output "${taskname} has failed..." | out-file 'c:\temp\a.log' -append -encoding ascii
     break 
   } elseif ($status.tostring() -match '(Running|Ready)'){
-    write-host "${taskname} is running..."
+    write-host "SUCCESS: ${taskname} is running..."
+    write-output "${taskname} is running..." | out-file 'c:\temp\a.log' -append -encoding ascii
     break 
   } else { 
-    write-host "${taskname} is not yet running..."
+    write-host "WARNING:${taskname} is not yet running..."
+    write-output "${taskname} is not yet running..."| out-file 'c:\temp\a.log' -append -encoding ascii
   }
   start-sleep -milliseconds 1000
 }
 
+write-output 'Complete' | out-file 'c:\temp\a.log' -append -encoding ascii
