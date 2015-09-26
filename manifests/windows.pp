@@ -22,19 +22,26 @@ node 'windows7' {
       # TODO: support random value to ensure it is written every time
        data   => 'C:\Windows\system32\cmd.exe /c echo foobar 123> C:\TEMP\a.txt',
        ensure => present,
-       notify => Reboot["after ${_name}"],
+       notify => Exec["reboot after ${_name}"],
      }
-reboot { "after ${_name}": 
-    subscribe => Registry_value["HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\${_name_alias}"],
+exec { "reboot after ${_name}": 
+    subscribe  => Registry_value["HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\${_name_alias}"],
+   refreshonly => true,
+   command     =>  'C:/Windows/System32/shutdown.exe -r -t 0',
+}
+# This will simply wait for one minute
+wait_for { 'explicit_wait':
+  seconds => 60,
+    require => Exec["reboot after ${_name}"],
 }
   notify { "wait for install of ${_name} to be finished": 
-    subscribe => [Registry_value["HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\${_name_alias}"],Reboot["after ${_name}"]],
+    require => Wait_for['explicit_wait'],
    } ->
 
   wait_for { "wait for install of ${_name} to be finished":
      query             => 'cmd.exe /c type c:\temp\a.txt',
      regex             => 'foobar',
-     exit_code         => 0,
+     exit_code         => [0,1,2,3],
      polling_frequency => 60,
      max_retries       => 10,
   }  
