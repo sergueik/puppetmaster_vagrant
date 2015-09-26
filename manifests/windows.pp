@@ -6,52 +6,11 @@ node 'windows7' {
   $_name = 'test application'
   # $my_file_arg = 'c:/temp/cleanup.cmd'
   # include 'mywebsite'
-  # TODO: expand the zip
-  $_name_alias = regsubst($_name, ' ', '_')
-  file {'c:/temp/a.txt':
-    ensure => absent,
-  }
-  exec {"Removing old Autorun installer command for ${_name}":
-    command => "C:/Windows/System32/reg.exe DELETE HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v ${_name_alias} /f",
-    returns => [0,1],
-  } ->
-  notify {"Creating Autorun installer command for ${_name}":} ->
-
-  # write the autorun registry keys
-    registry_value {"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\${_name_alias}":
-      # TODO: support random value to ensure it is written every time
-       data   => 'C:\Windows\system32\cmd.exe /c echo foobar 123> C:\TEMP\a.txt',
-       ensure => present,
-       notify => Reboot["reboot after ${_name}"],
-     }
-reboot { "reboot after ${_name}": 
-    subscribe  => Registry_value["HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\${_name_alias}"],
-#   refreshonly => true,
-#   command     =>  'C:/Windows/System32/shutdown.exe -r -t 0',
-}
-# This will simply wait for one minute
-wait_for { 'explicit_wait':
-  seconds => 60,
-    require => Reboot["reboot after ${_name}"],
-}
-  notify { "wait for install of ${_name} to be finished": 
-    require => Wait_for['explicit_wait'],
-   } ->
-
-  wait_for { "wait for install of ${_name} to be finished":
-     query             => 'cmd.exe /c type c:\temp\a.txt',
-     regex             => 'foobar',
-     exit_code         => [0,1,2,3],
-     polling_frequency => 60,
-     max_retries       => 10,
-  }  
-
-
-  # Cannot use either registry_value resource or Registry::Value class:
-  #  Munging failed for value "..." - 
-  exec {"Removing Autorun installer command for ${_name}":
-    command  => "C:/Windows/System32/reg.exe DELETE HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v ${_name_alias} /f",
-    subscribe => Wait_for["wait for install of ${_name} to be finished"],
-    refreshonly => true,
+ # include 'custom_command'
+  class { 'custom_command': 
+    title   => 'Launch_selenium_grid_node',
+    enable  => true,
+    config  => 'unused',
+    version => '0.1.0'
   }
 }

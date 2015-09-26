@@ -1,0 +1,34 @@
+$level = 'HIGHEST'
+$schedule = 'ONCE'
+$time = '00:00' # required, irrrevant
+$run_command = "<%= @run_command -%>"
+$taskname = '<%= @taskname -%>'
+$delete_existing_schedules = $true
+if ($delete_existing_schedules) {
+  $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}"
+  write-output $status
+  if ($status -ne $null){
+    write-host "${taskname} is present, deleting..."
+   & SchTasks.exe /Delete /TN $taskname /F
+  } else { 
+    write-host "No ${taskname} is present...ignoring"
+  }
+}
+& SchTasks.exe /Create  /TN $taskname /RL $level /TR $run_command /SC $schedule /ST $time
+& SchTasks.exe /Run /TN $taskname
+
+while($true){
+  $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}"
+  write-output $status
+  if ($status.tostring() -match '(Could not start)'){
+    write-host "${taskname} has failed..."
+    break 
+  } elseif ($status.tostring() -match '(Running|Ready)'){
+    write-host "${taskname} is running..."
+    break 
+  } else { 
+    write-host "${taskname} is not yet running..."
+  }
+  start-sleep -milliseconds 1000
+}
+
