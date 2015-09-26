@@ -191,36 +191,42 @@ else
 fi
 EOF
       config.vm.provision :puppet do |puppet|
+         puppet.hiera_config_path = 'data/hiera.yaml'
          puppet.module_path    = 'modules'
          puppet.manifests_path = 'manifests'
          puppet.manifest_file  = 'linux.pp'
-         puppet.options        = '--verbose --modulepath /vagrant/modules '
+         puppet.options        = '--verbose --modulepath /vagrant/modules --pluginsync --debug'
       end
     when /ubuntu/
       # Use shell provisioner to install latest puppet
       # config.vm.provision 'shell', path: 'bootstrap.sh'
-      config.vm.provision :shell, :path=> '/usr/bin/facter'
+      config.vm.provision :shell, :path=> '/usr/bin/facter hostname'
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
+        puppet.hiera_config_path = 'data/hiera.yaml'
         puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'linux.pp'
-        puppet.options        = '--verbose'
+        puppet.options        = '--verbose --pluginsync'
       end
     else
       # install .Net 4 and chocolatey
-      config.vm.provision :shell, :path => 'bootstrap.cmd'
+      config.vm.provision 'shell' do |shell|
+        shell.path = 'bootstrap.cmd'
+        # shell.args = 'debug'
+      end
       # install puppet using chocolatey
       config.vm.provision :shell, :path => 'install_puppet.ps1'
       # run facter
       config.vm.provision :shell, inline: <<-END_SCRIPT2
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-facter.bat
+facter.bat hostname
       END_SCRIPT2
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
-        puppet.binary_path    = 'C:\PROGRA~1\PUPPET~1\PUPPET\bin'
+        puppet.binary_path    = 'C:/PROGRA~1/PUPPET~1/PUPPET/bin'
         # puppet.binary_path    = 'C:/Program Files/Puppet Labs/Puppet/bin'
+	puppet.hiera_config_path = 'data/hiera.yaml'
         puppet.module_path    = 'modules'
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'windows.pp'
