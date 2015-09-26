@@ -8,7 +8,9 @@ node 'windows7' {
   # include 'mywebsite'
   # TODO: expand the zip
   $_name_alias = regsubst($_name, ' ', '_')
-
+  file {'c:/temp/a.txt':
+    ensure => absent,
+  }
   exec {"Removing old Autorun installer command for ${_name}":
     command => "C:/Windows/System32/reg.exe DELETE HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v ${_name_alias} /f",
     returns => [0,1],
@@ -25,7 +27,7 @@ node 'windows7' {
   } ->
   reboot { "after ${_name}":
     subscribe => Registry::Value["Autorun command for installing ${_name}"],
-  } ->
+  } 
     # registry_value {"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\${_name_alias}":
       # TODO: support random value to ensure it is written every time
       # data   => 'C:\Windows\system32\cmd.exe /c echo 123> C:\TEMP\a.txt',
@@ -34,7 +36,7 @@ node 'windows7' {
     # } ->
 
   notify { "wait for install of ${_name} to be finished": 
-    subscribe => Registry::Value["Autorun command for installing ${_name}"],
+    subscribe => [Registry::Value["Autorun command for installing ${_name}"],Reboot["after ${_name}"]],
    } ->
 
   wait_for { "wait for install of ${_name} to be finished":
