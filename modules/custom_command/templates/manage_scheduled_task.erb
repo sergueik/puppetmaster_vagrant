@@ -3,49 +3,81 @@ $schedule = 'ONCE'
 $time = '00:00' # required, irrrevant
 $run_command = "<%= @run_command -%>"
 $taskname = '<%= @taskname -%>'
-$run_command = 'notepad.exe'
+if ($run_command -eq ''){
+  $run_command = 'notepad.exe'
+}
 $delete_existing_schedules = $true
-write-output 'Started' | out-file 'c:\temp\a.log' -encoding ascii
+
+function log{
+param(
+  [string]$message,
+  [string]$log_file  = 'c:\temp\a.log'
+ )
+    write-host $message
+    write-output $message | out-file $log_file -append -encoding ascii
+}
+
+log -message ('Launching task for "{0}"' -f $run_command)
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-write-output "PATH is ${env:PATH}" | out-file 'c:\temp\a.log' -encoding ascii
-write-output 'doing step 1' | out-file 'c:\temp\a.log' -append -encoding ascii
+
 if ($delete_existing_schedules) {
-  $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}"
-  write-output $status
-  write-output $status  | out-file 'c:\temp\a.log' -append -encoding ascii
+  $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}" 
+  log $status
   if ($status -ne $null){
-    write-host "${taskname} is present, deleting..."
-  write-output  "${taskname} is present, deleting..." | out-file 'c:\temp\a.log' -append -encoding ascii
+   log -message "${taskname} is present, deleting..."
    & schtasks /Delete /TN $taskname /F
   } else { 
     write-host "No ${taskname} is present...ignoring"
+    log -message "No ${taskname} is present...ignoring"
   }
 }
-write-output 'doing step 2' | out-file 'c:\temp\a.log' -append -encoding ascii
+log ('Creating "{0}"' -f $taskname )
 & schtasks /Create  /TN $taskname /RL $level /TR $run_command /SC $schedule /ST $time
-write-output 'doing step 3' | out-file 'c:\temp\a.log' -append -encoding ascii
+log ('Starting "{0}"' -f $taskname )
 & schtasks /Run /TN $taskname
-write-output 'doing step 4' | out-file 'c:\temp\a.log' -append -encoding ascii
 $count = 1
 $max_count = 100
+$running = $false
+$finished = $false
 while($count -le $max_count ){
   $count ++
-  write-output "doing step 5[${count}]" | out-file 'c:\temp\a.log' -append -encoding ascii
-  $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}"
-  write-output $status | out-file 'c:\temp\a.log' -append -encoding ascii
+  $status = & schtasks /query /TN $taskname| select-string -pattern "${taskname}"
+  log $status
   if ($status.tostring() -match '(Could not)'){
-    write-host "WARNING: ${taskname} has failed..."
-    write-output "${taskname} has failed..." | out-file 'c:\temp\a.log' -append -encoding ascii
+    log "WARNING: ${taskname} has failed..."
     break 
   } elseif ($status.tostring() -match '(Running|Ready)'){
-    write-host "SUCCESS: ${taskname} is running..."
-    write-output "${taskname} is running..." | out-file 'c:\temp\a.log' -append -encoding ascii
+    log "SUCCESS: ${taskname} is running..."
+    $running = $true
     break 
   } else { 
-    write-host "WARNING:${taskname} is not yet running..."
-    write-output "${taskname} is not yet running..."| out-file 'c:\temp\a.log' -append -encoding ascii
+    log "WARNING: ${taskname} is not yet running..."
   }
   start-sleep -milliseconds 1000
 }
-
-write-output 'Complete' | out-file 'c:\temp\a.log' -append -encoding ascii
+# TODO : time management
+if ($running){
+  $count = 1
+  $max_count = 10
+  while($count -le $max_count ){
+    $count ++
+    $status = & schtasks /query /TN $taskname| select-string -pattern "${taskname}"
+    log $status
+    if ($status.tostring() -match '(Could not|Failed)'){
+      log "WARNING: ${taskname} has failed..."
+      break 
+    } elseif ($status.tostring() -match '(Running)'){
+      log "NOTICE: ${taskname} is running..."
+    } else { 
+      log "SUCCESS: ${taskname} is finished..."
+      $finished = $true
+      break 
+    }
+    start-sleep -milliseconds 60000
+ }
+}
+log 'Complete'
+<#
+Task Scheduler did not launch task "..."  because computer is running on batteries. 
+User Action: If launching the task on batteries is required, change the respective flag in the task configuration.
+#>
