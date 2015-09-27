@@ -28,11 +28,5 @@ powershell.exe -ExecutionPolicy %TARGET_EXECUTIONPOLICY% "&{Enable-PSRemoting -F
  
 goto :EOF
 :DONE
-
-echo 'Install .NET 4.0'
-@powershell -NoProfile -File "c:\vagrant\install_net4.ps1"
-
-echo 'Install Chocolatey'
-@powershell -NoProfile -File "c:\vagrant\install_chocolatey.ps1"
-
+REM ignore exit status to preventing cmd from running the script for the second time
 exit 0

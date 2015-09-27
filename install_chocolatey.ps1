@@ -1,4 +1,5 @@
-# https://github.com/tzehon/vagrant-windows
+# origin: https://github.com/tzehon/vagrant-windows
+
 $ChocoInstallPath = "$env:ProgramData\chocolateybin"
 if ([Environment]::GetEnvironmentVariable('chocolateyinstall', [System.EnvironmentVariableTarget]::Machine) -ne $null) { 
 write-output 'Chocolatey already installed.'
@@ -22,6 +23,7 @@ $env:Path += ";$ChocoInstallPath"
 
 if (!(Test-Path $ChocoInstallPath)) {
   # Install chocolatey
+  write-host 'Install Chocolatey'
   invoke-expression ((New-Object net.webclient).DownloadString('http://chocolatey.org/install.ps1'))
 }
 

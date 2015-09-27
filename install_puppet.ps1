@@ -1,7 +1,4 @@
-
 # iterate over installed producs 
-
-
 function read_registry {
   param(
     [string]$registry_hive = 'HKLM',
@@ -77,14 +74,15 @@ if (-not [environment]::Is64BitProcess) {
    $registry_path = '/SOFTWARE/Wow6432Node/Microsoft/Windows/CurrentVersion/Uninstall'
 }
 $Debugpreference = 'Continue'
-
+$env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+<# 
+# NOTE: chocolatey natively detects that puppet is installed 
+# and does it faster then this home-brewed script
+# optional - discover if puppet is already installed, through Powershell
 $install_path = read_registry -subfolder 'bin' -registry_path $registry_path -package_name $package_name -Debug $true
 if ($install_path -ne $null -and $install_path -ne '' -and (test-path -path $install_path)) { 
   write-output ('{0} is already installed to {1}' -f $package_name, $install_path )
-} else {
-  $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-
-  # NOTE: chocolatey natively detects that puppet is installed 
-  # doing it faster then this home-brewed script
-  cinst.exe --yes puppet 
+  exit
 }
+#>
+& cinst.exe --yes puppet

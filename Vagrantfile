@@ -104,7 +104,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
      # https://gist.github.com/uchagani/48d25871e7f306f1f8af
      # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
      config_vm_box     = 'windows7'
-     config_vm_default = 'windows'
+     config_vm_default = 'windows' 
+     # to save provisioning time
+     # set to true when imporging brand new box, false otherwise
+     config_vm_newbox  = false
      config_vm_box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
   end
 config.vm.define config_vm_default do |config|
@@ -210,18 +213,24 @@ EOF
         puppet.options        = '--verbose --pluginsync'
       end
     else
-      # install .Net 4 and chocolatey
-      config.vm.provision 'shell' do |shell|
-        shell.path = 'bootstrap.cmd'
-        # shell.args = 'debug'
-      end
-      # install puppet using chocolatey
-      config.vm.provision :shell, :path => 'install_puppet.ps1'
-      # run facter
-      config.vm.provision :shell, inline: <<-END_SCRIPT2
+      if config_vm_newbox  
+        config.vm.provision 'shell' do |shell|
+          # set powershell execution policy globally
+          shell.path = 'bootstrap.cmd'
+          # shell.args = 'debug'
+        end
+        # install .Net 4
+        config.vm.provision :shell, :path => 'install_net4.ps1'
+        # install chocolatey
+        config.vm.provision :shell, :path => 'install_chocolatey.ps1'
+        # install puppet using chocolatey
+        config.vm.provision :shell, :path => 'install_puppet.ps1'
+        # run facter
+        config.vm.provision :shell, inline: <<-END_SCRIPT2
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
 facter.bat hostname
-      END_SCRIPT2
+        END_SCRIPT2
+      end
       # Use puppet provisioner
       config.vm.provision :puppet do |puppet|
         puppet.binary_path    = 'C:/PROGRA~1/PUPPET~1/PUPPET/bin'

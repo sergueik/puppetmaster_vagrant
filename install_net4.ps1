@@ -27,7 +27,8 @@ function Enable-Net40 {
     $psi.Arguments = "/q /norestart /repair /log `'$NetFx4Path\NetFx4Install.log`'"
     #$psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Minimized;
 
-    Write-Host "Installing `'$NetFx4Installer`'"
+    write-Host 'Install .NET 4.0'
+    Write-Host "Running `'$NetFx4Installer`'"
     $s = [System.Diagnostics.Process]::Start($psi);
     $s.WaitForExit();
     # if ($s.ExitCode -ne 0) {
