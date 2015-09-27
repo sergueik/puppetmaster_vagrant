@@ -1,7 +1,7 @@
 $level = 'HIGHEST'
 $schedule = 'ONCE'
 $time = '00:00' # required, irrrevant
-$run_command = "<%= @run_command -%>"
+$run_command = "<%= @command -%>"
 $taskname = '<%= @taskname -%>'
 if ($run_command -eq ''){
   $run_command = 'notepad.exe'
@@ -11,7 +11,7 @@ $delete_existing_schedules = $true
 function log{
 param(
   [string]$message,
-  [string]$log_file  = 'c:\temp\a.log'
+  [string]$log_file  = '<%=@log-%>'
  )
     write-host $message
     write-output $message | out-file $log_file -append -encoding ascii
@@ -46,7 +46,10 @@ while($count -le $max_count ){
   if ($status.tostring() -match '(Could not)'){
     log "WARNING: ${taskname} has failed..."
     break 
-  } elseif ($status.tostring() -match '(Running|Ready)'){
+  } elseif ($status.tostring() -match '(Ready)'){
+    log "NOTICE: ${taskname} is ready..."
+    $running = $true
+  } elseif ($status.tostring() -match '(Running)'){
     log "SUCCESS: ${taskname} is running..."
     $running = $true
     break 
@@ -57,6 +60,7 @@ while($count -le $max_count ){
 }
 # TODO : time management
 if ($running){
+  log "NOTICE: waiting for running ${taskname} to complete..."
   $count = 1
   $max_count = 10
   while($count -le $max_count ){
@@ -78,6 +82,7 @@ if ($running){
 }
 log 'Complete'
 <#
+NOTE:
 Task Scheduler did not launch task "..."  because computer is running on batteries. 
 User Action: If launching the task on batteries is required, change the respective flag in the task configuration.
 #>
