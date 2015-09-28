@@ -99,16 +99,31 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
      config_vm_default = 'linux'
      # config_vm_box_url = "file://#{basedir}/Downloads/precise-server-cloudimg-amd64-vagrant-disk1.box"
      config_vm_box_url = "file://#{basedir}/Downloads/ubuntu-server-12042-x64-vbox4210.box"
-   else 
+  else 
+    config_vm_default = 'windows' 
+    # to save provisioning time
+    # set to true when imporging brand new box, false otherwise
+    config_vm_newbox  = true
+    if box_name =~ /2008/
+      # https://atlas.hashicorp.com/opentable/boxes/win-2008r2-standard-amd64-nocm/versions/1.0.1/providers/virtualbox.box 
+      config_vm_box     = 'windows_2008'
+      config_vm_box_url = "file://#{basedir}/Downloads/windows-2008R2-serverstandard-amd64_virtualbox.box"
+    elsif box_name =~ /2012/
+      #https://atlas.hashicorp.com/kensykora/boxes/windows_2012_r2_standard/versions/0.7.0/providers 
+      config_vm_box     = 'windows_2012'
+      config_vm_box_url = "file://#{basedir}/Downloads/windows_2012_r2_standard.box"
+
+    else
+
      # tweak modern.ie image into a vagrant manageable box
      # https://gist.github.com/uchagani/48d25871e7f306f1f8af
      # https://groups.google.com/forum/#!topic/vagrant-up/PpRelVs95tM 
      config_vm_box     = 'windows7'
-     config_vm_default = 'windows' 
      # to save provisioning time
      # set to true when imporging brand new box, false otherwise
      config_vm_newbox  = false
      config_vm_box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
+    end 
   end
 config.vm.define config_vm_default do |config|
     config.vm.box = config_vm_box
@@ -240,6 +255,8 @@ facter.bat hostname
         puppet.manifests_path = 'manifests'
         puppet.manifest_file  = 'windows.pp'
         puppet.options        = '--verbose'
+     # TODO: http://puppet-on-the-edge.blogspot.com/2014/03/heredoc-is-here.html
+     #   puppet.options        = '--verbose --parser'
       end 
   end 
 end
