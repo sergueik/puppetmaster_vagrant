@@ -14,8 +14,20 @@ define custom_command(
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
   $script_path = "c:\\temp\\${script}.ps1"
   $random = fqdn_rand(1000,$::uptime_seconds)
-  $log = "c:\\temp\\${script}${random}.log"
+  $xml_job_definition_path = "c:\\temp\\${script}.${random}.xml"
   $taskname = regsubst($name, " +", '_', 'G') # 'Launch_selenium_grid_node'
+
+  file { "XML task for ${name}":
+    ensure             => file,
+    path               => $xml_job_definition_path,
+    content            => template('custom_command/generic_scheduled_task.erb'),
+    source_permissions => ignore,
+
+  }
+  # +& schtasks /Delete /F /TN InstallSpoon
+  # +& schtasks /Create /TN InstallSpoon /XML $XmlFile
+  # +& schtasks /Run /TN InstallSpoon
+  $log = "c:\\temp\\${script}.${random}.log"
   notify { "Write powershell launcher script for ${name}":} ->
   file { "${name} launcher log":
     name               => "${script}${random}.log",

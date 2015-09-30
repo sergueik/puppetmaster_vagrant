@@ -1,10 +1,10 @@
 $level = 'HIGHEST'
 $schedule = 'ONCE'
 $time = '00:00' # required, irrrevant
-$run_command = "<%= @command -%>"
+$command = "<%= @command -%>"
 $taskname = '<%= @taskname -%>'
-if ($run_command -eq ''){
-  $run_command = 'notepad.exe'
+if ($command -eq ''){
+  $command = 'notepad.exe'
 }
 $delete_existing_schedules = $true
 
@@ -17,7 +17,7 @@ param(
     write-output $message | out-file $log_file -append -encoding ascii
 }
 
-log -message ('Launching task for "{0}"' -f $run_command)
+log -message ('Launching task for "{0}"' -f $command)
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
 
 if ($delete_existing_schedules) {
@@ -32,7 +32,7 @@ if ($delete_existing_schedules) {
   }
 }
 log ('Creating "{0}"' -f $taskname )
-& schtasks /Create  /TN $taskname /RL $level /TR $run_command /SC $schedule /ST $time
+& schtasks /Create  /TN $taskname /RL $level /TR $command /SC $schedule /ST $time
 log ('Starting "{0}"' -f $taskname )
 & schtasks /Run /TN $taskname
 $count = 1
