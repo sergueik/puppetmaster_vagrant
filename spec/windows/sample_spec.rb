@@ -213,7 +213,12 @@ end
 
 
 context 'Junctions ans Reparse Points with pinvoke' do
-
+  # requires custom specinfra
+  context 'Junctions ans Reparse Points' do
+    describe file('c:/temp/xxx') do
+     it { should be_symlink }
+    end
+  end
   describe command( <<-EOF
 
 # use pinvoke to read directory junction /  symlink target 
