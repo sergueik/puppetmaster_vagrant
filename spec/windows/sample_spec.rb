@@ -17,6 +17,21 @@ context 'Commands' do
     its(:exit_status) {should eq 0 }
   end
 end
+  describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
+    it { should respond_to(:exists?) }
+    it { should exist }
+    it { should respond_to(:has_property?).with(2).arguments }
+    it { should respond_to(:has_property?).with(1).arguments }
+    it { should have_property('Path', :type_string) }
+    it { should respond_to(:has_value?).with(1).arguments }
+    it { should have_property_value( 'OS', :type_string_converted, 'Windows_NT' ) }
+     # for the next tests to pass
+     # need to install modified specinfra.gem and serverspec.gem 
+     # on the host
+     it { should respond_to(:has_propertyvaluecontaining?).with(2).arguments }
+     it { should have_propertyvaluecontaining('Path', 'c:\\\\windows') }
+  end
+
 context 'WinNT Groups' do
   
     describe command (<<-EOF
