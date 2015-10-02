@@ -1,6 +1,7 @@
 require_relative '../windows_spec_helper'
 
 context 'Commands' do
+  
   describe command ('ipconfig ') do
     its(:stdout) { should match /^Windows IP Configuration/ }
     its(:stderr) { should be_empty }
@@ -17,6 +18,15 @@ context 'Commands' do
     its(:exit_status) {should eq 0 }
   end
 end
+context 'Process' do
+  processname = 'csrss.exe'
+  describe process(processname) do
+    xit { should be_running } 
+    its(:processname) { should match /#{processname}/ }
+    its(:user) { should match /SYSTEM/ }
+  end
+end
+
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
     it { should respond_to(:exists?) }
     it { should exist }
@@ -604,6 +614,9 @@ context 'World Wide Web Publishing Service' do
   describe service('W3SVC') do
     # comment slow command
     it { should be_running }
+    it { should have_property('StartName') }
+    # it { should have_property('StartName','LocalSystem') }
+
   end
 end
 context 'Windows Process Activation Service' do
