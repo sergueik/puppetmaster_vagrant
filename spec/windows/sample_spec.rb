@@ -17,6 +17,13 @@ context 'Commands' do
     its(:stderr) { should be_empty }
     its(:exit_status) {should eq 0 }
   end
+  processname = 'csrss'
+  describe command("(get-process -name '#{processname}').Responding") do
+    let (:pre_command) { 'get-item -path "c:\windows"' }
+    its(:stdout) { should match /[tT]rue/ }
+    its(:exit_status) { should eq 0 }
+  end
+
 end
 context 'Process' do
   processname = 'csrss.exe'
