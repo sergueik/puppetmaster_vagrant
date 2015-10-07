@@ -66,6 +66,37 @@ END
       its(:exit_status) { should eq 0 }
     end
   end
+    context 'side effect' do
+    download_path =  
+      # test-path -LiteralPath '#{download_path}/#{file}' -ErrorAction Stop
+
+    describe command(<<-END_COMMAND
+write-output 'pre_command was success';
+write-output 'main command will run';
+# Check the file is present
+
+return \$true
+END_COMMAND
+) do
+      let (:url) { 'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' }
+      let (:download_path) { 'c:/temp' }
+      let (:file) { 'nunit.zip' }
+# do not use \$true - too much indirection
+      let(:pre_command_script) { "(new-object -typename 'System.Net.WebClient').DownloadFile('#{url}','#{download_path}/#{file}'); write-host 'return -1'; return -1" }
+      let (:pre_command) do 
+      #NOTE: cannot make = assignments inside [ScriptBlock]::Create
+      # overall looks ugly and brittle
+      pre_command =  <<-END
+( Invoke-Command -ScriptBlock ([Scriptblock]::Create("#{pre_command_script}"))) -eq -1 
+END
+      pre_command.gsub!(/\r?\n/,' ')
+      end
+      its(:stdout) { should match /main command/ }
+      its(:stdout) { should match /pre_command/ }
+      its(:exit_status) { should == 1 }
+    end
+  end
+
 #  context 'download and run' do
 #    processname = 'csrss'
 #    describe command("(get-process -name '#{processname}').Responding") do 
