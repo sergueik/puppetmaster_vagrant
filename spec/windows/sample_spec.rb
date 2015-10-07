@@ -17,12 +17,78 @@ context 'Commands' do
     its(:stderr) { should be_empty }
     its(:exit_status) {should eq 0 }
   end
-  processname = 'csrss'
-  describe command("(get-process -name '#{processname}').Responding") do
-    let (:pre_command) { 'get-item -path "c:\windows"' }
-    its(:stdout) { should match /[tT]rue/ }
-    its(:exit_status) { should eq 0 }
+  context 'basic' do
+    processname = 'csrss'
+    describe command("(get-process -name '#{processname}').Responding") do
+      let (:pre_command) { 'get-item -path "c:\windows"' }
+      its(:stdout) { should match /[tT]rue/ }
+      its(:exit_status) { should eq 0 }
+    end
   end
+
+  context 'complex' do
+    describe command(<<-END_COMMAND
+  write-output 'main command testing the status of pre_command success';
+exit 0;
+END_COMMAND
+) do
+      let (:pre_command) do 
+      #NOTE: cannot make assignments inside [ScriptBlock]::Create
+      # overall looks ugly and brittle
+      pre_command =  <<-END
+( Invoke-Command -ScriptBlock ([Scriptblock]::Create("write-host 'pre-command'; write-host 'return true'; $return $true"))) -eq $true 
+END
+      pre_command.gsub!(/\r?\n/,' ')
+      end
+      its(:stdout) { should match /pre-command/ }
+      its(:stdout) { should match /success/ }
+      its(:stderr) { should match /success/ }
+      its(:exit_status) { should eq 0 }
+    end
+  end
+  context 'complex with refactoring of inner string context' do
+    describe command(<<-END_COMMAND
+  write-output 'main command testing the status of pre_command success';
+exit 0;
+END_COMMAND
+) do
+      let(:pre_command_script) { 'write-host "pre-command"; write-host "return true"; return $true' }
+      let (:pre_command) do 
+      #NOTE: cannot make assignments inside [ScriptBlock]::Create
+      # overall looks ugly and brittle
+      pre_command =  <<-END
+( Invoke-Command -ScriptBlock ([Scriptblock]::Create('#{pre_command_script}'))) -eq $true 
+END
+      pre_command.gsub!(/\r?\n/,' ')
+      end
+      its(:stdout) { should match /pre-command/ }
+      its(:stdout) { should match /success/ }
+      its(:exit_status) { should eq 0 }
+    end
+  end
+#  context 'download and run' do
+#    processname = 'csrss'
+#    describe command("(get-process -name '#{processname}').Responding") do 
+#      let (:url) { 'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' }
+#      let (:download_path) { 'c:/temp' }
+#      let (:file) { 'nunit.zip' }
+#      let (:pre_command) do 
+#      # has to be single line command
+#      # therefore no comments are allowed
+#      # example below assumes .Net framework 4.5 is instaled in guest
+#      pre_command =  <<-END
+#\$download_path = '#{download_path}';
+#\$url = '#{url}' ;
+#\$file = '#{file}' ;
+#\$web_client = new-object -typename 'System.Net.WebClient' ;
+#\$web_client.DownloadFile(\$url, "\$download_path/\$file") ;
+#END
+#      pre_command.gsub!(/\r?\n/,' ')
+#      end
+#      its(:stdout) { should match /[tT]rue/ }
+#      its(:exit_status) { should eq 0 }
+#    end
+#  end
 
 end
 context 'Process' do
