@@ -97,30 +97,40 @@ END
     end
   end
 
-#  context 'download and run' do
-#    processname = 'csrss'
-#    describe command("(get-process -name '#{processname}').Responding") do 
-#      let (:url) { 'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' }
-#      let (:download_path) { 'c:/temp' }
-#      let (:file) { 'nunit.zip' }
-#      let (:pre_command) do 
-#      # has to be single line command
-#      # therefore no comments are allowed
-#      # example below assumes .Net framework 4.5 is instaled in guest
-#      pre_command =  <<-END
-#\$download_path = '#{download_path}';
-#\$url = '#{url}' ;
-#\$file = '#{file}' ;
-#\$web_client = new-object -typename 'System.Net.WebClient' ;
-#\$web_client.DownloadFile(\$url, "\$download_path/\$file") ;
-#END
-#      pre_command.gsub!(/\r?\n/,' ')
-#      end
-#      its(:stdout) { should match /[tT]rue/ }
-#      its(:exit_status) { should eq 0 }
-#    end
-#  end
-
+  context 'download and run' do
+    download_path =  
+      @url =  'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' 
+      @download_path =  'c:/temp' 
+      @file =  'nunit.zip' 
+    describe command(<<-END_COMMAND
+write-output 'pre_command was success';
+write-output 'main command is run';
+write-output 'Check the file is present'
+\$zip_path = '#{@download_path}/#{@file}'
+test-path -LiteralPath \$zip_path -ErrorAction Stop
+write-output 'Extract the file'
+[string]\$extract_path = ('{0}\\Desktop\\Extract' -f \$env:USERPROFILE)
+[System.IO.Directory]::CreateDirectory(\$extract_path)
+add-type  -AssemblyName 'System.IO.Compression.FileSystem'
+[System.IO.Compression.ZipFile]::ExtractToDirectory(\$zip_path, \$extract_path)
+return \$true
+END_COMMAND
+) do
+# NOTE: avoid using \$true - too much interpolation
+      let(:pre_command_script) { "(new-object -typename 'System.Net.WebClient').DownloadFile('#{@url}','#{@download_path}/#{@file}'); write-host 'return -1'; return -1" }
+      let (:pre_command) do 
+      #NOTE: cannot make assignments inside [ScriptBlock]::Create
+      # overall looks ugly and brittle
+      pre_command =  <<-END
+( Invoke-Command -ScriptBlock ([Scriptblock]::Create("#{pre_command_script}"))) -eq -1 
+END
+      pre_command.gsub!(/\r?\n/,' ')
+      end
+      its(:stdout) { should match /main command/ }
+      its(:stdout) { should match /pre_command/ }
+      its(:exit_status) { should == 1 }
+    end
+  end
 end
 context 'Process' do
   processname = 'csrss.exe'
