@@ -16,7 +16,7 @@ define custom_command(
   $random = fqdn_rand(1000,$::uptime_seconds)
   $xml_job_definition_path = "c:\\temp\\${script}.${random}.xml"
   $taskname = regsubst($name, " +", '_', 'G') # 'Launch_selenium_grid_node'
-
+  ensure_resource('file', 'c:\temp', {ensure => directory})
   file { "XML task for ${name}":
     ensure             => file,
     path               => $xml_job_definition_path,

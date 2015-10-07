@@ -121,7 +121,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
      config_vm_box     = 'windows7'
      # to save provisioning time
      # set to true when imporging brand new box, false otherwise
-     config_vm_newbox  = false
      config_vm_box_url = "file://#{basedir}/Downloads/vagrant-win7-ie10-updated.box"
     end 
   end
@@ -229,11 +228,12 @@ EOF
       end
     else
       if config_vm_newbox  
-        config.vm.provision 'shell' do |shell|
-          # set powershell execution policy globally
-          shell.path = 'bootstrap.cmd'
-          # shell.args = 'debug'
-        end
+# The request for the Windows Remote Shell with ShellId  failed because the shell was not found on the server.
+#        config.vm.provision 'shell' do |shell|
+#          # set powershell execution policy globally
+#          shell.path = 'bootstrap.cmd'
+#          # shell.args = 'debug'
+#        end
         # install .Net 4
         config.vm.provision :shell, :path => 'install_net4.ps1'
         # install chocolatey
