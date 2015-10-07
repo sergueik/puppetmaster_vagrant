@@ -1,22 +1,6 @@
 require_relative '../windows_spec_helper'
 
 context 'Commands' do
-  
-  describe command ('ipconfig ') do
-    its(:stdout) { should match /^Windows IP Configuration/ }
-    its(:stderr) { should be_empty }
-    its(:exit_status) {should eq 0 }
-  end
-  describe command ('& "ipconfig" ') do
-    its(:stdout) { should match /^Windows IP Configuration/ }
-    its(:stderr) { should be_empty }
-    its(:exit_status) {should eq 0 }
-  end
-  describe command ('(get-CIMInstance "Win32_ComputerSystem" -Property "DNSHostName").DNSHostName') do
-    its(:stdout) { should match /\bwindows7\b/ }
-    its(:stderr) { should be_empty }
-    its(:exit_status) {should eq 0 }
-  end
   context 'basic' do
     processname = 'csrss'
     describe command("(get-process -name '#{processname}').Responding") do
@@ -24,21 +8,35 @@ context 'Commands' do
       its(:stdout) { should match /[tT]rue/ }
       its(:exit_status) { should eq 0 }
     end
+    describe command ('ipconfig ') do
+      its(:stdout) { should match /^Windows IP Configuration/ }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
+    end
+    describe command ('& "ipconfig" ') do
+      its(:stdout) { should match /^Windows IP Configuration/ }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
+    end
+    describe command ('(get-CIMInstance "Win32_ComputerSystem" -Property "DNSHostName").DNSHostName') do
+      its(:stdout) { should match /\bwindows7\b/ }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
+    end
   end
-
-  context 'complex' do
+  context 'medium complex' do
     describe command(<<-END_COMMAND
   write-output 'main command testing the status of pre_command success';
 exit 0;
 END_COMMAND
 ) do
       let (:pre_command) do 
-      #NOTE: cannot make assignments inside [ScriptBlock]::Create
-      # overall looks ugly and brittle
-      pre_command =  <<-END
+        #NOTE: cannot make assignments inside [ScriptBlock]::Create
+        # overall looks ugly and brittle
+        pre_command =  <<-END
 ( Invoke-Command -ScriptBlock ([Scriptblock]::Create("write-host 'pre-command'; write-host 'return true'; $return $true"))) -eq $true 
 END
-      pre_command.gsub!(/\r?\n/,' ')
+        pre_command.gsub!(/\r?\n/,' ')
       end
       its(:stdout) { should match /pre-command/ }
       its(:stdout) { should match /success/ }
@@ -46,65 +44,14 @@ END
       its(:exit_status) { should eq 0 }
     end
   end
-  context 'complex with refactoring of inner string context' do
-    describe command(<<-END_COMMAND
-  write-output 'main command testing the status of pre_command success';
-exit 0;
-END_COMMAND
-) do
-      let(:pre_command_script) { 'write-host "pre-command"; write-host "return true"; return $true' }
-      let (:pre_command) do 
-      #NOTE: cannot make assignments inside [ScriptBlock]::Create
-      # overall looks ugly and brittle
-      pre_command =  <<-END
-( Invoke-Command -ScriptBlock ([Scriptblock]::Create('#{pre_command_script}'))) -eq $true 
-END
-      pre_command.gsub!(/\r?\n/,' ')
-      end
-      its(:stdout) { should match /pre-command/ }
-      its(:stdout) { should match /success/ }
-      its(:exit_status) { should eq 0 }
-    end
-  end
-    context 'side effect' do
-    download_path =  
-      # test-path -LiteralPath '#{download_path}/#{file}' -ErrorAction Stop
-
-    describe command(<<-END_COMMAND
-write-output 'pre_command was success';
-write-output 'main command will run';
-# Check the file is present
-
-return \$true
-END_COMMAND
-) do
-      let (:url) { 'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' }
-      let (:download_path) { 'c:/temp' }
-      let (:file) { 'nunit.zip' }
-# do not use \$true - too much indirection
-      let(:pre_command_script) { "(new-object -typename 'System.Net.WebClient').DownloadFile('#{url}','#{download_path}/#{file}'); write-host 'return -1'; return -1" }
-      let (:pre_command) do 
-      #NOTE: cannot make = assignments inside [ScriptBlock]::Create
-      # overall looks ugly and brittle
-      pre_command =  <<-END
-( Invoke-Command -ScriptBlock ([Scriptblock]::Create("#{pre_command_script}"))) -eq -1 
-END
-      pre_command.gsub!(/\r?\n/,' ')
-      end
-      its(:stdout) { should match /main command/ }
-      its(:stdout) { should match /pre_command/ }
-      its(:exit_status) { should == 1 }
-    end
-  end
-
-  context 'download and run' do
-    download_path =  
+  context 'download .net assembly for execution' do
       @url =  'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' 
       @download_path =  'c:/temp' 
       @file =  'nunit.zip' 
     describe command(<<-END_COMMAND
 write-output 'pre_command was success';
 write-output 'main command is run';
+
 write-output 'Check the file is present'
 \$zip_path = '#{@download_path}/#{@file}'
 test-path -LiteralPath \$zip_path -ErrorAction Stop
@@ -141,19 +88,11 @@ END
       its(:stderr) { should match /Exception/ }
       its(:stderr) { should match /Expected: True/ }
       its(:stderr) { should match /But was:  False/ }
-
-      its(:exit_status) { should == 1 }
+      its(:exit_status) { should == 1 } 
     end
-end
-context 'Process' do
-  processname = 'csrss.exe'
-  describe process(processname) do
-    xit { should be_running } 
-    its(:processname) { should match /#{processname}/ }
-    its(:user) { should match /SYSTEM/ }
   end
 end
-
+context 'Registry' do
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
     it { should respond_to(:exists?) }
     it { should exist }
@@ -168,7 +107,7 @@ end
      it { should respond_to(:has_propertyvaluecontaining?).with(2).arguments }
      it { should have_propertyvaluecontaining('Path', 'c:\\\\windows') }
   end
-
+end
 context 'WinNT Groups' do
   
     describe command (<<-EOF
@@ -673,9 +612,6 @@ EOF
     its(:stdout) { should match /c:\\opscode\\chef\\bin/io }
   end
 
-
-
-
   # note non-standard syntax
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
     it { should exist }
@@ -776,17 +712,5 @@ EOF
   end
 
 end
-
-
-
-
-
-# require 'spec_helper'
-# does not work with windows_spec ?
-
-# describe 'test' do
-#  include_examples 'iis::init'
-# end
-
 
 
