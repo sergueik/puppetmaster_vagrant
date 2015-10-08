@@ -228,12 +228,11 @@ EOF
       end
     else
       if config_vm_newbox  
-# The request for the Windows Remote Shell with ShellId  failed because the shell was not found on the server.
-#        config.vm.provision 'shell' do |shell|
-#          # set powershell execution policy globally
-#          shell.path = 'bootstrap.cmd'
-#          # shell.args = 'debug'
-#        end
+        # The request for the Windows Remote Shell with ShellId  failed because the shell was not found on the server.
+        config.vm.provision :shell, inline: <<-END_SCRIPT1
+set-executionpolicy Unrestricted
+enable-emoting -Force
+        END_SCRIPT1
         # install .Net 4
         config.vm.provision :shell, :path => 'install_net4.ps1'
         # install chocolatey
