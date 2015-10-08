@@ -42,6 +42,30 @@ define custom_command(
   # +& schtasks /Delete /F /TN InstallSpoon
   # +& schtasks /Create /TN InstallSpoon /XML $XmlFile
   # +& schtasks /Run /TN InstallSpoon
+  $script_script_path = "${log_dir}\\remove_from_environment.ps1"
+  $application_path = 'C:\Program Files\Spoon\Cmd'
+  # notity {"Prune from environment ${application_path} script": }
+  ensure_resource('file', $script_script_path , { 
+    ensure             => file,
+    path               => $script_script_path,
+    content            => template('custom_command/remove_from_environment_ps1.erb'),
+  } )
+
+
+  exec { "Execute script that will Prune from environment from application path ${application_path} for ${name}":
+    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    command => "powershell -executionpolicy remotesigned -file ${script_script_path}",
+    logoutput => true,
+    require  => File[$script_script_path],
+  } ->
+
+  exec { "Execute (2) script that will Prune from environment from application path ${application_path} for ${name}":
+    provider  => 'powershell',
+    command   => "& ${script_script_path}",
+    logoutput => true,
+    require   => File[$script_script_path],
+  } ->
+
   notify { "Write powershell launcher script for ${name}":} ->
   file { "${name} launcher log":
     name               => "${script}${random}.log",
