@@ -12,11 +12,26 @@ define custom_command(
   validate_string($script)
   validate_string($command)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
-  $script_path = "c:\\temp\\${script}.ps1"
   $random = fqdn_rand(1000,$::uptime_seconds)
-  $xml_job_definition_path = "c:\\temp\\${script}.${random}.xml"
-  $taskname = regsubst($name, " +", '_', 'G') # 'Launch_selenium_grid_node'
-  ensure_resource('file', 'c:\temp', {ensure => directory})
+  $taskname = regsubst($name, "[$/\\|:, ]", '_', 'G')
+  $log_dir = "c:\\temp\\${taskname}"
+  $script_path = "${log_dir}\\${script}.ps1"
+  $xml_job_definition_path = "${log_dir}\\${script}.${random}.xml"
+  $log = "${log_dir}\\${script}.${random}.log"
+
+  exec { "purge ${log_dir}":
+    provider  => 'powershell',
+    command   => "\$target='${log_dir}' ; remove-item -recurse -force -literalpath \$target",
+    onlyif    => "\$target='${log_dir}' ; if (-not (test-path -literalpath \$target)){exit 1}",
+    logoutput => true,
+    cwd       => 'c:\windows\temp'
+  }
+  ensure_resource('file', 'c:/temp' , { ensure => directory } )
+
+  ensure_resource('file', $log_dir , {
+    ensure => directory,
+    require => Exec["purge ${log_dir}"],
+  })
   file { "XML task for ${name}":
     ensure             => file,
     path               => $xml_job_definition_path,
@@ -27,7 +42,6 @@ define custom_command(
   # +& schtasks /Delete /F /TN InstallSpoon
   # +& schtasks /Create /TN InstallSpoon /XML $XmlFile
   # +& schtasks /Run /TN InstallSpoon
-  $log = "c:\\temp\\${script}.${random}.log"
   notify { "Write powershell launcher script for ${name}":} ->
   file { "${name} launcher log":
     name               => "${script}${random}.log",
