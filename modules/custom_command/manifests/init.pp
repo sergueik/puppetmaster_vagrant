@@ -19,6 +19,10 @@ define custom_command(
   $xml_job_definition_path = "${log_dir}\\${script}.${random}.xml"
   $log = "${log_dir}\\${script}.${random}.log"
 
+  $script_block_1 = "get-service | where-object {\$_.Name -match \"\$service_name\"} | foreach-object { stop-service -name \$_.Name}"
+  $script_block_2 = "get-service -name \"\$service_name\";"
+  $script_block_3 = "\$service_object = get-wmiobject -class win32_service -filter \"name='\$service_name'\"; \$service_object.delete();"
+
   exec { "purge ${log_dir}":
     cwd       => 'c:\windows\temp',
     command   => "\$target='${log_dir}' ; remove-item -recurse -force -literalpath \$target",
@@ -83,15 +87,25 @@ define custom_command(
     path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   } ->
-exec {"$title stopping service: 'name_of_service_is_not_interpolated'":
-    command   => "\$service_name='name_of_service_is_not_interpolated' ; get-service | where-object {\$_.Name -match \"\$service_name\"} | foreach-object { stop-service -name \$_.Name}",
+
+
+  exec {"${title} stopping service: 'name_of_service_is_not_interpolated'":
+    command   => "\$service_name='name_of_service_is_not_interpolated' ; ${script_block_1}",
     cwd       => 'c:\windows\temp',
     logoutput => true,
-    onlyif    => "\$service_name='name_of_service_is_not_interpolated' ; get-service -name \"\$service_name\";", # correctly sets $? 
-    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    onlyif    => "\$service_name='name_of_service_is_not_interpolated' ; ${script_block_2}", # correctly sets $? 
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
+  }
 
+  exec {"${title} deleting service: 'name_of_service_is_not_interpolated'":
+    command   => "\$service_name='name_of_service_is_not_interpolated' ; ${script_block_3}",
+    cwd       => 'c:\windows\temp',
+    logoutput => true,
+    onlyif    => "\$service_name='name_of_service_is_not_interpolated' ; ${script_block_2}", # correctly sets $? 
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+  }
 
-}
   notify { "Done ${name}.":}
 }

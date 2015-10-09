@@ -12,10 +12,10 @@ node 'windows7' {
     script  => 'launch_notepad',
     wait    => true,
   }
-  custom_command { 'Run spoon selenium grid':
-    command => $run_command,
-    script  => 'launch_spoon',
-    wait    => true,
-  }
-  Custom_command['Launch nodepad'] -> Custom_command['Run spoon selenium grid'] 
+#  custom_command { 'Run spoon selenium grid':
+#    command => $run_command,
+#    script  => 'launch_spoon',
+#    wait    => true,
+#  }
+#  Custom_command['Launch nodepad'] -> Custom_command['Run spoon selenium grid'] 
 }
