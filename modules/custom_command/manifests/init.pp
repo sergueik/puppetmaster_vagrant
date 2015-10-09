@@ -19,9 +19,9 @@ define custom_command(
   $xml_job_definition_path = "${log_dir}\\${script}.${random}.xml"
   $log = "${log_dir}\\${script}.${random}.log"
 
-  $script_block_1 = "get-service | where-object {\$_.Name -match \"\$service_name\"} | foreach-object { stop-service -name \$_.Name}"
-  $script_block_2 = "get-service -name \"\$service_name\";"
-  $script_block_3 = "\$service_object = get-wmiobject -class win32_service -filter \"name='\$service_name'\"; \$service_object.delete();"
+  $script_block_1 = 'get-service | where-object {$_.Name -match "$service_name"} | foreach-object { stop-service -name $_.Name}'
+  $script_block_2 = 'get-service -name "$service_name";'
+  $script_block_3 = '$service_object = get-wmiobject -class win32_service -filter "name=\'$service_name\'"; $service_object.delete();'
 
   exec { "purge ${log_dir}":
     cwd       => 'c:\windows\temp',
