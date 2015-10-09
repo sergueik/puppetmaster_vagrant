@@ -3,7 +3,7 @@ Info
 This module is a Powershell script designed 
 The script is simply a [wrapper for `schtasks.exe` utility](http://stackoverflow.com/questions/18387920/get-scheduledtask-in-powershell-on-windows-server-2003). It was originally designed for and tested against Windows 7 guest as a quick solution for installing legacy applications which lack a console (silent) installer (even if the desktop access is required for an innocent progress bar).
 
-With Windows Server 2012,Windows 8 and later 
+With Windows Server 2008 R2, 2012, Windows 8 and later a collection of 
 [Scheduled Tasks]( https://technet.microsoft.com/en-us/library/jj649808%28v=wps.630%29.aspx) 
 powershell cmdlets have been introduced.
 

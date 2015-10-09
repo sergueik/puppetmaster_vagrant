@@ -43,8 +43,25 @@ define custom_command(
   # +& schtasks /Delete /F /TN InstallSpoon
   # +& schtasks /Create /TN InstallSpoon /XML $XmlFile
   # +& schtasks /Run /TN InstallSpoon
+  $script_script_path = "${log_dir}\\remove_from_environment.ps1"
+  $application_path = 'C:\Program Files\Spoon\Cmd'
+  # notity {"Prune from environment ${application_path} script": }
+  ensure_resource('file', $script_script_path , { 
+    ensure             => file,
+    path               => $script_script_path,
+    content            => template('custom_command/remove_from_environment_ps1.erb'),
+  } )
 
   # https://github.com/counsyl/puppet-windows
+
+  exec { "Prune application path ${application_path} from environment for ${name}":
+    command   => "& { ${script_script_path} }",
+    logoutput => true,
+    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+    require   => File[$script_script_path],
+  } ->
+
   notify { "Write powershell launcher script for ${name}":} ->
   file { "${name} launcher log":
     name               => "${script}${random}.log",
