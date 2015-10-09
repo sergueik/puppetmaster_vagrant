@@ -712,5 +712,59 @@ EOF
   end
 
 end
+context 'chained commands' do
+  context 'basic' do
+    before(:each) do
+      # interpolation
+      # Specinfra::Runner::run_command("echo \"it works\" > #{@logfile}")
+      Specinfra::Runner::run_command("echo \"it works\" > c:\\temp\\a.txt")
+    end
+    @logfile = 'c:\temp\a.txt'
+    describe command("(get-content -path '#{@logfile}')") do
+      its(:stdout) { should match /it works/ }
+      its(:exit_status) { should eq 0 }
+    end
+  end
+  context 'moderate' do
+    context 'download .net assembly for execution' do
+      @url =  'http://github.com/nunit/nunitv2/releases/download/2.6.4/NUnit-2.6.4.zip' 
+      @download_path =  'c:/temp' 
+      @file =  'nunit.zip' 
+      before(:each) do 
+       Specinfra::Runner::run_command(<<-END_COMMAND1
+\$o = new-object -typename 'System.Net.WebClient'
+\$o.DownloadFile('#{@url}','#{@download_path}/#{@file}')
+END_COMMAND1
+)
+      end
+      describe command(<<-END_COMMAND
 
-
+write-output 'Check the file is present'
+\$zip_path = '#{@download_path}/#{@file}'
+test-path -LiteralPath \$zip_path -ErrorAction Stop
+write-output 'extract the file'
+[string]\$extract_path = ('{0}\\Desktop\\Extract' -f \$env:USERPROFILE)
+[System.IO.Directory]::CreateDirectory(\$extract_path)
+add-type  -AssemblyName 'System.IO.Compression.FileSystem'
+[System.IO.Compression.ZipFile]::ExtractToDirectory(\$zip_path, \$extract_path)
+\$dll_name = 'nunit.framework.dll'
+write-output 'load assembly'
+add-type -path ('{0}\\Desktop\\Extract\\NUnit-2.6.4\\bin\\{1}' -f \$env:USERPROFILE , \$dll_name)
+write-output 'throw assertion exception'
+[NUnit.Framework.Assert]::IsTrue(\$true -eq \$false)
+write-output 'complete execution'
+return \$true
+END_COMMAND
+) do
+      its(:stdout) { should match /extract the file/ }
+      its(:stdout) { should match /load assembly/ }
+      its(:stdout) { should match /throw assertion exception/ }
+      its(:stdout) { should match /complete execution/ }
+      its(:stderr) { should match /Exception/ }
+      its(:stderr) { should match /Expected: True/ }
+      its(:stderr) { should match /But was:  False/ }
+      # its(:exit_status) { should == 1 } 
+      end
+    end
+  end
+end
