@@ -20,11 +20,12 @@ define custom_command(
   $log = "${log_dir}\\${script}.${random}.log"
 
   exec { "purge ${log_dir}":
-    provider  => 'powershell',
+    cwd       => 'c:\windows\temp',
     command   => "\$target='${log_dir}' ; remove-item -recurse -force -literalpath \$target",
-    onlyif    => "\$target='${log_dir}' ; if (-not (test-path -literalpath \$target)){exit 1}",
     logoutput => true,
-    cwd       => 'c:\windows\temp'
+    onlyif    => "\$target='${log_dir}' ; if (-not (test-path -literalpath \$target)){exit 1}",
+    provider  => 'powershell',
+    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
   }
   ensure_resource('file', 'c:/temp' , { ensure => directory } )
 
@@ -51,18 +52,13 @@ define custom_command(
     content            => template('custom_command/remove_from_environment_ps1.erb'),
   } )
 
+  # https://github.com/counsyl/puppet-windows
 
-  exec { "Execute script that will Prune from environment from application path ${application_path} for ${name}":
+  exec { "Prune application path ${application_path} from environment for ${name}":
+    command   => "& { ${script_script_path} }",
+    logoutput => true,
     path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-    command => "powershell -executionpolicy remotesigned -file ${script_script_path}",
-    logoutput => true,
-    require  => File[$script_script_path],
-  } ->
-
-  exec { "Execute (2) script that will Prune from environment from application path ${application_path} for ${name}":
     provider  => 'powershell',
-    command   => "& ${script_script_path}",
-    logoutput => true,
     require   => File[$script_script_path],
   } ->
 
@@ -82,10 +78,20 @@ define custom_command(
   } -> 
 
   exec { "Execute script that will create and run scheduled task ${name}": 
-    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     command => "powershell -executionpolicy remotesigned -file ${script_path}",
     require  => File[ "${name} launcher script"],
+    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
   } ->
+exec {"$title stopping service: 'name_of_service_is_not_interpolated'":
+    command   => "\$service_name='name_of_service_is_not_interpolated' ; get-service | where-object {\$_.Name -match \"\$service_name\"} | foreach-object { stop-service -name \$_.Name}",
+    cwd       => 'c:\windows\temp',
+    logoutput => true,
+    onlyif    => "\$service_name='name_of_service_is_not_interpolated' ; get-service -name \"\$service_name\";", # correctly sets $? 
+    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
 
+
+}
   notify { "Done ${name}.":}
 }
