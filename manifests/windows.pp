@@ -12,6 +12,10 @@ node 'windows7' {
     script  => 'launch_notepad',
     wait    => true,
   }
+
+exec_service_control {'aspnet_state': }
+exec_service_control {'AxInstSV': }
+exec_path_environment{ 'C:\Program Files\Spoon\Cmd':}
 #  custom_command { 'Run spoon selenium grid':
 #    command => $run_command,
 #    script  => 'launch_spoon',
