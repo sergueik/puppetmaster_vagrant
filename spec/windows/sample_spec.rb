@@ -712,5 +712,19 @@ EOF
   end
 
 end
+context 'chained commands' do
+  context 'basic' do
+    before(:each) do
+      # interpolation
+      # Specinfra::Runner::run_command("echo \"it works\" > #{@logfile}")
+      Specinfra::Runner::run_command("echo \"it works\" > c:\\temp\\a.txt")
+    end
+    @logfile = 'c:\temp\a.txt'
+    describe command("(get-content -path '#{@logfile}')") do
+      its(:stdout) { should match /it works/ }
+      its(:exit_status) { should eq 0 }
+    end
+  end
+end
 
 
