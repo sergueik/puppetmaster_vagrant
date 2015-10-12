@@ -3,7 +3,7 @@
 
 define exec_path_environment(
   $application_path = $title, # e.g. 'C:\Program Files\Spoon\Cmd'
-  $version      = '0.1.0'
+  $version          = '0.1.0'
 )   { 
   # Validate install parameters.
   validate_string($application_path)
