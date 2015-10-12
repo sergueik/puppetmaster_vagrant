@@ -6,11 +6,11 @@ define exec_path_environment(
   $version      = '0.1.0'
 )   { 
   # Validate install parameters.
-  validate_string($service_name)
+  validate_string($application_path)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
   $random = fqdn_rand(1000,$::uptime_seconds)
-  $taskname = regsubst($title, "[\$/\\\\|:, ]", '_', 'G')
-  $log_dir = "c:\\windows\\temp\\${taskname}"
+  $task_name = regsubst($title, "[\$/\\\\|:, ]", '_', 'G')
+  $log_dir = "c:\\windows\\temp\\${task_name}"
   $log = "${log_dir}\\${task_name}.${random}.log"
   $temp_script = "${log_dir}\\remove_from_environment.ps1"
 
@@ -40,7 +40,7 @@ define exec_path_environment(
   exec { "${title} prune application path ${application_path} from environment":
     command   => "& { ${temp_script} }",
     logoutput => true,
-    path    => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
     require   => File[$temp_script],
   }

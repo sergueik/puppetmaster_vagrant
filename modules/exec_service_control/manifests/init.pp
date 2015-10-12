@@ -9,8 +9,8 @@ define exec_service_control(
   validate_string($service_name)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
   $random = fqdn_rand(1000,$::uptime_seconds)
-  $taskname = regsubst($title, "[$/\\|:, ]", '_', 'G')
-  $log_dir = "c:\\temp\\${taskname}"
+  $task_name = regsubst($title, "[$/\\|:, ]", '_', 'G')
+  $log_dir = "c:\\temp\\${task_name}"
   $log = "${log_dir}\\${task_name}.${random}.log"
 
   exec {"${title} stopping service: '${service_name}'":
