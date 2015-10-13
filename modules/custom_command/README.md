@@ -41,7 +41,9 @@ Limitations
 -----------
 In current revision the timeout values to wait for the newly created scheduled task to start and finish are hard-coded in the template / module.
 
-
+custom_command::exec_* types
+----
+These resources are Pupper wrapper of basic Powershell command rendered through template designed  to automate removal of registry keys, directories, stopping services, managing Windows system environment etc. - common subtasts of 'uninstall' which are less risky to perform through direct 'exec' type rather than relying on native Puppet type or module (e.g. registry) module which usage may lead to duplicate declaration errors. 
 History
 -------
 

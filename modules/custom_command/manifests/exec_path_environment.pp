@@ -1,9 +1,9 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
 
-define exec_path_environment(
+define custom_command::exec_path_environment(
   $application_path = $title, # e.g. 'C:\Program Files\Spoon\Cmd'
-  $version          = '0.1.0'
+  $version          = '0.2.0'
 )   { 
   # Validate install parameters.
   validate_string($application_path)
@@ -31,7 +31,7 @@ define exec_path_environment(
 
 
   ensure_resource('file', $temp_script, { 
-    content => template('exec_path_environment/remove_from_environment_ps1.erb'),
+    content => template('custom_command/remove_from_environment_ps1.erb'),
     ensure  => file,
     path    => $temp_script,
     # require => File[$log_dir],

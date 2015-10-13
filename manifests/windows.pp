@@ -13,10 +13,10 @@ node 'windows7' {
     wait    => true,
   }
 
-exec_service_control {'aspnet_state': }
-exec_service_control {'AxInstSV': }
-exec_remove_directory{ 'C:\Program Files\Spoon\Cmd':}
-exec_path_environment{ 'C:\Program Files\Spoon\Cmd':}
+custom_command::exec_service_control {'aspnet_state': }
+custom_command::exec_service_control {'AxInstSV': }
+custom_command::exec_remove_directory{ 'C:\Program Files\Spoon\Cmd':}
+custom_command::exec_path_environment{ 'C:\Program Files\Spoon\Cmd':}
 #  custom_command { 'Run spoon selenium grid':
 #    command => $run_command,
 #    script  => 'launch_spoon',
