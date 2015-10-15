@@ -24,9 +24,11 @@ node 'default' {
 $has_yum_packages = true
 
   if $has_yum_packages {
-    package { ['perl-DBI','perl-DBD-MySQL','perl-XML-Parser','perl-XML-Simple','perl-XML-XPath'] :
+    package { ['perl-DBI','perl-DBD-MySQL','perl-XML-Parser','perl-XML-Simple','perl-XML-XPath','perl-Time-HiRes','perl-IPC-ShareLite'] :
       ensure => present,
     }
+    # 'Net::Ping', 'Data::Validate::IP','Net::hostent','Net::Netmask is with Perl 5.10
+    # 
   }  else {
 
     class { 'staging':
