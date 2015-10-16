@@ -1,0 +1,5 @@
+$service_name ='<%= @service_name -%>'
+$service_object = get-service -name "${service_name}" | select-object {$_.Status -eq 'Running'}
+if ($service_object -eq $null){
+exit 1
+}
