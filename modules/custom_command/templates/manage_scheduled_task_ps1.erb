@@ -1,8 +1,8 @@
 $level = 'HIGHEST'
 $schedule = 'ONCE'
 $time = '00:00' # required, irrrevant
-$command = "<%= @command -%>"
-$taskname = '<%= @taskname -%>'
+$command = "<%= @command %>"
+$taskname = '<%= @taskname %>'
 if ($command -eq ''){
   $command = 'notepad.exe'
 }
@@ -11,7 +11,7 @@ $delete_existing_schedules = $true
 function log{
 param(
   [string]$message,
-  [string]$log_file  = '<%=@log-%>'
+  [string]$log_file  = '<%=@log%>'
  )
     write-host $message
     write-output $message | out-file $log_file -append -encoding ascii

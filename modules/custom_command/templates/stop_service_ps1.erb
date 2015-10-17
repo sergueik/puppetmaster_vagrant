@@ -1,4 +1,4 @@
-$service_name = '<%= @service_name -%>'
+$service_name = '<%= @service_name %>'
 Get-Service |
 Where-Object { $_.Name -match "${service_name}" } |
 ForEach-Object { Stop-Service -Name $_.Name }
