@@ -20,7 +20,7 @@ define custom_command::exec_check_powershell_version(
       path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
       provider  => 'powershell',
       command   => template("custom_command/${template}_ps1.erb"),
-    } 
+    }
   }
   exec {"Run onlyif \$host.Version.Major < '${expected_version}'":
     command   => 'write-output "`$host.Version.Major = $($host.Version.Major)"',
@@ -29,7 +29,7 @@ define custom_command::exec_check_powershell_version(
     onlyif    => template("custom_command/${template}_ps1.erb"),
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
-  }   
+  }
   exec {"Run unless \$host.Version.Major < '${expected_version}'":
     command   => 'write-output "`$host.Version.Major = $($host.Version.Major)"',
     cwd       => 'c:\windows\temp',
@@ -37,6 +37,24 @@ define custom_command::exec_check_powershell_version(
     unless    => template("custom_command/${template}_ps1.erb"),
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
-  }   
+  }
+
+# inline
+  exec {"Run onlyif(inline) \$host.Version.Major < '${expected_version}'":
+    command   => 'write-output "`$host.Version.Major = $($host.Version.Major)"',
+    cwd       => 'c:\windows\temp',
+    logoutput => true,
+    onlyif    => "\$expected_version = [int](${expected_version});exit [int]( -not ($host.Version.Major -lt \${expected_version} ))",
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+  }
+  exec {"Run unless(inline) \$host.Version.Major < '${expected_version}'":
+    command   => 'write-output "`$host.Version.Major = $($host.Version.Major)"',
+    cwd       => 'c:\windows\temp',
+    logoutput => true,
+    unless    => "\$expected_version = [int](${expected_version});exit [int]( -not ($host.Version.Major -lt \${expected_version} ))",
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+  }
 }
 
