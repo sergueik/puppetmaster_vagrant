@@ -3,12 +3,14 @@
 
 define custom_command::exec_template_test (
   $template = $title, # e.g. 
+  $target_path = undef,
   $version = '0.1.0',
   $service_name = undef,
   $debug = false
 )   { 
   # Validate install parameters. Uncomment the one actually used by sut
   # validate_string($service_name)
+  validate_string($target_path)
   validate_bool($debug)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
   if $debug {

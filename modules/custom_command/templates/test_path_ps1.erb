@@ -1,2 +1,7 @@
-$target_path = '<%= @target_path -%>'
-if (-not (test-path -path "$target_path" -errroaction 'SilentlyContinue' )) { exit 1 } 
+$target_path = '<%= @target_path %>'
+write-output "target_path=${target_path}"
+$status = (test-path -path $target_path -erroraction 'SilentlyContinue' ) 
+write-output "DEBUG: test-path ${target_path} => ${status}"
+$exitcode  =  [int]( -not ($status))
+write-output "will exit with ${exitcode}"
+exit $exitcode
