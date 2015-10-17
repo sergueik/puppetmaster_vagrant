@@ -1,5 +1,8 @@
-$service_name ='<%= @service_name -%>'
-$service_object = get-service -name "${service_name}" | select-object {$_.Status -eq 'Running'}
-if ($service_object -eq $null){
-exit 1
-}
+$service_name ='<%= @service_name %>'
+write-output "service_name=${service_name}"
+$service_object = get-service -name "${service_name}" | where-object {$_.Status -eq 'Running'}
+$status = ($service_object -ne $null)
+write-output "Running? = ${status}"
+$exitcode = [int]( -not ( $status ))
+write-output "will exit with ${exitcode}"
+exit $exitcode

@@ -6,9 +6,12 @@ node 'windows7' {
   # NOTE: the spoon selenium grid command will fail unless spoon provisioner is not being on the box
   $spoon_command = 'run base,spoonbrew/selenium-grid'
   $run_command = "'C:\\Program Files\\Spoon\\Cmd\\spoon.exe' ${spoon_command}"
-
-  custom_command::exec_check_powershell_version {'4': }
-  custom_command::exec_check_powershell_version {'5': }
+  custom_command::exec_template_test { 'query_is_running_service':
+    service_name => 'wscsvc', # 'WPCSvc',
+    debug        => true
+  }
+#  custom_command::exec_check_powershell_version {'4': }
+#  custom_command::exec_check_powershell_version {'5': }
 
 #  custom_command::exec_powershell_execution_syntax_error {'test':}
 #  custom_command::exec_service_control {'aspnet_state': }
