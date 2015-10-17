@@ -1,0 +1,10 @@
+$expected_version = [int](<%= @expected_version %>)
+$version = $host.Version.Major
+write-output "expected_version=${expected_version}"
+write-output "version=${version}"
+write-output "condition: (`$version -lt `$expected_version) => "
+write-output "condition: (${version} -lt ${expected_version} ) => "
+write-output  (($version -lt $expected_version))
+$status  = [int](($version -lt $expected_version))
+write-output "will exit with ${status}"
+exit $status
