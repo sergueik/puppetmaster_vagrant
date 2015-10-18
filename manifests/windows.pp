@@ -6,6 +6,13 @@ node 'windows7' {
   # NOTE: the spoon selenium grid command will fail unless spoon provisioner is not being on the box
   $spoon_command = 'run base,spoonbrew/selenium-grid'
   $run_command = "'C:\\Program Files\\Spoon\\Cmd\\spoon.exe' ${spoon_command}"
+  custom_command::exec_check_path_environment { 'c:\windows\system32': }
+
+  custom_command::exec_check_path_environment { 'C:\Program Files\Spoon\Cmd': }
+
+  custom_command::exec_check_path_environment { 'c:\Program Files\Oracle\VirtualBox Guest Additions':
+    debug        => true
+  }
    custom_command::exec_template_test { 'test_path':
     service_name => 'wscsvc', # 'WPCSvc',
     target_path  => "C:\\Program Files\\Spoon\\Cmd\\spoon.exe", # 'c:\users',

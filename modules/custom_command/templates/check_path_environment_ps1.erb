@@ -1,0 +1,10 @@
+$application_path = '<%= @application_path %>'
+
+$current_path_environment = [environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Machine)
+
+$status = ($current_path_environment.ToLower().Contains($application_path.ToLower()))
+write-output "DEBUG: [environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Machine).Contains(${application_path}) => $status"
+# converting Powershell statuses to appropriate exitcodes
+$exitcode  =  [int]( -not ($status))
+write-output "will exit with ${exitcode}"
+exit $exitcode
