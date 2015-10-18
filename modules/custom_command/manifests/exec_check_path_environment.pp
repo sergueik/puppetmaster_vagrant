@@ -22,7 +22,7 @@ define custom_command::exec_check_path_environment(
       command   => template("custom_command/${template}_ps1.erb"),
     }
   }
-  exec {"Run onlyif '${application_path}' is in System Environment":
+  exec {"Run onlyif '${application_path}' is in System Environment (${title})":
     command   => 'write-output "executing custom onlyif command"',
     cwd       => 'c:\windows\temp',
     logoutput => true,
@@ -30,7 +30,7 @@ define custom_command::exec_check_path_environment(
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   }
-  exec {"Run unless'${application_path}' is in System Environment":
+  exec {"Run unless'${application_path}' is in System Environment (${title}":
     command   => 'write-output "executing custom unless command"',
     cwd       => 'c:\windows\temp',
     logoutput => true,

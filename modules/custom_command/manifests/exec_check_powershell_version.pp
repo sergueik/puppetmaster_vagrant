@@ -10,7 +10,7 @@ define custom_command::exec_check_powershell_version(
   validate_re($expected_version, '^\d$')
   validate_bool($debug)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
-  $template = 'exec_check_powershell_version'
+  $template = 'check_powershell_version'
   if $debug {
     # validate the script behaves as intended before putting it as onlyif / unless condition
     exec {"${template}( ${title})": 
