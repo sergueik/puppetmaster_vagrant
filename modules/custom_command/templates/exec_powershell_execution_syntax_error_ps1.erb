@@ -1,5 +1,8 @@
-write-output 'the script will fail processing the code following if statement'
-if ($true){
+# the if statement formatted to single line is fully executed
+$variable = $true
+if ($variable){ write-output "variable = true" } else {write-output 'variable = false' }
+# with multiline if statement the script will quietly ignore processing the code beyond the first line
+if ($variable){ write-output "variable = true"
   write-output 'debug'
 }
 write-output 'never printed'
