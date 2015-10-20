@@ -635,6 +635,10 @@ EOF
     it { should have_property('Path', :type_string) }
     it { should have_property_value( 'OS', :type_string_converted, 'Windows_NT' ) }
   end
+  describe windows_registry_key('HKLM\SOFTWARE\Microsoft\PowerShell\3\PowerShellEngine') do
+    # does not work with  :type_string_converted
+    it { should have_property_value('PowerShellVersion' , :type_string ,'4.0' ) }
+  end
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
 
     let(:value_check) do
