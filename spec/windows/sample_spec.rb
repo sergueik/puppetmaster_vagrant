@@ -621,14 +621,12 @@ EOF
 ) do
     its(:stdout) { should match /c:\\opscode\\chef\\bin/io }
   end
-  describe command (<<-EOF 
-write-output ([Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine))
-
+describe command (<<-EOF
+write-output (([Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) -replace '\\\\', '/'))
 EOF
 ) do
-    its(:stdout) { should match /c:\\opscode\\chef\\bin/io }
+    its(:stdout) { should match |c:/opscode/chef/bin|i }
   end
-
   # note non-standard syntax
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
     it { should exist }
