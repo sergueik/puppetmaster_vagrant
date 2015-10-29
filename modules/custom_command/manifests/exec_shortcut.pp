@@ -1,7 +1,5 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
-# http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell
-# http://stackoverflow.com/questions/9701840/how-to-create-a-shortcut-using-powershell
 define custom_command::exechortcut(
   $shortcut_basename = $title,
   $shortcut_pathname = undef,
@@ -16,16 +14,22 @@ define custom_command::exechortcut(
   validate_string($shortcut_targetpath )
   validate_string($shortcut_target_arguments )
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
+
+
+# http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell
+# http://stackoverflow.com/questions/9701840/how-to-create-a-shortcut-using-powershell
+# NOTE: https://forge.puppetlabs.com/puppetlabs/win_desktop_shortcut is not doing what it says it is doing.
+
   $random = fqdn_rand(1000,$::uptime_seconds)
   $task_name = regsubst($title, "[$/\\|:, ]", '_', 'G')
   $log_dir = "c:\\temp\\${task_name}"
   $log = "${log_dir}\\${task_name}.${random}.log"
 
-  exec {"${title} stopping service: '${service_name}'":
+  exec {"${title} creating admin shortcut: '${shortcut_basename}' for '${shortcut_target}'":
     command   => template('custom_command/create_admin_shortcut_ps1.erb'),
     cwd       => 'c:\windows\temp',
     logoutput => true,
-    unless    => "test-item -path ('{0}\{1}.lnk', ${shortcut_pathname}, ${shortcut_basename}  )", 
+    unless    => "exit [int]( -not test-item -path ('{0}\{1}.lnk', ${shortcut_pathname}, ${shortcut_basename}))", 
 
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
@@ -35,8 +39,8 @@ define custom_command::exechortcut(
     command   =>  template('custom_command/create_basic_shortcut_ps1.erb'),
     cwd       => 'c:\windows\temp',
     logoutput => true,
+    unless    => "exit [int]( -not test-item -path ('{0}\{1}.lnk', ${shortcut_pathname}, ${shortcut_basename}))", 
     unless    => "test-item -path ('{0}\{1}.lnk', ${shortcut_pathname}, ${shortcut_basename}  )", 
-    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   }  
 }
