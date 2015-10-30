@@ -27,28 +27,35 @@ define custom_command::exec_shortcut  (
     $shortcut_pathname = '$HOME\Desktop'
   }
   $path_check = "exit [int]( -not (test-path -path ('{0}\\{1}.lnk' -f ${shortcut_pathname}, ${shortcut_basename})))"
-  exec { "${title} performing post-run check for '${shortcut_basename}(admin).lnk'":
-    command    => "exit [int]( -not (test-path -path ('{0}\\{1}(admin).lnk' -f '${shortcut_pathname}', '${shortcut_basename}')))",
+  $admin_path_check = "exit [int]( -not (test-path -path ('{0}\\{1}(admin).lnk' -f ${shortcut_pathname}, ${shortcut_basename})))"
+  exec {"${title} creating basic shortcut: '${service_name}.lnk'":
+    command   =>  template('custom_command/create_simple_shortcut_ps1.erb'),
+    cwd       => 'c:\windows\temp',
+    logoutput => true,
+    unless    => $path_check,
+    provider  => 'powershell',
+  } ->
+  exec { "${title} performing post-run check for '${shortcut_basename}.lnk'":
+    command    => $path_check,
     cwd       => 'c:\windows\temp',
     logoutput => true,
     provider  => 'powershell',
   }  ->
-  exec {"${title} creating basic shortcut: '${service_name}'":
-    command   =>  template('custom_command/create_simple_shortcut_ps1.erb'),
-    cwd       => 'c:\windows\temp',
-    logoutput => true,
-    unless    => "exit [int]( -not (test-path -path ('{0}\\{1}(admin).lnk' -f '${shortcut_pathname}', '${shortcut_basename}')))",
-    provider  => 'powershell',
-  } ->
   # cannot create shortcut with the same name
-  exec {"${title} creating admin shortcut: '${shortcut_basename}' for '${shortcut_target}'":
+  exec {"${title} creating admin shortcut: '${shortcut_basename}(admin).lnk' for '${shortcut_target}'":
     command   => template('custom_command/create_admin_shortcut_ps1.erb'),
     cwd       => 'c:\windows\temp',
     logoutput => true,
-    unless    => $path_check,
+    unless    => $admin_path_check,
 
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   } ->
+  exec { "${title} performing post-run check for '${shortcut_basename}(admin).lnk'":
+    command    => $admin_path_check,
+    cwd       => 'c:\windows\temp',
+    logoutput => true,
+    provider  => 'powershell',
+  }  ->
  notify { 'Done': }
 }
