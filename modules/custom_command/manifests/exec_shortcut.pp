@@ -1,5 +1,9 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
+# http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell
+# http://stackoverflow.com/questions/9701840/how-to-create-a-shortcut-using-powershell
+# NOTE: https://forge.puppetlabs.com/puppetlabs/win_desktop_shortcut is not doing what it says it is doing.
+
 define custom_command::exec_shortcut  (
   $shortcut_basename = $title,
   $shortcut_pathname = '$HOME\Desktop',
@@ -8,17 +12,13 @@ define custom_command::exec_shortcut  (
   $shortcut_run_as_admin = undef,
   $version      = '0.1.0'
 )   {
-  # Validate install parameters.
+  # Validate install parameters
   validate_string($shortcut_basename )
   validate_string($shortcut_pathname )
   validate_string($shortcut_targetpath )
   validate_string($shortcut_target_arguments )
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$')
 
-
-# http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell
-# http://stackoverflow.com/questions/9701840/how-to-create-a-shortcut-using-powershell
-# NOTE: https://forge.puppetlabs.com/puppetlabs/win_desktop_shortcut is not doing what it says it is doing.
   $random = fqdn_rand(1000,$::uptime_seconds)
   $task_name = regsubst($title, "[$/\\|:, ]", '_', 'G')
   $log_dir = "c:\\temp\\${task_name}"
@@ -26,13 +26,18 @@ define custom_command::exec_shortcut  (
   if ( $shortcut_pathname == ''){
     $shortcut_pathname = '$HOME\Desktop'
   }
-  $path_check = "exit [int]( -not (test-path -path ('{0}\\{1}.lnk' -f ${shortcut_pathname}, ${shortcut_basename})))"
-  $admin_path_check = "exit [int]( -not (test-path -path ('{0}\\{1}(admin).lnk' -f ${shortcut_pathname}, ${shortcut_basename})))"
-  exec {"${title} creating basic shortcut: '${service_name}.lnk'":
-    command   =>  template('custom_command/create_simple_shortcut_ps1.erb'),
+  $path_check = "exit [int]( -not (test-path -path ('{0}\\{1}.lnk' -f \"${shortcut_pathname}\", '${shortcut_basename}')))"
+  if ($shortcut_run_as_admin ) {
+    $template = 'create_admin_shortcut_ps1.erb'
+  } else {
+    $template = 'create_simple_shortcut_ps1.erb'
+  }
+  exec { "${title} creating shortcut: '${shortcut_basename}.lnk' for '${shortcut_targetpath}'":
+    command   => template("custom_command/${template}"),
     cwd       => 'c:\windows\temp',
     logoutput => true,
     unless    => $path_check,
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   } ->
   exec { "${title} performing post-run check for '${shortcut_basename}.lnk'":
@@ -40,22 +45,5 @@ define custom_command::exec_shortcut  (
     cwd       => 'c:\windows\temp',
     logoutput => true,
     provider  => 'powershell',
-  }  ->
-  # cannot create shortcut with the same name
-  exec {"${title} creating admin shortcut: '${shortcut_basename}(admin).lnk' for '${shortcut_target}'":
-    command   => template('custom_command/create_admin_shortcut_ps1.erb'),
-    cwd       => 'c:\windows\temp',
-    logoutput => true,
-    unless    => $admin_path_check,
-
-    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-    provider  => 'powershell',
-  } ->
-  exec { "${title} performing post-run check for '${shortcut_basename}(admin).lnk'":
-    command    => $admin_path_check,
-    cwd       => 'c:\windows\temp',
-    logoutput => true,
-    provider  => 'powershell',
-  }  ->
- notify { 'Done': }
+  } 
 }
