@@ -17,6 +17,17 @@ node 'windows7' {
     application_path => 'C:\Program Files\Spoon\Cmd', 
   }
 
+#  custom_command::exec_shortcut { 'puppet test':
+#    shortcut_targetpath => 'c:\Windows\write.exe',
+#    shortcut_run_as_admin => false,
+#  } ->
+#  # cannot create shortcut with the same name
+#  custom_command::exec_shortcut { 'puppet test(admin)':
+#    shortcut_targetpath => 'c:\Windows\notepad.exe',
+#    shortcut_run_as_admin => true,
+#  }
+
+
 #  custom_command::exec_check_path_environment { 'c:\Program Files\Oracle\VirtualBox Guest Additions':
 #    debug        => true
 #  }
