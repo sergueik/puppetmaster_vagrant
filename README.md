@@ -1,16 +1,15 @@
 Introduction
 ------------
-Vagrant and Puppet resources for setting up a box in Virtual Box with running Puppetmaster
-
+Vagrant and Puppet resources for setting up a box in Virtual Box with Chef and Puppet provisioner and experiement with Serverspec and Puppet Modules
 
 
 Environment
 -----------
-Boxes are cached locally in `Downloads` directory. Based on the `BOX_NAME` environment the following guest is created 
+Boxes are [cached](http://stackoverflow.com/questions/28399324/download-vagrant-box-file-locally-from-atlas-and-configuring-it) locally in `Downloads` directory. Based on the `BOX_NAME` environment the following guest is created 
 
 
 | Image tag        | Filename           | Origin  |
-| ------------- |:-------------:| -----:|
+| :------------- |:-------------| :-----|
 | centos65_i386  | centos_6-5_i386.box                            |  |
 | centos66_x64   | centos-6.6-x86_64.box                          |   https://github.com/tommy-muehle/puppet-vagrant-boxes/releases/download/1.0.0/centos-6.6-x86_64.box |
 | centos65_x64   | centos-6.5-x86_64.box                          |    |
@@ -41,7 +40,7 @@ Tweaking of modern.ie image into a vagrant manageable box is covered e.g. in
 
 Puppet
 ------
-All linux boxes have Puppet 3.8.x . The Windows ones do not. To install Puppet, set `config_vm_newbox` to `true` only when importing brand new Windos box image. To save provisioning time, set `config_vm_newbox` to `false`. Vagrantfile uses shell provisioner to install latest Puppet.
+Most Linux boxes have Puppet 3.8.x . The Windows ones do not. To install Puppet, set `config_vm_newbox` to `true` only when importing brand new Windos box image. To save provisioning time, set `config_vm_newbox` to `false`. Vagrantfile uses shell provisioner to install latest Puppet.
 
 ServerSpec
 ----------
