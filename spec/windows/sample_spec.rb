@@ -133,14 +133,10 @@ END_COMMAND
   end
   describe command(<<-END_COMMAND
 $link_basename = '#{link_basename}'
-
-Get-Content "$HOME\\Desktop\\${link_basename}.lnk" -Encoding Byte | ForEach-Object {
-  foreach ( $byte in $_ ) {
+  foreach ( $byte in [byte[]] (get-content -encoding byte -path "$HOME\\Desktop\\${link_basename}.lnk" -totalcount 1000)) {
     $output += '{0:X2} ' -f $byte
   }
-  write-output $output 
-}
-
+write-output $output 
 END_COMMAND
 ) do
     its(:stdout) { should match /C0 00 00 00 00 00 00 46/ }
