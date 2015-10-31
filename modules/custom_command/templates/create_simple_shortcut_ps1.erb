@@ -1,12 +1,11 @@
-$shortcut_basename = '<%=@shortcut_basename -%>'
-$shortcut_pathname = "<%=@shortcut_pathname -%>"
-$shortcut_path = ('{0}\{1}.lnk' -f $shortcut_pathname, $shortcut_basename  )
-$shortcut_targetpath = '<%=@shortcut_targetpath -%>'
-$shortcut_target_arguments = '<%=@shortcut_target_arguments -%>'
+$link_basename = '<%=@link_basename -%>'
+$link_pathname = "<%=@link_pathname -%>"
+$link_path = ('{0}\{1}.lnk' -f $link_pathname, $link_basename  )
+$target_path = '<%=@target_path -%>'
+$target_args = '<%=@link_args -%>'
 $o = new-object -ComObject 'WScript.Shell'
-$s = $o.CreateShortcut($shortcut_path)
-$s.TargetPath = $shortcut_targetpath 
-$s.Arguments = $shortcut_target_arguments
+$s = $o.CreateShortcut($link_path)
+$s.TargetPath = $target_path 
+$s.Arguments = $target_args
 write-output 'Save shortcut'
 $s.Save()
-write-output 'Done.'

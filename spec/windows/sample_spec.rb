@@ -109,6 +109,43 @@ END
     end
   end
 end
+context 'Shortcuts' do
+  link_basename = 'puppet_test'
+  link_hexdump  = "c:/windows/temp/#{link_basename}.hex"
+ 
+  before(:all) do
+    Specinfra::Runner::run_command(<<-END_COMMAND
+$link_basename = '#{link_basename}'
+$link_hexdump = '#{link_hexdump}'
+
+Get-Content "$HOME\\Desktop\\${link_basename}.lnk" -Encoding Byte -ReadCount 256 | ForEach-Object {
+  $output = ''
+  foreach ( $byte in $_ ) {
+    $output += '{0:X2} ' -f $byte
+  }
+  write-output $output | out-file $link_hexdump -append
+}
+END_COMMAND
+)
+  end
+  describe file(link_hexdump) do
+    its(:content) { should match /C0 00 00 00 00 00 00 46/ }
+  end
+  describe command(<<-END_COMMAND
+$link_basename = '#{link_basename}'
+
+Get-Content "$HOME\\Desktop\\${link_basename}.lnk" -Encoding Byte | ForEach-Object {
+  foreach ( $byte in $_ ) {
+    $output += '{0:X2} ' -f $byte
+  }
+  write-output $output 
+}
+
+END_COMMAND
+) do
+    its(:stdout) { should match /C0 00 00 00 00 00 00 46/ }
+  end
+end
 context 'Registry' do
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
     it { should respond_to(:exists?) }

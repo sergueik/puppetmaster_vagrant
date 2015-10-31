@@ -41,15 +41,54 @@ Limitations
 -----------
 In current revision the timeout values to wait for the newly created scheduled task to start and finish are hard-coded in the template / module.
 
-custom_command::exec_* types
-----
-These resources are Pupper wrapper of basic Powershell command rendered through template designed  to automate removal of registry keys, directories, stopping services, managing Windows system environment etc. - common subtasts of 'uninstall' which are less risky to perform through direct 'exec' type rather than relying on native Puppet type or module (e.g. registry) module which usage may lead to duplicate declaration errors. 
+Misc. `custom_command` Module resources
+=======================================
+These are Puppet wrapper of various basic Powershell command rendered through template designed  to automate removal of registry keys, directories, stopping services, managing Windows system environment etc.
+
+Create Shortcut
+===============
+Module creates  a Windows shell Link (.LNK) file by invoking Powershell  and calling 'WScript.Shell' COM object as describes in
+[stackoverflow](http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell)
+
+Sample usage
+------------
+```
+custom_command::exec_shortcut { 'puppet test':
+   target_path   => 'c:\Windows\write.exe',
+   run_as_admin  => false,
+   debug         => false
+}
+
+custom_command::exec_shortcut { 'puppet test(admin)':
+   target_path  => 'c:\Windows\notepad.exe',
+   run_as_admin => true,
+}
+```
+Server Spec Test
+----------------
+Reads the hex dump of the '.LNK' file using Powershell [snippet](http://windowsitpro.com/powershell/get-hex-dumps-files-powershell) and examines its [binary format](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0CCQQFjABahUKEwiB6Im7le3IAhWI1CYKHdRAAtg&url=https%3A%2F%2Fmsdn.microsoft.com%2Fen-us%2Flibrary%2Fdd871305.aspx&usg=AFQjCNGjKeZ_5uIddVk1gvsf6FJVcSUDVw) specifically looking for LinkCLSID `00021401-0000-0000-C000-000000000046`:
+```
+  describe command(<<-END_COMMAND
+$link_basename = '#{link_basename}'
+
+Get-Content "$HOME\\Desktop\\${link_basename}.lnk" -Encoding Byte | ForEach-Object {
+  foreach ( $byte in $_ ) {
+    $output += '{0:X2} ' -f $byte
+  }
+  write-output $output 
+}
+
+END_COMMAND
+) do
+    its(:stdout) { should match /C0 00 00 00 00 00 00 46/ }
+  end
+
+```
 History
 -------
 
  *  0.1.0 initial release as [Puppet class](https://docs.puppetlabs.com/puppet/latest/reference/lang_classes.html)
  *  0.2.0 rewritten as [Puppet defined type](https://docs.puppetlabs.com/puppet/latest/reference/lang_defined_types.html).
-
 Author
 ------
 [Serguei Kouzmine](kouzmine_serguei@yahoo.com)

@@ -1,49 +1,53 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
-# http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell
-# http://stackoverflow.com/questions/9701840/how-to-create-a-shortcut-using-powershell
-# NOTE: https://forge.puppetlabs.com/puppetlabs/win_desktop_shortcut is not doing what it says it is doing.
-
 define custom_command::exec_shortcut  (
-  $shortcut_basename = $title,
-  $shortcut_pathname = '$HOME\Desktop',
-  $shortcut_targetpath = undef,
-  $shortcut_target_arguments = undef,
-  $shortcut_run_as_admin = undef,
-  $version      = '0.1.0'
+  $link_basename = $title,
+  $link_pathname = '$HOME\Desktop',
+  $target_path   = undef,
+  $target_args   = undef,
+  $run_as_admin  = undef,
+  $debug         = false,
+  $version       = '0.2.0'
 )   {
   # Validate install parameters
-  validate_string($shortcut_basename )
-  validate_string($shortcut_pathname )
-  validate_string($shortcut_targetpath )
-  validate_string($shortcut_target_arguments )
+  validate_string($link_basename )
+  validate_string($link_pathname )
+  validate_string($target_path )
+  validate_string($target_args )
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$')
-
   $random = fqdn_rand(1000,$::uptime_seconds)
-  $task_name = regsubst($title, "[$/\\|:, ]", '_', 'G')
-  $log_dir = "c:\\temp\\${task_name}"
-  $log = "${log_dir}\\${task_name}.${random}.log"
-  if ( $shortcut_pathname == ''){
-    $shortcut_pathname = '$HOME\Desktop'
+  $task_title_tag = regsubst($title, "[$/\\|:, ]", '_', 'G')
+  $log_dir = "c:\\temp\\${task_title_tag}"
+  $log = "${log_dir}\\${task_title_tag}.${random}.log"
+  if ( $link_pathname == ''){
+    $link_pathname = '$HOME\Desktop'
   }
-  $path_check = "exit [int]( -not (test-path -path ('{0}\\{1}.lnk' -f \"${shortcut_pathname}\", '${shortcut_basename}')))"
-  if ($shortcut_run_as_admin ) {
+  $path_check = "exit [int]( -not (test-path -path ('{0}\\{1}.lnk' -f \"${link_pathname}\", '${link_basename}')))"
+  if ($run_as_admin ) {
     $template = 'create_admin_shortcut_ps1.erb'
   } else {
     $template = 'create_simple_shortcut_ps1.erb'
   }
-  exec { "${title} creating shortcut: '${shortcut_basename}.lnk' for '${shortcut_targetpath}'":
+  exec { "${task_title_tag}_create_shortcut":
     command   => template("custom_command/${template}"),
     cwd       => 'c:\windows\temp',
     logoutput => true,
     unless    => $path_check,
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
-  } ->
-  exec { "${title} performing post-run check for '${shortcut_basename}.lnk'":
-    command    => $path_check,
-    cwd       => 'c:\windows\temp',
-    logoutput => true,
-    provider  => 'powershell',
+  } 
+  if $debug {
+    exec { "${tasl_title_tag}_confirm_shortcut_created":
+      command    => $path_check,
+      cwd       => 'c:\windows\temp',
+      logoutput => true,
+      provider  => 'powershell',
+      require   => Exec [ "${task_title_tag}_create_shortcut"],
+      command   => template("custom_command/${template}"),
+      cwd       => 'c:\windows\temp',
+      logoutput => true,
+      path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+      provider  => 'powershell',
+    } 
   } 
 }
