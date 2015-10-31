@@ -22,7 +22,9 @@ define custom_command::exec_shortcut  (
   if ( $link_pathname == ''){
     $link_pathname = '$HOME\Desktop'
   }
-  $path_check = "exit [int]( -not (test-path -path ('{0}\\{1}.lnk' -f \"${link_pathname}\", '${link_basename}')))"
+  $expression = "test-path -path ('{0}\\{1}.lnk' -f \"${link_pathname}\", '${link_basename}')"
+  # convert Powershell (True, False) to shess exit codes (0,1) 
+  $path_check = "exit [int]( -not (${expression}))"
   if ($run_as_admin ) {
     $template = 'create_admin_shortcut_ps1.erb'
   } else {
