@@ -47,7 +47,7 @@ These are Puppet wrapper of various basic Powershell command rendered through te
 
 Create Shortcut
 ===============
-Module creates  a Windows shell Link (.LNK) file by invoking Powershell  and calling 'WScript.Shell' COM object as describes in
+Module creates  a Windows shell Link __.LNK__ file by invoking Powershell  and calling __WScript.Shell__ COM object as describes in
 [stackoverflow](http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell)
 
 Sample usage
@@ -64,25 +64,27 @@ custom_command::exec_shortcut { 'puppet test(admin)':
    run_as_admin => true,
 }
 ```
+By default the __.LNK__ file is created under `$env:USERPROFILE\Desktop` but other locations e.g. `$env:ALLUSERSPROFILE\Desktop` can be specidied through `link_path` property.
+
 Server Spec Test
 ----------------
-Reads the hex dump of the '.LNK' file using Powershell [snippet](http://windowsitpro.com/powershell/get-hex-dumps-files-powershell) and examines its [binary format](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0CCQQFjABahUKEwiB6Im7le3IAhWI1CYKHdRAAtg&url=https%3A%2F%2Fmsdn.microsoft.com%2Fen-us%2Flibrary%2Fdd871305.aspx&usg=AFQjCNGjKeZ_5uIddVk1gvsf6FJVcSUDVw) specifically looking for LinkCLSID `00021401-0000-0000-C000-000000000046`:
+Reads the hex dump of the __.LNK__ file using Powershell [snippet](http://windowsitpro.com/powershell/get-hex-dumps-files-powershell) and examines its binary format to find [SHELL_LINK_HEADER structure](https://msdn.microsoft.com/en-us/library/dd871305.aspx) specifically looking for __HeaderSize__ `0000004C` and __LinkCLSID__ `00021401-0000-0000-C000-000000000046`:
 ```
   describe command(<<-END_COMMAND
 $link_basename = '#{link_basename}'
-
-Get-Content "$HOME\\Desktop\\${link_basename}.lnk" -Encoding Byte | ForEach-Object {
-  foreach ( $byte in $_ ) {
+[byte[]] $bytes = get-content -encoding byte -path "$env:USERPROFILE\\Desktop\\${link_basename}.lnk" -totalcount 20
+  foreach ( $byte in $bytes ) {
     $output += '{0:X2} ' -f $byte
   }
-  write-output $output 
-}
-
+write-output $output 
 END_COMMAND
 ) do
-    its(:stdout) { should match /C0 00 00 00 00 00 00 46/ }
+    # HeaderSize
+    its(:stdout) { should match /4C 00 00 00/ }
+    # LinkCLSID
+    its(:stdout) { should match /01 14 02 00 00 00 00 00 C0 00 00 00 00 00 00 46/ }
   end
-
+end
 ```
 History
 -------
