@@ -2,11 +2,21 @@ $link_basename = '<%=@link_basename -%>'
 $link_pathname = "<%=@link_pathname -%>"
 $link_path = ('{0}\{1}.lnk' -f $link_pathname, $link_basename  )
 $target_path = '<%=@target_path -%>'
-$target_args = '<%=@link_args -%>'
 $o = new-object -ComObject 'WScript.Shell'
 $s = $o.CreateShortcut($link_path)
 $s.TargetPath = $target_path 
-$s.Arguments = $target_args
+<% if @target_args -%>
+$s.Arguments = '<%=@target_args -%>'
+<% end -%>
+<% if @link_desc -%>
+$s.Description = "<%= @link_desc %>";
+<% end -%>
+<% if @icon_location -%>
+$s.IconLocation = "<%= @icon_location %>";
+<% end -%>
+<% if @target_workdir -%>
+$s.WorkingDirectory = "<%= @target_workdir %>";
+<% end -%>
 write-output 'Save shortcut'
 $s.Save()
 write-output 'Setting admin bit'

@@ -1,13 +1,16 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
 define custom_command::exec_shortcut  (
-  $link_basename = $title,
-  $link_pathname = '$HOME\Desktop',
-  $target_path   = undef,
-  $target_args   = undef,
-  $run_as_admin  = undef,
-  $debug         = false,
-  $version       = '0.2.0'
+  $link_basename  = $title,
+  $link_pathname  = '$HOME\Desktop',
+  $target_path    = undef,
+  $target_args    = undef,
+  $target_workdir = undef,
+  $link_desc      = undef,
+  $icon_location  = undef,
+  $run_as_admin   = undef,
+  $debug          = false,
+  $version        = '0.3.0'
 )   {
   # Validate install parameters
   validate_string($link_basename )
