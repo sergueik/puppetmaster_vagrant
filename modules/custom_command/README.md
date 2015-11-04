@@ -48,7 +48,7 @@ These are Puppet wrapper of various basic Powershell command rendered through te
 Create Shortcut
 ===============
 Module creates  a Windows shell Link __.LNK__ file by invoking Powershell  and calling __WScript.Shell__ COM object as describes in
-[stackoverflow](http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell)
+[stackoverflow](http://stackoverflow.com/questions/28997799/how-to-create-a-run-as-administrator-shortcut-using-powershell).  The implementation in basically similar to [counsyl1/puppet-windows](https://github.com/counsyl/puppet-windows) (found on puppet-forge after).
 
 Sample usage
 ------------
