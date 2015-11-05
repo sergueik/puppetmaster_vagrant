@@ -1,0 +1,11 @@
+$file_name = '<%= @file_name %>' 
+$file_path = '<%= @file_path -%>' 
+$md5_checksum   = '<%= @md5_checksum -%>'
+$o = new-object -TypeName 'System.Security.Cryptography.MD5CryptoServiceProvider'
+write-output ('{0} *{1}' -f $file_name, [System.BitConverter]::ToString($o.ComputeHash([System.IO.File]::ReadAllBytes($file_path))))
+$status = [int] (-not ( [System.BitConverter]::ToString($o.ComputeHash([System.IO.File]::ReadAllBytes($file_path))) -eq $md5_checksum))
+write-output "status = ${status}" 
+
+exit $status 
+
+

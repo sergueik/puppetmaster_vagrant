@@ -62,4 +62,15 @@ node 'windows7' {
 #    wait    => true,
 #  }
 #  Custom_command['Launch nodepad'] -> Custom_command['Run spoon selenium grid'] 
+  custom_command::exec_md5checksum { 'c:\Windows\system32\notepad.exe':
+    # md5_checksum => 'd378bffb70923139d6a4f546864aa61c',
+    md5_checksum => 'D3-78-BF-FB-70-92-31-39-D6-A4-F5-46-86-4A-A6-1C',
+    file_name     => 'notepad.exe',
+  }  -> 
+  custom_command::exec_md5checksum { 'c:\Windows\system32\cmd.exe':
+    md5_checksum => 'd378bffb70923139d6a4f546864aa61a',
+    file_name     => 'cmd.exe',
+    debug        => true,
+  }  
 }
+
