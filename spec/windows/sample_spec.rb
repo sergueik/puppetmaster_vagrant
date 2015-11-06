@@ -211,6 +211,54 @@ context 'Registry' do
      it { should respond_to(:has_propertyvaluecontaining?).with(2).arguments }
      it { should have_propertyvaluecontaining('Path', 'c:\\\\windows') }
   end
+
+context 'multistring' do
+# run the same script before(:all) does not help
+before(:all) do
+  Specinfra::Runner::run_command(<<-END_COMMAND
+$registry_key  = 'HKLM:\\SYSTEM\\CurrentControlSet\\services\\Appinfo' 
+$property = 'DependOnService'
+(Get-Item $registry_key).GetValue($property)
+END_COMMAND
+  ) 
+  end
+  processname = 'csrss'
+  registry_key  = 'HKLM:\SYSTEM\CurrentControlSet\services\Appinfo' 
+  testdata  = {
+      'DependOnService' => "RpcSs\nProfSvc",
+      'RequiredPrivileges' => "SeBackupPrivilege\nSeTcbPrivilege",
+    }
+  testdata.each do |property,values|
+    describe command (<<-END_COMMAND
+$registry_key = '#{registry_key}'
+$property = '#{property}'
+$values = @"
+#{values}
+"@
+$status = $true
+$values -split "`r?`n" | foreach-object {
+$value = $_ 
+$value = $value -replace '^.*\\\\', ''
+$status = $status -band [bool] ((Get-Item $registry_key).GetValue($property) -match $value )
+}
+write-output ([bool]$status)
+$exit_status  = [int](-not $status )
+
+write-output "exiting with ${exit_status}"
+
+exit( $exit_status)
+END_COMMAND
+    ) do
+        its(:stdout) { should match /true/i }
+        its(:stdout) { should match /exiting with 0/i }
+        # sporadically collecting the <AV>Preparing modules for first use.</AV> error
+        its(:exit_status) {should eq 0} 
+    end
+  end
+end
+# TODO:
+#    'RequiredPrivileges' => [ 'SeAssignPrimaryTokenPrivilege', 'SeIncreaseQuotaPrivilege', 'SeTcbPrivilege', 'SeBackupPrivilege', 'SeRestorePrivilege', 'SeDebugPrivilege', 'SeAuditPrivilege', 'SeChangeNotifyPrivilege', 'SeImpersonatePrivilege' ], 
+
 end
 context 'WinNT Groups' do
   
@@ -712,7 +760,7 @@ describe command (<<-EOF
 write-output (([Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) -replace '\\\\', '/'))
 EOF
 ) do
-    its(:stdout) { should match |c:/opscode/chef/bin|i }
+    its(:stdout) { should match /c:\/opscode\/chef\/bin/i }
   end
   # note non-standard syntax
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
