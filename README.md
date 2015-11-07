@@ -22,6 +22,9 @@ Boxes are [cached](http://stackoverflow.com/questions/28399324/download-vagrant-
 |windows_2012    | windows_2012_r2_standard.box | (https://atlas.hashicorp.com/kensykora/boxes/windows_2012_r2_standard/versions/0.7.0/providers )|
 |windows7 | vagrant-win7-ie10-updated.box |  |
 
+These images are made  availablei on [Microsoft Edge Team Dev site](https://dev.windows.com/en-us/microsoft-edge/tools/vms/windows/).
+
+
 All box definitions are stored in `Vagrantfile.local`. Uncomment the desired box and comment the rest:
 ```
 # windows 7
