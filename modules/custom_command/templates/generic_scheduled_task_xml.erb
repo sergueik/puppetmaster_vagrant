@@ -10,7 +10,7 @@ ERROR: The task XML is malformed.(1,2):: -->
   <Triggers/>
   <Principals>
     <Principal id="Author">
-      <UserId><%= @account_userdomain %>\<%= @account_username %></UserId>
+   <UserId><%= @account_userdomain %>\account_userdomain<%=scope.lookupvar('::user') -%></UserId>
       <LogonType>InteractiveToken</LogonType>
       <RunLevel>LeastPrivilege</RunLevel>
     </Principal>
