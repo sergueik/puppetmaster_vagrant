@@ -62,6 +62,7 @@ while($count -le $max_count ){
   }
   start-sleep -milliseconds 1000
 }
+<% if @wait %>
 # TODO : time management
 if ($running){
   log "NOTICE: waiting for running ${taskname} to complete..."
@@ -85,6 +86,7 @@ if ($running){
  }
 }
 log 'Complete'
+<% end %>
 <#
 NOTE:
 Task Scheduler did not launch task "..."  because computer is running on batteries. 
