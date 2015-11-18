@@ -34,7 +34,11 @@ if ($delete_existing_schedules) {
 log ('Creating "{0}"' -f $taskname )
 & schtasks /Create  /TN $taskname /RL $level /TR $command /SC $schedule /ST $time
 log ('Starting "{0}"' -f $taskname )
-& schtasks /Run /TN $taskname
+
+$command = "schtasks /Run /TN ${taskname}"
+log -message "command: ${command}"
+$status =  invoke-expression -command $command
+log -message "status: ${status}"
 $count = 1
 $max_count = 100
 $running = $false
