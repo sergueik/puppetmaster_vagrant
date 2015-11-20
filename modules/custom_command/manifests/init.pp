@@ -12,6 +12,21 @@ define custom_command(
   validate_string($script)
   validate_string($command)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
+  # Windows 2008 R2 and 2012 have cmdlets to manage jobs
+  # Next requires puppet-win_facts $::operatingsystemversion fact
+  if  $::operatingsystemversion {
+    case $::operatingsystemversion {
+      /(Windows Server 2012|Windows Server 2008 R2)/: {
+        $command_script = 'scheduled_task_cmdled_wrapper_ps1.erb'
+      }
+      /Windows Server 2008 Standard/:{
+        $command_script = 'manage_scheduled_task_ps1.erb'
+      }
+      default: {
+        fail("Unsupported Windows version: '$::operatingsystemversion'")
+      }
+    }
+  }
   $random = fqdn_rand(1000,$::uptime_seconds)
   $taskname = regsubst($name, "[$/\\|:, ]", '_', 'G')
   $log_dir = "c:\\temp\\${taskname}"
