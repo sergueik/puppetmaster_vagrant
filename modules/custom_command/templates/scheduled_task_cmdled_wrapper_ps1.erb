@@ -1,0 +1,26 @@
+<#
+New-ScheduledTask 
+Register-ScheduledTask
+
+(get-scheduledtask -taskname 'launch_timing_system_tray_app' ).Actions
+Id               :
+Arguments        :
+Execute          : C:\Users\vagrant\Desktop\timing\Program\bin\Debug\timing.exe
+WorkingDirectory :
+PSComputerName   :
+
+start-scheduledtask -taskname 'launch_timing_system_tray_app'
+(get-scheduledtask -taskname 'launch_timing_system_tray_app' ).State
+'Running'
+get-scheduledtaskinfo -taskname 'launch_timing_system_tray_app'
+
+
+LastRunTime        : 11/20/2015 1:38:38 PM
+LastTaskResult     : 2147946720
+NextRunTime        :
+NumberOfMissedRuns : 0
+TaskName           : launch_timing_system_tray_app
+TaskPath           :
+PSComputerName     :
+
+#>
