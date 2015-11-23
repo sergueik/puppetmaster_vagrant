@@ -18,6 +18,21 @@ context 'Pending reboots' do
       its(:stdout) { should match /Success/i }
     end
   end
+  context 'Shutdown Flags' do
+    describe command (<<-EOF
+      $reboot_flag = 16
+      $success = (((Get-Item 'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon').GetValue('ShutdownFlags') -band $reboot_flag -bxor (65535 -bxor $reboot_flag) ) -eq 65535)
+      if ($success){ 
+        write-output 'Success'
+      } else {
+        write-output 'Failure'
+      }
+    EOF
+    ) do
+      its(:stdout) { should match /Success/i }
+    end
+  end
+
   context 'Reboot watch' do
     describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Reporting\RebootWatch') do
       it{ should exist}
