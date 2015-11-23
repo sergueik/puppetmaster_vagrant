@@ -1,22 +1,29 @@
 require_relative '../windows_spec_helper'
-
 context 'Pending reboots' do 
-  context 'CBS' do
+  context 'Component Based Servicing' do
     describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing') do
       it{ should_not have_property('RebootPending')}
     end
   end
   context 'UAS' do
-    describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\UAS') do
-      it{ should have_property_value('UpdateCount', :type_dword, '0')}
+    describe command (<<-EOF
+      $update_count = (Get-Item 'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update\\UAS').GetValue('UpdateCount')
+      if (($update_count -eq $null) -or ($update_count -eq 0)){ 
+        write-output 'Success'
+      } else {
+        write-output 'Failure'
+      }
+    EOF
+    ) do
+      its(:stdout) { should match /Success/i }
     end
   end
-  context 'RebootWatch' do
+  context 'Reboot watch' do
     describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Reporting\RebootWatch') do
       it{ should exist}
     end
   end
-  context 'WUAU' do 
+  context 'WindowsUpdate Auto Update' do 
     describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update') do
       it{ should_not have_property('RebootRequired')}
     end
