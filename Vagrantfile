@@ -83,10 +83,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config_vm_box     = 'centos'
       config_vm_default = 'linux'
       config_vm_box_name = 'centos-6.5-x86_64.box'
+    when /centos67_x64/ # Puppet 4.2.3
+      config_vm_box     = 'centos'
+      config_vm_default = 'linux'
+      config_vm_box_name = 'vagrant-centos-6.7.box'
     when /centos7/
       config_vm_box     = 'centos'
       config_vm_default = 'linux'
       config_vm_box_name = 'centos-7.0-x86_64.box'
+    when /centos71/ # Puppet 4.2.3
+      config_vm_box     = 'centos'
+      config_vm_default = 'linux'
+      config_vm_box_name = 'vagrant-centos-7.1.box'
     when /trusty32/
       config_vm_box      = 'ubuntu'
       config_vm_default  = 'linux'
@@ -207,6 +215,12 @@ EOF
           config.vm.provision :puppet do |puppet|
             puppet.hiera_config_path = 'data/hiera.yaml'
             puppet.module_path    = 'modules'
+            
+            # Puppet 4.3: invalid option: --manifestdir  
+            # /opt/vagrant/embedded/gems/gems/vagrant-1.7.4/plugins/provisioners/puppet/provisioner/puppet.rb:
+            # setting 
+            # config.environment_path
+            # allows one get past the error but leads to another one - puppet is unable to find manifests on the guest
             puppet.manifests_path = 'manifests'
             puppet.manifest_file  = 'linux.pp'
             puppet.options        = puppet_options
