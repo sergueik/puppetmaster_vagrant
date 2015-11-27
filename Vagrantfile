@@ -83,18 +83,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config_vm_box     = 'centos'
       config_vm_default = 'linux'
       config_vm_box_name = 'centos-6.5-x86_64.box'
-    when /centos67_x64/ # Puppet 4.2.3
-      config_vm_box     = 'centos'
-      config_vm_default = 'linux'
-      config_vm_box_name = 'centos-6.6-64-puppet-virtualbox.box' # 'vagrant-centos-6.7.box'
     when /centos7/
       config_vm_box     = 'centos'
       config_vm_default = 'linux'
       config_vm_box_name = 'centos-7.0-x86_64.box'
-    when /centos71/ # Puppet 4.2.3
-      config_vm_box     = 'centos'
-      config_vm_default = 'linux'
-      config_vm_box_name = 'vagrant-centos-7.1.box'
     when /trusty32/
       config_vm_box      = 'ubuntu'
       config_vm_default  = 'linux'
@@ -211,15 +203,11 @@ else
 fi
 EOF
           end
-          puppet_options = if debug then '--verbose --modulepath /vagrant/environments/production/modules --pluginsync --debug' else '--verbose --modulepath /vagrant/environments/production/modules --pluginsync' end 
+          puppet_options = if debug then '--verbose --modulepath /vagrant/modules --pluginsync --debug' else '--verbose --modulepath /vagrant/modules --pluginsync' end 
           config.vm.provision :puppet do |puppet|
-            puppet.hiera_config_path = 'environments/production/data/hiera.yaml'
-            puppet.module_path    = 'environments/production/modules'
-            # https://github.com/mitchellh/vagrant/issues/5987
-            # Puppet 4.x: invalid option: --manifestdir  
-            puppet.environment_path = 'environments'
-            puppet.working_directory = '/tmp/vagrant-puppet/environments/production'
-            puppet.manifests_path = 'environments/production/manifests'
+            puppet.hiera_config_path = 'data/hiera.yaml'
+            puppet.module_path    = 'modules'
+            puppet.manifests_path = 'manifests'
             puppet.manifest_file  = 'linux.pp'
             puppet.options        = puppet_options
           end
