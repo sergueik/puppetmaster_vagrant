@@ -117,6 +117,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # https://atlas.hashicorp.com/kensykora/boxes/windows_2012_r2_standard/versions/0.7.0/providers
       config_vm_box     = 'windows_2012'
       config_vm_box_url = "file://#{basedir}/Downloads/windows_2012_r2_standard.box"
+      # config_vm_newbox  = true
 
     else
      config_vm_box     = 'windows7'
@@ -208,12 +209,29 @@ else
 fi
 EOF
         end
-        config.vm.provision :puppet do |puppet|
-           puppet.hiera_config_path = 'data/hiera.yaml'
-           puppet.module_path    = 'modules'
-           puppet.manifests_path = 'manifests'
-           puppet.manifest_file  = 'linux.pp'
-           puppet.options        = '--verbose --modulepath /vagrant/modules --pluginsync --debug'
+
+        # hack the problem with module_data
+        config.vm.provision 'shell', inline: <<-EOF
+#
+# rm -r -f /var/lib/hiera
+# ln -fs /vagrant/data /var/lib/hiera
+EOF
+        if debug
+          config.vm.provision :puppet do |puppet|
+            puppet.hiera_config_path = 'data/hiera.yaml'
+            puppet.module_path    = 'modules'
+            puppet.manifests_path = 'manifests'
+            puppet.manifest_file  = 'linux.pp'
+            puppet.options        = '--verbose --modulepath /vagrant/modules --pluginsync --debug'
+          end
+        else
+          config.vm.provision :puppet do |puppet|
+            puppet.hiera_config_path = 'data/hiera.yaml'
+            puppet.module_path    = 'modules'
+            puppet.manifests_path = 'manifests'
+            puppet.manifest_file  = 'linux.pp'
+            puppet.options        = '--verbose --modulepath /vagrant/modules --pluginsync'
+          end
         end
       when /ubuntu/
         if config_vm_newbox
@@ -233,7 +251,7 @@ EOF
         if config_vm_newbox
           config.vm.provision :shell, inline: <<-END_SCRIPT1
 set-executionpolicy Unrestricted
-enable-emoting -Force
+enable-remoting -Force
         END_SCRIPT1
           # install .Net 4
           config.vm.provision :shell, :path => 'install_net4.ps1'
