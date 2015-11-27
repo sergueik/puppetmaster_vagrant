@@ -13,7 +13,9 @@ Boxes are [cached](http://stackoverflow.com/questions/28399324/download-vagrant-
 | centos65_i386  | centos_6-5_i386.box                            |  |
 | centos66_x64   | centos-6.6-x86_64.box                          |   https://github.com/tommy-muehle/puppet-vagrant-boxes/releases/download/1.0.0/centos-6.6-x86_64.box |
 | centos65_x64   | centos-6.5-x86_64.box                          |    |
+| centos67_x64   | vagrant-centos-6.7.box                         |Puppet 4.3|
 | centos7        | centos-7.0-x86_64.box                          |  | 
+| centos71       | vagrant-centos-7.1.box                         |Puppet 4.3| 
 |trusty32        | trusty-server-cloudimg-i386-vagrant-disk1.box  |  |
 |trusty64        | trusty-server-cloudimg-amd64-vagrant-disk1.box | |
 |precise64       | ubuntu-server-12042-x64-vbox4210.box           | |
@@ -60,3 +62,5 @@ Notes
 * See also [A modern Puppet Master from scratch](http://stdout.no/a-modern-puppet-master-from-scratch/)
 * [Provisioning a Windows box with Vagrant, Chocolatey and Puppet](www.tzehon.com/2014/01/20/provisioning-a-windows-box-with-vagrant-chocolatey-and-puppet-part-1/)
 * [Vagrant Boxes for playing with Puppet on Windows (but not boxes...](https://github.com/ferventcoder/vagrant-windows-puppet) specifically for DSC
+
+* branch puppet_43 contains file and directory changes required to provision the vm via Puppet 4.3
