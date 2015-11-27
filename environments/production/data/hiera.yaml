@@ -4,5 +4,5 @@
 - common
 
 :yaml:
-  :datadir: '/vagrant/data'
+  :datadir: '/vagrant/environments/production/data'
 

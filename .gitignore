@@ -3,3 +3,4 @@
 *~
 .*.sw?
 modules/
+environments/*/modules/
