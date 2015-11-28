@@ -205,6 +205,8 @@ EOF
           end
           puppet_options = if debug then '--verbose --modulepath /vagrant/modules --pluginsync --debug' else '--verbose --modulepath /vagrant/modules --pluginsync' end 
           config.vm.provision :puppet do |puppet|
+            # for not using module_data
+            # http://blog.wilcoxd.com/2015/03/02/a-deep-dive-into-vagrant-puppet-and-hiera/
             puppet.hiera_config_path = 'data/hiera.yaml'
             puppet.module_path    = 'modules'
             puppet.manifests_path = 'manifests'
