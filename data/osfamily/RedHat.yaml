@@ -1,6 +1,13 @@
 ---
-product_name: 'linux product name'
-product_package_name: 'linux package name'
-product_specific_params: 
-  param_flag: 'false'
-  param_linux_only_setting: 'linux-only'
+yum_modules:
+  - 'perl-DBI'
+  - 'perl-DBD-MySQL' 
+  - 'perl-XML-Parser' 
+  - 'perl-XML-Simple' 
+  - 'perl-XML-XPath' 
+  - 'perl-Time-HiRes'
+rpm_modules:
+  'perl-IPC-ShareLite': 
+    source: 'ftp://rpmfind.net/linux/dag/redhat/el4/en/x86_64/dag/RPMS/perl-IPC-ShareLite-0.17-1.el4.rf.x86_64.rpm'
+  'perl-libwww-perl':
+    source: 'ftp://rpmfind.net/linux/centos/6.7/os/i386/Packages/perl-libwww-perl-5.833-2.el6.noarch.rpm'
