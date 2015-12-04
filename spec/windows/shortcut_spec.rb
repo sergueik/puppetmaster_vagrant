@@ -1,6 +1,7 @@
 require_relative '../windows_spec_helper'
 
 context 'Shortcuts' do
+
   link_basename = 'puppet_test'
   link_basename = 'puppet_test(admin)'
   link_hexdump  = "c:/windows/temp/#{link_basename}.hex"
@@ -41,3 +42,44 @@ END_COMMAND
     its(:stdout) { should match /01 14 02 00 00 00 00 00 C0 00 00 00 00 00 00 46/ }
   end
 end
+
+# origin: http://powershell.com/cs/media/p/45855.aspx
+context 'Shortcuts' do
+  link_basename = 'puppet_test'
+
+  describe command(<<-END_COMMAND
+$link_basename = '#{link_basename}'
+$link_basename = 'puppet_test'
+[String]$Shortcut = "$env:USERPROFILE\\Desktop\\${link_basename}.lnk"
+$CLSID = '00021401-0000-0000-C000-000000000046' 
+try { 
+  $filestream = [IO.File]::OpenRead($Shortcut) 
+  $binary_reader = New-Object IO.BinaryReader($filestream) 
+  $sz = $binary_reader.ReadUInt32() # SHELL_LINK_HEADER size 
+  $filestream.Position = 0 
+   
+  $buf = New-Object "Byte[]" $sz 
+  [void]$binary_reader.Read($buf, 0, $buf.Length) 
+   
+  $status = [bool](([Byte[]]$buf[4..19] -as [Guid]).Guid.ToUpper().Equals($CLSID))  
+
+ if (($status -eq 1 ) -or ($status -is [Boolean] -and $status)){ 
+   $exit_code = 0 
+ } else { 
+   $exit_code = 1 
+ } 
+} catch [Exception] { 
+  $status = $false
+}
+$exit_code  = [int](-not $status )
+write-output "status = ${status}"
+write-output "exiting with ${exit_code}"
+exit $exit_code
+END_COMMAND
+) do
+      its(:stdout) { should match /true/i }
+        its(:stdout) { should match /exiting with 0/i }
+        # avoid sporadically collecting the <AV>Preparing modules for first use.</AV> error
+        its(:exit_status) {should eq 0} 
+  end
+end 
