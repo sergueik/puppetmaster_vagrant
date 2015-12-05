@@ -49,7 +49,6 @@ context 'Shortcuts' do
 
   describe command(<<-END_COMMAND
 $link_basename = '#{link_basename}'
-$link_basename = 'puppet_test'
 [String]$Shortcut = "$env:USERPROFILE\\Desktop\\${link_basename}.lnk"
 $CLSID = '00021401-0000-0000-C000-000000000046' 
 try { 
@@ -57,24 +56,22 @@ try {
   $binary_reader = New-Object IO.BinaryReader($filestream) 
   $sz = $binary_reader.ReadUInt32() # SHELL_LINK_HEADER size 
   $filestream.Position = 0 
-   
   $buf = New-Object "Byte[]" $sz 
   [void]$binary_reader.Read($buf, 0, $buf.Length) 
    
   $status = [bool](([Byte[]]$buf[4..19] -as [Guid]).Guid.ToUpper().Equals($CLSID))  
 
- if (($status -eq 1 ) -or ($status -is [Boolean] -and $status)){ 
-   $exit_code = 0 
- } else { 
-   $exit_code = 1 
- } 
+  $binary_reader.Dispose()
 } catch [Exception] { 
   $status = $false
 }
+
 $exit_code  = [int](-not $status )
 write-output "status = ${status}"
 write-output "exiting with ${exit_code}"
 exit $exit_code
+
+
 END_COMMAND
 ) do
       its(:stdout) { should match /true/i }
