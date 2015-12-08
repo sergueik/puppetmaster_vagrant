@@ -100,7 +100,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config_vm_default  = 'linux'
       config_vm_box_name = 'ubuntu-server-12042-x64-vbox4210.box'
     else
-      config_vm_default = 'windows'
+      # config_vm_default = 'windows'
       # set config_vm_newbox to true when importing for the first time
       config_vm_newbox  = false
       if box_name =~ /xp/
@@ -113,6 +113,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         config_vm_box     = 'windows_2012'
         config_vm_box_name = 'windows_2012_r2_standard.box'
       else
+        config_vm_newbox  = true
         config_vm_box     = 'windows7'
         config_vm_box_name = 'vagrant-win7-ie10-updated.box'
       end
@@ -230,10 +231,7 @@ EOF
           end
         else
           if config_vm_newbox
-            config.vm.provision :shell, inline: <<-END_SCRIPT1
-set-executionpolicy Unrestricted
-enable-remoting -Force
-        END_SCRIPT1
+            config.vm.provision :shell, :path => 'bootstrap_legacy.cmd'
             # install .Net 4
             config.vm.provision :shell, :path => 'install_net4.ps1'
             # install chocolatey
@@ -244,6 +242,7 @@ enable-remoting -Force
             config.vm.provision :shell, inline: <<-END_SCRIPT2
 $env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
 facter.bat hostname
+puppet.bat module install puppetlabs-powershell
         END_SCRIPT2
           end
           # Use puppet provisioner
