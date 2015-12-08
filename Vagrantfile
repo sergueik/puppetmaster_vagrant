@@ -100,9 +100,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config_vm_default  = 'linux'
       config_vm_box_name = 'ubuntu-server-12042-x64-vbox4210.box'
     else
-      # config_vm_default = 'windows'
+      config_vm_default = 'windows'
       # set config_vm_newbox to true when importing for the first time
-      config_vm_newbox  = false
+      # config_vm_newbox  = false
       if box_name =~ /xp/
         config_vm_box      = 'windows_xp'
         config_vm_box_name = 'IE8.XP.For.Vagrant.box'
