@@ -10,7 +10,13 @@
 # box_cpus = 1
 # box_gui = false
 
-# windows 7
+# windows 10
+  box_name = 'windows10'
+  box_memory = 1024
+  box_cpus = 1
+  box_gui = true
+
+#  windows 7
 #  box_name = 'windows7'
 #  box_memory = 1024
 #  box_cpus = 1
@@ -35,10 +41,10 @@
 # box_gui = false
 
 # centos 6.6 x64 with Puppet 3.8.1
- box_name = 'centos66_x64'
- box_memory = 512
- box_cpus = 1
- box_gui = false
+# box_name = 'centos66_x64'
+# box_memory = 512
+# box_cpus = 1
+# box_gui = false
 
 # centos 7 with puppet 3.x
 # box_name = 'centos7_x64'

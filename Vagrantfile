@@ -112,6 +112,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       elsif box_name =~ /2012/
         config_vm_box     = 'windows_2012'
         config_vm_box_name = 'windows_2012_r2_standard.box'
+      elsif box_name =~ /windows10/
+        config_vm_newbox  = true
+        config_vm_box     = 'windows10'
+        config_vm_box_name = 'vagrant-win10-edge-default.box'
       else
         config_vm_newbox  = true
         config_vm_box     = 'windows7'
