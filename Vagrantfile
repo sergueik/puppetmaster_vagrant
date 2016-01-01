@@ -66,7 +66,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  config_vm_newbox  = false
+  config_vm_newbox = false
 
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   case box_name
@@ -113,7 +113,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         config_vm_box     = 'windows_2012'
         config_vm_box_name = 'windows_2012_r2_standard.box'
       elsif box_name =~ /windows10/
-        config_vm_newbox  = true
+        # config_vm_newbox  = true
         config_vm_box     = 'windows10'
         config_vm_box_name = 'vagrant-win10-edge-default.box'
       else
@@ -167,6 +167,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.customize ['modifyvm', :id, '--memory', box_memory ]
         vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
         vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
+        vb.customize ['modifyvm', :id, '--ioapic', 'on'] 
         vb.customize ['modifyvm', :id, '--audio', 'none']
         vb.customize ['modifyvm', :id, '--usb', 'off']
       end
@@ -243,16 +244,26 @@ EOF
             # install puppet using chocolatey
             config.vm.provision :shell, :path => 'install_puppet.ps1'
             # run facter
+            # NOTE: error from Vagrant: 
+            # The splatting operator '@' cannot be used to reference variables in an expression. 
+            # '@puppet' can be used only as an 
+            # argument to a command. To reference variables in an expression use '$puppet'.
             config.vm.provision :shell, inline: <<-END_SCRIPT2
-$env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-facter.bat hostname
-puppet.bat module install puppetlabs-powershell
+& echo "Running Facter"
+& facter.bat hostname
+& echo "Installing puppetlabs-powershell from Puppet Forge"
+& puppet.bat module install puppetlabs-powershell
         END_SCRIPT2
           end
+          # Use chef provisioner
+          # config.vm.provision :chef_solo do |chef|
+          #   chef.version = '12.5.1'
+          #   chef.data_bags_path = 'data_bags'
+          #   chef.add_recipe 'custom_powershell'
+          # end 
           # Use puppet provisioner
           config.vm.provision :puppet do |puppet|
             puppet.binary_path    = 'C:/PROGRA~1/PUPPET~1/PUPPET/bin'
-            # puppet.binary_path    = 'C:/Program Files/Puppet Labs/Puppet/bin'
             puppet.hiera_config_path = 'data/hiera.yaml'
             puppet.module_path    = 'modules'
             puppet.manifests_path = 'manifests'
