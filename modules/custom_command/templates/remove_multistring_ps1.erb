@@ -1,0 +1,4 @@
+$hive = '<%= @hive %>'
+$registry_path = '<%= @registry_path %>'
+$name = '<%= @name %>'
+Remove-ItemProperty -path ('{0}/{1}' -f $hive,$path) -name $name -force -erroraction 'SilentlyContinue' 

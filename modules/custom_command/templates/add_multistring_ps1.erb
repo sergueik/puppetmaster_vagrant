@@ -1,0 +1,6 @@
+$hive = '<%= @hive %>'
+$registry_path = '<%= @registry_path %>'
+$name = '<%= @name %>'
+$value = '<%= @value %>'
+
+New-ItemProperty -Path ('{0}/{1}' -f $hive,$path) -Name $name -Value $value -PropertyType $propertyType
