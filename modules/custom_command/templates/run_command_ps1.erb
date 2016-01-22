@@ -1,0 +1,10 @@
+$hive = 'HKLM:'
+$registry_path = 'SOFTWARE/Microsoft/Windows/CurrentVersion/Run'
+$name = '<%= @name %>'
+$command = '<%= @command %>'
+$propertyType = 'String'
+# e.g.
+#  'c:\windows\system32\cmd.exe /c copy  /y C:\ProgramData\PuppetLabs\puppet\cache\state\last_run_report.yaml C:\ProgramData\PuppetLabs\puppet\cache\state\previous_run_report.yaml'
+
+New-ItemProperty -Path ('{0}/{1}' -f $hive,$path) -Name $name -Value $command -PropertyType $propertyType
+
