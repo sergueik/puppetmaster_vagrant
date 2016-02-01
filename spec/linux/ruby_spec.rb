@@ -1,18 +1,19 @@
 require 'spec_helper'
 
 context 'Execute embedded Ruby from Puppet Agent' do
-  context 'With Environment' do
-    # TODO: ismx
-    lines = [ 
-      'answer: 42',
-      'Status: changed',
-      '"failed"=>0', # resources
-      '"failure"=>0', # events
-      # to see the output, add/uncomment a failed expectation
-      # 'Status: unchanged'
-    ]
-    script_file = '/tmp/test.rb'
-    ruby_script = <<-EOF
+  # TODO: ismx
+  lines = [ 
+    'answer: 42',
+    # TODO: instrument idempotency check 
+    # 'Status: changed', 
+    'Status: unchanged',
+    '"failed"=>0', # resources
+    '"failure"=>0', # events
+    # to see the output, add/uncomment a failed expectation
+    # 'Status: unchanged'
+  ]
+  script_file = '/tmp/test.rb'
+  ruby_script = <<-EOF
 require 'puppet'
 require 'yaml'
 require 'pp'
@@ -54,30 +55,29 @@ pp raw_summary
 status = puppet_transaction_report.status
 puts 'Status: ' + status
  
-    EOF
-    before(:all) do
-      Specinfra::Runner::run_command('echo "#{ruby_script}">#{script_file}')
-    end
-    # when the test script is not found run the command loud
-    describe command(<<-END_COMMAND
-      echo "#{ruby_script}">#{script_file}
-      END_COMMAND
-    ) do
-      its(:stdout) { should be_empty }
-      its(:stderr) { should be_empty }
-      its(:exit_status) {should eq 0 }
-    end
-    describe command(<<-EOF
-      export RUBYOPT='rubygems'
-      ruby #{script_file}
-    EOF
-    ) do
-      its(:stderr) { should be_empty }
-      its(:exit_status) {should eq 0 }
-      lines.each do |line| 
-        its(:stdout) do
-          should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
-        end
+  EOF
+  before(:all) do
+    Specinfra::Runner::run_command('echo "#{ruby_script}">#{script_file}')
+  end
+  # when the test script is not found run the command loud
+  describe command(<<-END_COMMAND
+    echo "#{ruby_script}">#{script_file}
+    END_COMMAND
+  ) do
+    its(:stdout) { should be_empty }
+    its(:stderr) { should be_empty }
+    its(:exit_status) {should eq 0 }
+  end
+  describe command(<<-EOF
+    export RUBYOPT='rubygems'
+    ruby #{script_file}
+  EOF
+  ) do
+    its(:stderr) { should be_empty }
+    its(:exit_status) {should eq 0 }
+    lines.each do |line| 
+      its(:stdout) do
+        should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
       end
     end
   end
