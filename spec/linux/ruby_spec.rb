@@ -18,11 +18,10 @@ require 'yaml'
 require 'pp'
 
 # Do basic smoke test
-puts 'Generate YAML' 
-pp YAML.dump({'answer'=>42})
+puts \\"Generate YAML\\n\\" + YAML.dump({'answer'=>42})
 
 # Read Puppet Agent last run report
-# NOTE: escaping special characters 
+# NOTE: escaping special characters to prevent execution by shell 
 puppet_last_run_report = \\`puppet config print 'lastrunreport'\\`.chomp
 data = File.read(puppet_last_run_report)
 # Parse
@@ -30,23 +29,43 @@ puppet_transaction_report = YAML.load(data)
 
 # Get metrics
 metrics = puppet_transaction_report.metrics
-puts 'Metrics:'
-pp metrics
-# Show resources
-puppet_resource_statuses = puppet_transaction_report.resource_statuses
+
+time = metrics['time']
+puts 'Times:'
+pp time.values
+
+events = metrics['events']
+puts 'Events:'
+pp events.values
+# puts events.values.to_yaml
+
+resources = metrics['resources']
 puts 'Resources:'
+pp resources.values
+
+puppet_resource_statuses = puppet_transaction_report.resource_statuses
+puts 'Resource Statuses:'
 pp puppet_resource_statuses.keys
-# Get summary
+
 raw_summary = puppet_transaction_report.raw_summary
 puts 'Summary:'
 pp raw_summary
-# Get status
+
 status = puppet_transaction_report.status
 puts 'Status: ' + status
  
     EOF
     before(:all) do
       Specinfra::Runner::run_command('echo "#{ruby_script}">#{script_file}')
+    end
+    # when the test script is not found run the command loud
+    describe command(<<-END_COMMAND
+      echo "#{ruby_script}">#{script_file}
+      END_COMMAND
+    ) do
+      its(:stdout) { should be_empty }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
     end
     describe command(<<-EOF
       export RUBYOPT='rubygems'
