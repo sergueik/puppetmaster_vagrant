@@ -30,9 +30,12 @@ schtasks.exe /Query /TN #{name} /xml
       [
           '<Command>"C:\\\\Program Files \\(x86\\)\\\\#{program_directory}\\\\#{program}"</Command>',
           "<Arguments>#{arguments}</Arguments>",
+          "<WeeksInterval>1</WeeksInterval>",
+          "<Monday />",
+          "12:00:00</StartBoundary>",
           '<WorkingDirectory>c:\\\\windows\\\\temp</WorkingDirectory>'
       ].each do |line|
-        its(:stdout) { should match /#{Regexp.new(line)}/i }
+        its(:stdout) { should match Regexp.new(line) }
       end
     end
   end
