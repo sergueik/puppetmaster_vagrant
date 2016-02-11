@@ -19,11 +19,17 @@ try {
 EOF
   ) do
       its(:stdout) do
-        should match Regexp.new('"FileName":  "' + file_path.gsub(/[()]/,"\\#{$&}").gsub('/','\\').gsub(/\\/,'\\\\\\\\\\\\\\\\') + '"', Regexp::IGNORECASE)
+
+        # x = '(abc)' # => "(abc)"
+        # x.gsub(/[abc]/,"\\#{$&}")  # => "(\\a\\a\\a)"
+        # x.gsub(/(a|b|c)/,"\\#{$&}") # => "(\\c\\c\\c)"
+
+
+        should match Regexp.new('"FileName":  "' + file_path.gsub('(','\\(').gsub(')','\\)').gsub('/','\\').gsub(/\\/,'\\\\\\\\\\\\\\\\') + '"', Regexp::IGNORECASE)
         should match /"ProductVersion":  "#{file_version}"/
       end
     end 
-    describe file(file_path.gsub(/[()]/,"\\#{$&}").gsub('/','\\')) do
+    describe file(file_path.gsub('(','\\(').gsub(')','\\)').gsub('/','\\')) do
       it { should be_version(file_version) }
     end
   end 
