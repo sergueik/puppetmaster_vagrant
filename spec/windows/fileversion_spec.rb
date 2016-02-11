@@ -29,7 +29,7 @@ EOF
         should match /"ProductVersion":  "#{file_version}"/
       end
     end 
-    describe file(file_path.gsub('(','\\(').gsub(')','\\)').gsub('/','\\')) do
+    describe file(file_path.gsub('/','\\')) do
       it { should be_version(file_version) }
     end
   end 
