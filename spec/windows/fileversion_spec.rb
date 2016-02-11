@@ -34,3 +34,26 @@ EOF
     end
   end 
 end
+
+
+context 'File version Powershell 2.0' do
+  {
+   'C:\Program Files (x86)\Columbo\Columbo.exe' =>  '1.1.1.0',
+  }.each do |file_path, file_version|
+    describe command(<<-EOF
+    $file_path = '#{file_path}'
+      try {
+        $info = get-item -path $file_path
+        # Powershell 2.0 lacks convertto-json cmdlet
+        write-output ($info.VersionInfo | format-list)
+      } catch [Exception]  { 
+        write-output 'Error reading file'
+      }
+    EOF
+    ) do
+        its(:stdout) do
+          should match /ProductVersion +: +#{file_version}"/
+        end
+      end 
+    end 
+  end
