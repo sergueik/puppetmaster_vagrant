@@ -1,3 +1,11 @@
+require_relative '../windows_spec_helper'
+
+context 'Columbo' do
+  context 'Installed Application' do
+  {
+   'Columbo [SRV]' => '1.1.2',
+  }.each do |appName, appVersion|
+    describe command(<<-EOF
 # fix to 
 # to support non-standard application names like 'Foo [Bar]'
 # https://github.com/sergueik/specinfra/blob/master/lib/specinfra/backend/powershell/support/find_installed_application.ps1
@@ -8,8 +16,8 @@ function FindInstalledApplication {
 
   if ((Get-WmiObject win32_operatingsystem).OSArchitecture -notmatch '64')
   {
-    $keys= (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*')
-    $possible_path= 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    $keys= (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
+    $possible_path= 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
     if (Test-Path $possible_path)
     {
       $keys+= (Get-ItemProperty $possible_path)
@@ -17,13 +25,13 @@ function FindInstalledApplication {
   }
     else
   {
-    $keys = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
-    $possible_path= 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    $keys = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
+    $possible_path= 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
     if (Test-Path $possible_path)
     {
       $keys+= (Get-ItemProperty $possible_path)
     }
-    $possible_path= 'HKCU:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    $possible_path= 'HKCU:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
     if (Test-Path $possible_path)
     {
       $keys+= (Get-ItemProperty $possible_path)
@@ -35,7 +43,7 @@ function FindInstalledApplication {
   if ($appVersion -eq $null) {
     write-host ('appName  = "{0}"' -f $appName )
 start-sleep 1
-$appNameRegex = new-object Regex(($appName -replace '\[', '\[' -replace '\]', '\]'))
+$appNameRegex = new-object Regex(($appName -replace '\\[', '\\[' -replace '\\]', '\\]'))
 
 $keys | foreach-Object {
 write-host ('DisplayName = "{0}"' -f $_.DisplayName)
@@ -50,7 +58,7 @@ write-host 'x'
   else{
     write-host ('appName  = "{0}", appVersion={1}' -f $appName,$appVersion )
 start-sleep 1
-$appNameRegex = new-object Regex(($appName -replace '\[', '\[' -replace '\]', '\]'))
+$appNameRegex = new-object Regex(($appName -replace '\\[', '\\[' -replace '\\]', '\\]'))
 
 $keys | foreach-Object {
 write-host ('DisplayName = "{0}"' -f $_.DisplayName)
@@ -70,21 +78,24 @@ write-host 'x'
 
 
 $exitCode = 1
-$ProgressPreference = "SilentlyContinue"
-# try {
-#  $success = ((FindInstalledApplication -appName 'Columbo [SRV]' -appVersion '2.0.2') -eq $true)
-#  if ($success -is [Boolean] -and $success) { $exitCode = 0 } 
-#  
-#  } catch {
-#  Write-Output $_.Exception.Message
-#}
-
+$ProgressPreference = 'SilentlyContinue'
 try {
-  $success = ((FindInstalledApplication -appName 'Columbo [SRV]') -eq $true)
-  if ($success -is [Boolean] -and $success) { $exitCode = 0 } 
-  
+  $success = ((FindInstalledApplication -appName '#{appName}' -appVersion '#{appVersion}') -eq $true)
+  if ($success -is [Boolean] -and $success) { 
+  $exitCode = 0 }   
   } catch {
   Write-Output $_.Exception.Message
 }
 Write-Output "Exiting with code: $exitCode"
+
+    EOF
+    ) do
+        its(:stdout) do
+          should match /Exiting with code: 0/
+        end
+      end
+    end
+  end
+
+end
 
