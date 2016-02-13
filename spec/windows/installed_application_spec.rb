@@ -56,7 +56,7 @@ try {
 } catch {
   Write-Output $_.Exception.Message
 }
-Write-Output 'Exiting with code: $exitCode'
+Write-Output "Exiting with code: ${exitCode}"
     EOF
     ) do
         its(:stdout) do
