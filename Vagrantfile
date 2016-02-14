@@ -1,6 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'yaml'
+require 'pp'
+
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
 basedir = basedir.gsub('\\', '/')
@@ -14,35 +17,38 @@ box_cpus          = ENV.fetch('BOX_CPUS', '')
 box_gui           = ENV.fetch('BOX_GUI', '')
 debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
 
-unless box_name =~ /\S/
-  custom_vagrantfile = 'Vagrantfile.local'
-  if File.exist?(custom_vagrantfile)
-    puts "Loading '#{custom_vagrantfile}'"
-    # config = Hash[File.read(File.expand_path(custom_vagrantfile)).scan(/(.+?) *= *(.+)/)]
-    config = {}
-    File.read(File.expand_path(custom_vagrantfile)).split(/\n/).each do |line|
-      if line !~ /^#/
-        key_val = line.scan(/^ *(.+?) *= *(.+) */)
-        config.merge!(Hash[key_val])
-      end
+dir = File.expand_path(File.dirname(__FILE__))
+
+
+config = {}
+vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
+vagrantfile_custom = "#{dir}/Vagrantfile.local"
+if File.exists?(vagrantfile_yaml)
+  puts "Loading '#{vagrantfile_yaml}'"
+  config_yaml = YAML::load_file( vagrantfile_yaml )
+  
+  config = config_yaml[config_yaml['boot']]
+elsif File.exist?(vagrantfile_custom)
+  puts "Loading '#{vagrantfile_custom}'"
+  # config = Hash[File.read(File.expand_path(vagrantfile_custom)).scan(/(.+?) *= *(.+)/)]
+  File.read(File.expand_path(vagrantfile_custom)).split(/\n/).each do |line|
+    if line !~ /^#/
+      key_val = line.scan(/^ *(.+?) *= *(.+) */)
+      config.merge!(Hash[key_val])
     end
-    if debug
-      puts config.inspect
-    end
-    box_name = config['box_name']
-    box_gui = config['box_gui'] != nil && config['box_gui'].match(/(true|t|yes|y|1)$/i) != nil
-    box_cpus = config['box_cpus'].to_i
-    box_memory = config['box_memory'].to_i
-  else
-    # TODO: throw an error
   end
+else
+    # TODO: throw an error
+end
+unless box_name =~ /\S/
+  box_name = config['box_name']
+  box_gui = config['box_gui'] != nil && config['box_gui'].to_s.match(/(true|t|yes|y|1)$/i) != nil
+  box_cpus = config['box_cpus'].to_i
+  box_memory = config['box_memory'].to_i
 end
 
 if debug
-  puts "box_name=#{box_name}"
-  puts "box_gui=#{box_gui}"
-  puts "box_cpus=#{box_cpus}"
-  puts "box_memory=#{box_memory}"
+  pp "#{{:box_name => box_name, :box_gui => box_gui, :box_cpus => box_cpus , :box_memory => box_memory}}"
 end
 
 VAGRANTFILE_API_VERSION = '2'
@@ -109,6 +115,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       elsif box_name =~ /2008/
         config_vm_box      = 'windows_2008'
         config_vm_box_name = 'windows-2008R2-serverstandard-amd64_virtualbox.box'
+      # https://atlas.hashicorp.com/opentable/boxes/win-2008r2-standard-amd64-nocm/versions/1.0.1/providers/virtualbox.box
       elsif box_name =~ /2012/
         config_vm_box     = 'windows_2012'
         config_vm_box_name = 'windows_2012_r2_standard.box'
@@ -116,10 +123,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # config_vm_newbox  = true
         config_vm_box     = 'windows10'
         config_vm_box_name = 'vagrant-win10-edge-default.box'
+      elsif box_name =~ /windows_winrm/
+        # config_vm_newbox  = true
+        config_vm_box     = 'windows_winrm'
+        config_vm_box_name = 'windows10_winrm_configured_repackaged.box'
       else
         config_vm_newbox  = true
         config_vm_box     = 'windows7'
         config_vm_box_name = 'vagrant-win7-ie10-updated.box'
+        # https://atlas.hashicorp.com/ferventcoder/boxes/win7pro-x64-nocm-lite
+        # config_vm_box_name = 'win7pro-x64-nocm-lite.box'
+        # broken winrm
+
       end
     end
     config_vm_box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"

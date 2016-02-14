@@ -1,0 +1,82 @@
+---
+boot: 'windows7'
+vagrant_boxes:
+
+# ubuntu  14.04 x86
+'trusty_32':
+  box_name: 'trusty32'
+  box_memory: 512
+  box_cpus: 1
+  box_gui: false
+
+# ubuntu 14.04 x64
+'trusty64':
+  box_name: 'trusty64'
+  box_memory: 512
+  box_cpus: 1
+  box_gui: false
+
+# windows 10
+'windows10':
+  box_name: 'windows10'
+  box_memory: 1024
+  box_cpus: 1
+  box_gui: true
+
+#  windows10 winrm configured
+'windows_winrm':
+  box_name: 'windows_winrm'
+  box_memory: 1024
+  box_cpus: 1
+  box_gui: true
+
+#  windows 7
+'windows7':
+  box_name: 'windows7'
+  box_memory: 1024
+  box_cpus: 1
+  box_gui: true
+
+# windows xp
+'windows_xp':
+  box_name: 'windows_xp'
+  box_memory: 1024
+  box_cpus: 1
+  box_gui: true
+
+# windows 2012 
+'windows_2012':
+  box_name: 'windows_2012'
+  box_memory: 1024
+  box_cpus: 1
+  box_gui: true
+
+# centos 6.5 x86 with Puppet 3.2.3
+'centos65_i386':
+  box_name: 'centos65_i386'
+  box_memory: 512
+  box_cpus: 1
+  box_gui: false
+
+# centos 6.6 x64 with Puppet 3.8.1
+'centos66_x64':
+  box_name: 'centos66_x64'
+  box_memory: 512
+  box_cpus: 1
+  box_gui: false
+
+# centos 7 with puppet 3.x 
+'centos7_x64':
+  box_name: 'centos7_x64'
+  box_memory: 512
+  box_cpus: 1
+  box_gui: false
+
+# ubuntu 12.04 x64 with Puppet v3.1.1.
+# NOTE: non-standard path to ruby: /opt/ruby/bin/ruby
+'precise64':
+  box_name: 'precise64'
+  box_memory: 512
+  box_cpus: 1
+  box_gui: false
+
