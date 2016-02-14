@@ -26,8 +26,8 @@ if File.exists?(vagrantfile_yaml)
   puts "Loading '#{vagrantfile_yaml}'"
   config_yaml = YAML::load_file( vagrantfile_yaml )
   
-  config = config_yaml[config_yaml[:boot]]
-  pp config
+  box_config = config_yaml[config_yaml[:boot]]
+  pp box_config
 elsif File.exist?(vagrantfile_custom)
   puts "Loading '#{vagrantfile_custom}'"
   config_legacy = {}
@@ -39,7 +39,7 @@ elsif File.exist?(vagrantfile_custom)
     end
 
   # convert legacy config keys to symbols
-  config = config_legacy.inject({}) do
+  box_config = config_legacy.inject({}) do
     |data,(key,value)| data[key.to_sym] = value
     data 
   end
@@ -50,10 +50,10 @@ else
 end
 pp config
 unless box_name =~ /\S/
-  box_name = config[:box_name]
-  box_gui = config[:box_gui] != nil && config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
-  box_cpus = config[:box_cpus].to_i
-  box_memory = config[:box_memory].to_i
+  box_name = box_config[:box_name]
+  box_gui = box_config[:box_gui] != nil && box_config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
+  box_cpus = box_config[:box_cpus].to_i
+  box_memory = box_config[:box_memory].to_i
 end
 
 if debug
@@ -81,76 +81,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  config_vm_newbox = config[:config_vm_newbox]
-  config_vm_box = config[:config_vm_box]
-  config_vm_default = config[:config_vm_default]
-  config_vm_box_name = config[:config_vm_box_name]
-
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
-  case box_name
-    when /centos65_i386/
-      config_vm_box      = 'centos'
-      config_vm_default  = 'linux'
-      config_vm_box_name = 'centos_6-5_i386.box'
-    when /centos66_x64/
-      config_vm_box     = 'centos'
-      config_vm_default = 'linux'
-      config_vm_box_name  = 'centos-6.6-x86_64.box'
-    when /centos65_x64/  # Puppet not preinstalled
-      config_vm_newbox  = true
-      config_vm_box     = 'centos'
-      config_vm_default = 'linux'
-      config_vm_box_name = 'centos-6.5-x86_64.box'
-    when /centos7/
-      config_vm_box     = 'centos'
-      config_vm_default = 'linux'
-      config_vm_box_name = 'centos-7.0-x86_64.box'
-    when /trusty32/
-      config_vm_box      = 'ubuntu'
-      config_vm_default  = 'linux'
-     config_vm_box_name = 'trusty-server-cloudimg-i386-vagrant-disk1.box'
-    when /trusty64/
-      config_vm_box      = 'ubuntu'
-      config_vm_default  = 'linux'
-      config_vm_box_name = 'trusty-server-cloudimg-amd64-vagrant-disk1.box'
-    when /precise64/
-      config_vm_box      = 'ubuntu'
-      config_vm_default  = 'linux'
-      config_vm_box_name = 'ubuntu-server-12042-x64-vbox4210.box'
-    else
-      config_vm_default = 'windows'
-      # set config_vm_newbox to true when importing for the first time
-      # config_vm_newbox  = false
-      if box_name =~ /xp/
-        config_vm_box      = 'windows_xp'
-        config_vm_box_name = 'IE8.XP.For.Vagrant.box'
-      elsif box_name =~ /2008/
-        config_vm_box      = 'windows_2008'
-        config_vm_box_name = 'windows-2008R2-serverstandard-amd64_virtualbox.box'
-      # https://atlas.hashicorp.com/opentable/boxes/win-2008r2-standard-amd64-nocm/versions/1.0.1/providers/virtualbox.box
-      elsif box_name =~ /2012/
-        config_vm_box     = 'windows_2012'
-        config_vm_box_name = 'windows_2012_r2_standard.box'
-      elsif box_name =~ /windows10/
-        # config_vm_newbox  = true
-        config_vm_box     = 'windows10'
-        config_vm_box_name = 'vagrant-win10-edge-default.box'
-      elsif box_name =~ /windows_winrm/
-        # config_vm_newbox  = true
-        config_vm_box     = 'windows_winrm'
-        config_vm_box_name = 'windows10_winrm_configured_repackaged.box'
-      else
-        config_vm_newbox  = true
-        config_vm_box     = 'windows7'
-        config_vm_box_name = 'vagrant-win7-ie10-updated.box'
-        # https://atlas.hashicorp.com/ferventcoder/boxes/win7pro-x64-nocm-lite
-        # config_vm_box_name = 'win7pro-x64-nocm-lite.box'
-        # broken winrm
 
-      end
-    end
-    config_vm_box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
-    config.vm.define config_vm_default do |config|
+  config_vm_newbox = box_config[:config_vm_newbox]
+  config_vm_box = box_config[:config_vm_box]
+  config_vm_default = box_config[:config_vm_default]
+  config_vm_box_name = box_config[:config_vm_box_name]
+
+  config_vm_box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  config.vm.define config_vm_default do |config|
       config.vm.box = config_vm_box
       config.vm.box_url  = config_vm_box_url
       puts "Configuring '#{config.vm.box}'"
