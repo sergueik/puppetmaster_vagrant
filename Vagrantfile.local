@@ -11,16 +11,23 @@
 # box_gui = false
 
 # windows 10
-  box_name = 'windows10'
-  box_memory = 1024
-  box_cpus = 1
-  box_gui = true
-
-#  windows 7
-#  box_name = 'windows7'
+#  box_name = 'windows10'
 #  box_memory = 1024
 #  box_cpus = 1
 #  box_gui = true
+
+#  windows10 winrm configured
+#  box_name = 'windows_winrm'
+#  box_memory = 1024
+#  box_cpus = 1
+#  box_gui = true
+
+
+#  windows 7
+  box_name = 'windows7'
+  box_memory = 1024
+  box_cpus = 1
+  box_gui = true
 
 # windows xp
 # box_name = 'windows_xp'

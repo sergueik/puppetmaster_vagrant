@@ -19,7 +19,6 @@ debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
 
 dir = File.expand_path(File.dirname(__FILE__))
 
-
 config = {}
 vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
 vagrantfile_custom = "#{dir}/Vagrantfile.local"
@@ -27,24 +26,34 @@ if File.exists?(vagrantfile_yaml)
   puts "Loading '#{vagrantfile_yaml}'"
   config_yaml = YAML::load_file( vagrantfile_yaml )
   
-  config = config_yaml[config_yaml['boot']]
+  config = config_yaml[config_yaml[:boot]]
+  pp config
 elsif File.exist?(vagrantfile_custom)
   puts "Loading '#{vagrantfile_custom}'"
+  config_legacy = {}
   # config = Hash[File.read(File.expand_path(vagrantfile_custom)).scan(/(.+?) *= *(.+)/)]
   File.read(File.expand_path(vagrantfile_custom)).split(/\n/).each do |line|
     if line !~ /^#/
       key_val = line.scan(/^ *(.+?) *= *(.+) */)
-      config.merge!(Hash[key_val])
+      config_legacy.merge!(Hash[key_val])
     end
+
+  # convert legacy config keys to symbols
+  config = config_legacy.inject({}) do
+    |data,(key,value)| data[key.to_sym] = value
+    data 
+  end
+
   end
 else
     # TODO: throw an error
 end
+pp config
 unless box_name =~ /\S/
-  box_name = config['box_name']
-  box_gui = config['box_gui'] != nil && config['box_gui'].to_s.match(/(true|t|yes|y|1)$/i) != nil
-  box_cpus = config['box_cpus'].to_i
-  box_memory = config['box_memory'].to_i
+  box_name = config[:box_name]
+  box_gui = config[:box_gui] != nil && config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
+  box_cpus = config[:box_cpus].to_i
+  box_memory = config[:box_memory].to_i
 end
 
 if debug
@@ -72,7 +81,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  config_vm_newbox = false
+  config_vm_newbox = config[:config_vm_newbox]
+  config_vm_box = config[:config_vm_box]
+  config_vm_default = config[:config_vm_default]
+  config_vm_box_name = config[:config_vm_box_name]
 
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   case box_name

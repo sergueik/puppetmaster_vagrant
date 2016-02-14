@@ -1,6 +1,9 @@
 ---
+
 :boot: windows7
-:trusty_32:
+
+# NOTE: keys are vagrant box names
+'trusty_32':
   :box_name: trusty32
   :box_memory: 512
   :box_cpus: 1
@@ -9,7 +12,7 @@
   :config_vm_default: windows
   :config_vm_box: windows7
   :config_vm_box_name: vagrant-win7-ie10-updated.box
-:trusty64:
+'trusty64':
   :box_name: trusty64
   :box_memory: 512
   :box_cpus: 1
@@ -18,7 +21,7 @@
   :config_vm_default: linux
   :config_vm_box: ubuntu
   :config_vm_box_name: trusty-server-cloudimg-amd64-vagrant-disk1.box
-:windows10:
+'windows10':
   :box_name: windows10
   :box_memory: 1024
   :box_cpus: 1
@@ -27,7 +30,7 @@
   :config_vm_default: windows
   :config_vm_box: windows10
   :config_vm_box_name: vagrant-win10-edge-default.box
-:windows_winrm:
+'windows_winrm':
   :box_name: windows_winrm
   :box_memory: 1024
   :box_cpus: 1
@@ -36,7 +39,7 @@
   :config_vm_default: windows
   :config_vm_box: windows_winrm
   :config_vm_box_name: windows10_winrm_configured_repackaged.box
-:windows7:
+'windows7':
   :box_name: windows7
   :box_memory: 1024
   :box_cpus: 1
@@ -45,7 +48,7 @@
   :config_vm_default: windows
   :config_vm_box: windows7
   :config_vm_box_name: vagrant-win7-ie10-updated.box
-:windows_xp:
+'windows_xp':
   :box_name: windows_xp
   :box_memory: 1024
   :box_cpus: 1
@@ -54,7 +57,7 @@
   :config_vm_default: windows
   :config_vm_box: windows_xp
   :config_vm_box_name: IE8.XP.For.Vagrant.box
-:windows_2012:
+'windows_2012':
   :box_name: windows_2012
   :box_memory: 1024
   :box_cpus: 1
@@ -63,7 +66,7 @@
   :config_vm_default: windows
   :config_vm_box: windows_2012
   :config_vm_box_name: windows_2012_r2_standard.box
-:centos65_i386:
+'centos65_i386':
   :box_name: centos65_i386
   :box_memory: 512
   :box_cpus: 1
@@ -72,7 +75,7 @@
   :config_vm_default: linux
   :config_vm_box: centos
   :config_vm_box_name: centos_6-5_i386.box
-:centos66_x64:
+'centos66_x64':
   :box_name: centos66_x64
   :box_memory: 512
   :box_cpus: 1
@@ -81,7 +84,7 @@
   :config_vm_default: linux
   :config_vm_box: centos
   :config_vm_box_name: centos-6.6-x86_64.box
-:centos7_x64:
+'centos7_x64':
   :box_name: centos7_x64
   :box_memory: 512
   :box_cpus: 1
@@ -90,7 +93,7 @@
   :config_vm_default: linux
   :config_vm_box: centos
   :config_vm_box_name: centos-7.0-x86_64.box
-:precise64:
+'precise64':
   :box_name: precise64
   :box_memory: 512
   :box_cpus: 1
