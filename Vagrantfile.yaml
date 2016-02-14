@@ -1,8 +1,8 @@
 ---
-
+# NOTE: vagrant box names are keys
 :boot: windows7
 
-# NOTE: keys are vagrant box names
+# ubuntu 14.04 x86
 'trusty_32':
   :box_name: trusty32
   :box_memory: 512
@@ -12,6 +12,8 @@
   :config_vm_default: windows
   :config_vm_box: windows7
   :config_vm_box_name: vagrant-win7-ie10-updated.box
+
+# ubuntu 14.04 x64
 'trusty64':
   :box_name: trusty64
   :box_memory: 512
@@ -21,6 +23,19 @@
   :config_vm_default: linux
   :config_vm_box: ubuntu
   :config_vm_box_name: trusty-server-cloudimg-amd64-vagrant-disk1.box
+
+# https://atlas.hashicorp.com/opentable/boxes/win-2008r2-standard-amd64-nocm/versions/1.0.1/providers/virtualbox.box
+'windows_2008':
+  :box_name: windows10
+  :box_memory: 1024
+  :box_cpus: 1
+  :box_gui: true
+  :config_vm_newbox: false
+  :config_vm_default: windows
+  :config_vm_box: windows_2008
+  :config_vm_box_name: windows-2008R2-serverstandard-amd64_virtualbox.box
+
+# windows 10, winrm not configured
 'windows10':
   :box_name: windows10
   :box_memory: 1024
@@ -30,6 +45,8 @@
   :config_vm_default: windows
   :config_vm_box: windows10
   :config_vm_box_name: vagrant-win10-edge-default.box
+
+# windows10 winrm configured (possibly?)
 'windows_winrm':
   :box_name: windows_winrm
   :box_memory: 1024
@@ -39,6 +56,8 @@
   :config_vm_default: windows
   :config_vm_box: windows_winrm
   :config_vm_box_name: windows10_winrm_configured_repackaged.box
+
+# windows 7 - shoud be used as default for windows
 'windows7':
   :box_name: windows7
   :box_memory: 1024
@@ -48,6 +67,20 @@
   :config_vm_default: windows
   :config_vm_box: windows7
   :config_vm_box_name: vagrant-win7-ie10-updated.box
+
+
+ # https://atlas.hashicorp.com/ferventcoder/boxes/win7pro-x64-nocm-lite
+'windows7_nocm':
+  :box_name: windows7
+  :box_memory: 1024
+  :box_cpus: 1
+  :box_gui: true
+  :config_vm_newbox: true
+  :config_vm_default: windows
+  :config_vm_box: windows7
+  :config_vm_box_name: win7pro-x64-nocm-lite.box
+
+# never used,
 'windows_xp':
   :box_name: windows_xp
   :box_memory: 1024
@@ -57,6 +90,7 @@
   :config_vm_default: windows
   :config_vm_box: windows_xp
   :config_vm_box_name: IE8.XP.For.Vagrant.box
+
 'windows_2012':
   :box_name: windows_2012
   :box_memory: 1024
@@ -66,6 +100,8 @@
   :config_vm_default: windows
   :config_vm_box: windows_2012
   :config_vm_box_name: windows_2012_r2_standard.box
+
+# centos 6.5 x86 with Puppet 3.2.3
 'centos65_i386':
   :box_name: centos65_i386
   :box_memory: 512
@@ -75,6 +111,19 @@
   :config_vm_default: linux
   :config_vm_box: centos
   :config_vm_box_name: centos_6-5_i386.box
+
+# Warning: Puppet not preinstalled
+'centos65_x64':
+  :box_name: centos65_x64
+  :box_memory: 512
+  :box_cpus: 1
+  :box_gui: false
+  :config_vm_newbox: false
+  :config_vm_default: linux
+  :config_vm_box: centos
+  :config_vm_box_name: centos-6.6-x86_64.box
+
+# centos 6.6 x64 with Puppet 3.8.1
 'centos66_x64':
   :box_name: centos66_x64
   :box_memory: 512
@@ -84,6 +133,8 @@
   :config_vm_default: linux
   :config_vm_box: centos
   :config_vm_box_name: centos-6.6-x86_64.box
+
+# centos 7 with puppet 3.x 
 'centos7_x64':
   :box_name: centos7_x64
   :box_memory: 512
@@ -93,6 +144,9 @@
   :config_vm_default: linux
   :config_vm_box: centos
   :config_vm_box_name: centos-7.0-x86_64.box
+
+# ubuntu 12.04 x64 with Puppet v3.1.1.
+-# NOTE: non-standard path to ruby: /opt/ruby/bin/ruby
 'precise64':
   :box_name: precise64
   :box_memory: 512
