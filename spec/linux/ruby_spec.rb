@@ -20,12 +20,27 @@ context 'Puppet Last Run Report' do
       require 'yaml'
       require 'pp'
       require 'optparse'
+
+      options = {}
+      OptionParser.new do |opts|
+        opts.banner = \\"Usage: example.rb [options]\\"
+        opts.on(\\"-v\\", \\"--[no-]verbose\\", \\"Run verbosely\\") do |v|
+          options[:verbose] = v
+        end
+        opts.on(\\"-rRUN\\", \\"--run=RUN\\", \\"Examine the RUN'th Puppet Run Report\\") do |_run|
+          options[:run] = _run
+        end
+      end.parse!
+
       # Do basic smoke test
       puts \\"Generate YAML\\n\\" + YAML.dump({'answer'=>42})
 
       # Read Puppet Agent last run report
       # NOTE: escaping special characters to prevent execution by shell 
       puppet_last_run_report = \\`puppet config print 'lastrunreport'\\`.chomp
+      if options[:run]
+        puppet_last_run_report = puppet_last_run_report + '.' + options[:run].to_s
+      end
       data = File.read(puppet_last_run_report)
       # Parse
       puppet_transaction_report = YAML.load(data)
@@ -57,8 +72,8 @@ context 'Puppet Last Run Report' do
       status = puppet_transaction_report.status
       puts 'Status: ' + status
     EOF
-    before(:all) do
-      # TODO: shell escapes
+    before(:each) do
+      # TODO: provide example of differently quoted shell script
       Specinfra::Runner::run_command("echo \"#{ruby_script}\" > #{script_file}")
     end
     context 'Repeated Run' do 
@@ -70,7 +85,7 @@ context 'Puppet Last Run Report' do
       ]
       describe command(<<-EOF
         export RUBYOPT='rubygems'
-        ruby #{script_file}
+        ruby #{script_file} --run=2
       EOF
       ) do
         let(:path) { '/usr/bin' } 
@@ -96,7 +111,7 @@ context 'Puppet Last Run Report' do
 
       describe command(<<-EOF
         export RUBYOPT='rubygems'
-        ruby #{script_file}
+        ruby #{script_file} --run=1
       EOF
       ) do
         its(:stderr) { should be_empty }
