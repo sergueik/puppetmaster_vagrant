@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 context 'Puppet Last Run Report' do
-  context 'Last Run Report Rotation' do
+  context 'Last Run Report Rotation Basics' do
     puppet = 'puppet'
     describe command(<<-EOF
       $STATEDIR=$(#{puppet} config print statedir)
@@ -13,85 +13,98 @@ context 'Puppet Last Run Report' do
         its(:stdout) { should  match /\d/ }
     end
   end
-
-  context 'Execute embedded Ruby from Puppet Agent' do
-    # TODO: ismx
-    lines = [ 
-      'answer: 42',
-      # TODO: instrument idempotency check 
-      # 'Status: changed', 
-      'Status: unchanged',
-      '"failed"=>0', # resources
-      '"failure"=>0', # events
-      # to see the output, add/uncomment a failed expectation
-      # 'Status: unchanged'
-    ]
+  context 'Execute Puppet Agent embedded Ruby to examine Last Run Report' do
     script_file = '/tmp/test.rb'
     ruby_script = <<-EOF
-  require 'puppet'
-  require 'yaml'
-  require 'pp'
+      require 'puppet'
+      require 'yaml'
+      require 'pp'
+      require 'optparse'
+      # Do basic smoke test
+      puts \\"Generate YAML\\n\\" + YAML.dump({'answer'=>42})
 
-  # Do basic smoke test
-  puts \\"Generate YAML\\n\\" + YAML.dump({'answer'=>42})
+      # Read Puppet Agent last run report
+      # NOTE: escaping special characters to prevent execution by shell 
+      puppet_last_run_report = \\`puppet config print 'lastrunreport'\\`.chomp
+      data = File.read(puppet_last_run_report)
+      # Parse
+      puppet_transaction_report = YAML.load(data)
 
-  # Read Puppet Agent last run report
-  # NOTE: escaping special characters to prevent execution by shell 
-  puppet_last_run_report = \\`puppet config print 'lastrunreport'\\`.chomp
-  data = File.read(puppet_last_run_report)
-  # Parse
-  puppet_transaction_report = YAML.load(data)
+      # Get metrics
+      metrics = puppet_transaction_report.metrics
 
-  # Get metrics
-  metrics = puppet_transaction_report.metrics
+      time = metrics['time']
+      puts 'Times:'
+      pp time.values
 
-  time = metrics['time']
-  puts 'Times:'
-  pp time.values
+      events = metrics['events']
+      puts 'Events:'
+      pp events.values
+      # puts events.values.to_yaml
 
-  events = metrics['events']
-  puts 'Events:'
-  pp events.values
-  # puts events.values.to_yaml
+      resources = metrics['resources']
+      puts 'Resources:'
+      pp resources.values
 
-  resources = metrics['resources']
-  puts 'Resources:'
-  pp resources.values
+      puppet_resource_statuses = puppet_transaction_report.resource_statuses
+      puts 'Resource Statuses:'
+      pp puppet_resource_statuses.keys
 
-  puppet_resource_statuses = puppet_transaction_report.resource_statuses
-  puts 'Resource Statuses:'
-  pp puppet_resource_statuses.keys
+      raw_summary = puppet_transaction_report.raw_summary
+      puts 'Summary:'
+      pp raw_summary
 
-  raw_summary = puppet_transaction_report.raw_summary
-  puts 'Summary:'
-  pp raw_summary
-
-  status = puppet_transaction_report.status
-  puts 'Status: ' + status
-   
+      status = puppet_transaction_report.status
+      puts 'Status: ' + status
     EOF
     before(:all) do
-      Specinfra::Runner::run_command('echo "#{ruby_script}">#{script_file}')
+      # TODO: shell escapes
+      Specinfra::Runner::run_command("echo \"#{ruby_script}\" > #{script_file}")
     end
-    # when the test script is not found run the command loud
-    describe command(<<-END_COMMAND
-      echo "#{ruby_script}">#{script_file}
-      END_COMMAND
-    ) do
-      its(:stdout) { should be_empty }
-      its(:stderr) { should be_empty }
-      its(:exit_status) {should eq 0 }
+    context 'Repeated Run' do 
+      lines = [ 
+        'answer: 42',
+        'Status: unchanged',
+        '"failed"=>0', # resources
+        '"failure"=>0', # events
+      ]
+      describe command(<<-EOF
+        export RUBYOPT='rubygems'
+        ruby #{script_file}
+      EOF
+      ) do
+        let(:path) { '/usr/bin' } 
+        # NOTE: Ruby may not be installed system-wide, need to add agent to the PATH 
+        # Puppet 4.3 : `/opt/puppetlabs/bin`
+        # Puppet 3.4 : `/opt/puppetlabs/bin`
+        its(:stderr) { should be_empty }
+        its(:exit_status) {should eq 0 }
+        lines.each do |line| 
+          its(:stdout) do
+            should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
+          end
+        end
+      end
     end
-    describe command(<<-EOF
-      export RUBYOPT='rubygems'
-      ruby #{script_file}
-    EOF
-    ) do
-      its(:stderr) { should be_empty }
-      its(:exit_status) {should eq 0 }
-      lines.each do |line| 
-        its(:stdout) do
-          should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
+    context 'First Run' do 
+      lines = [ 
+        'answer: 42',
+        'Status: changed',
+        '"failed"=>0', # resources
+        '"failure"=>0', # events
+      ]
+
+      describe command(<<-EOF
+        export RUBYOPT='rubygems'
+        ruby #{script_file}
+      EOF
+      ) do
+        its(:stderr) { should be_empty }
+        its(:exit_status) {should eq 0 }
+        lines.each do |line| 
+          its(:stdout) do
+            should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
+          end
         end
       end
     end
