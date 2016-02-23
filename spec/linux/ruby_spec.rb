@@ -88,10 +88,10 @@ context 'Puppet Last Run Report' do
         ruby #{script_file} --run=2
       EOF
       ) do
-        let(:path) { '/usr/bin' } 
         # NOTE: Ruby may not be installed system-wide, need to add agent to the PATH 
-        # Puppet 4.3 : `/opt/puppetlabs/bin`
-        # Puppet 3.4 : `/opt/puppetlabs/bin`
+        # Puppet 4.3 (2015.2) : `/opt/puppetlabs/bin`
+        # Puppet 3.4 (Puppet Enterprise 3.2) `/opt/puppet/bin`: 
+        let(:path) { '/opt/puppet/bin:/opt/puppetlabs/bin' } 
         its(:stderr) { should be_empty }
         its(:exit_status) {should eq 0 }
         lines.each do |line| 
