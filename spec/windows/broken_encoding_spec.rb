@@ -3,7 +3,20 @@ require_relative '../windows_spec_helper'
 context 'Discover Corrupt ASCII Files with Unicode Fragments' do
   # create a mix content file
   # to setup a test case
-  file_path = 'C:\Users\sergueik\c.groovy'
+  file_path = 'C:\Users\vagrant\test.txt'
+  before(:each) do
+  
+    Specinfra::Runner::run_command(<<-END_COMMAND
+$content = @"
+  this is a test this is a test this is a test this is a test this is a test 
+  this is a test this is a test this is a test this is a test this is a test 
+"@
+
+write-output $content | out-file '#{file_path}' -encoding ascii
+    END_COMMAND
+    )
+
+  end
   describe command(<<-EOF
 # origin http://poshcode.org/3252
 function test_bomless_file {
@@ -64,6 +77,7 @@ function test_bomless_file {
 }
 
 $result = test_bomless_file -file_path '#{file_path}'
+write-output $result.EncodingName
 write-output $result.EncodingName
 
 EOF
