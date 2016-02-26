@@ -68,7 +68,7 @@ pp get_install_dir
       let(:path) { "#{puppet_home}/sys/ruby/bin" }
       lines.each do |line| 
         its(:stdout) do
-          should match  Regexp.new(line.gsub('\','\\\\').gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
+          should match  Regexp.new(line.gsub('\\','\\\\').gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
         end
       end
     end
