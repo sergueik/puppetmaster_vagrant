@@ -106,7 +106,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.synced_folder './' , '/vagrant'
     # Configure common port forwarding
     config.vm.network 'forwarded_port', guest: 4444, host: 4444, id: 'selenium', auto_correct:true
-    config.vm.network 'forwarded_port', guest: 3000, host: 3000, id: 'reactor', auto_correct:true
+    config.vm.network "forwarded_port", guest: 9000, host: 9000, id: 'aurelia', auto_correct:true
 
     config.vm.provider 'virtualbox' do |vb|
       vb.gui = box_gui
@@ -177,7 +177,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           sudo npm install
           echo "[PROVISION] Running 'jspm install' in Aurelia skeleton project"
           jspm install -y
-          # sudo npm install -g require-dir run-sequence gulp-changed gulp-changed gulp-plumber gulp-courcemaps gulp-sourcemaps object.assign gulp-notify gulp-tsb aurelia-bundler del vinyl-paths aurelia-tools
+          # sudo npm install -g require-dir run-sequence gulp-changed gulp-changed gulp-plumber gulp-courcemaps gulp-sourcemaps object.assign gulp-notify gulp-tsb aurelia-bundler del vinyl-paths aurelia-tools gulp-protractor gulp-tslint gulp-bump browser-sync karma
           gulp watch
           END_SCRIPT
 
