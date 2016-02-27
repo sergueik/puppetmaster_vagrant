@@ -1,0 +1,186 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+require 'pp'
+# based on 
+# origin: https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
+vagrant_use_proxy = ENV.fetch('VAGRANT_USE_PROXY', nil)
+http_proxy        = ENV.fetch('HTTP_PROXY', nil)
+box_name          = ENV.fetch('BOX_NAME', '')
+debug             = ENV.fetch('DEBUG', 'false')
+box_memory        = ENV.fetch('BOX_MEMORY', '')
+box_cpus          = ENV.fetch('BOX_CPUS', '')
+box_gui           = ENV.fetch('BOX_GUI', '')
+# required
+github_login      = ENV.fetch('GITHUB_LOGIN', nil)
+github_pass       = ENV.fetch('GITHUB_PASS', nil)
+aurelia_project   = ENV.fetch('AURELIA_PROJECT',  'skeleton-es2016' )
+debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+config = {}
+vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
+vagrantfile_custom = "#{dir}/Vagrantfile.local"
+if File.exists?(vagrantfile_yaml)
+  puts "Loading '#{vagrantfile_yaml}'"
+  config_yaml = YAML::load_file( vagrantfile_yaml )
+  
+  box_config = config_yaml[config_yaml[:boot]]
+  pp box_config
+elsif File.exist?(vagrantfile_custom)
+  puts "Loading '#{vagrantfile_custom}'"
+  config_legacy = {}
+  # config = Hash[File.read(File.expand_path(vagrantfile_custom)).scan(/(.+?) *= *(.+)/)]
+  File.read(File.expand_path(vagrantfile_custom)).split(/\n/).each do |line|
+    if line !~ /^#/
+      key_val = line.scan(/^ *(.+?) *= *(.+) */)
+      config_legacy.merge!(Hash[key_val])
+    end
+
+  # convert legacy config keys to symbols
+  box_config = config_legacy.inject({}) do
+    |data,(key,value)| data[key.to_sym] = value
+    data 
+  end
+
+  end
+else
+    # TODO: throw an error
+end
+pp config
+unless box_name =~ /\S/
+  box_name = box_config[:box_name]
+  box_gui = box_config[:box_gui] != nil && box_config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
+  box_cpus = box_config[:box_cpus].to_i
+  box_memory = box_config[:box_memory].to_i
+end
+
+if debug
+  pp "#{{:box_name => box_name, :box_gui => box_gui, :box_cpus => box_cpus , :box_memory => box_memory}}"
+end
+
+VAGRANTFILE_API_VERSION = '2'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # Configure Proxy authentication
+
+  if vagrant_use_proxy
+    if http_proxy
+
+      if Vagrant.has_plugin?('vagrant-proxyconf')
+        # Windows-specific case
+        # A proxy should be specified in the form of http://[user:pass@]host:port.
+        # without the domain part and with percent signs doubled - Vagrant and Ruby still use batch files on Windows
+        # https://github.com/tmatilai/vagrant-proxyconf
+        # https://github.com/WinRb/vagrant-windows
+        config.proxy.http     = http_proxy.gsub('%%','%')
+        config.proxy.https    = http_proxy.gsub('%%','%')
+        config.proxy.no_proxy = 'localhost,127.0.0.1'
+      end
+    end
+  end
+
+  # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
+  # described in Vagrantfile.yaml
+  
+  config_vm_newbox = box_config[:config_vm_newbox]
+  config_vm_box = box_config[:config_vm_box]
+  config_vm_default = box_config[:config_vm_default]
+  config_vm_box_name = box_config[:config_vm_box_name]
+
+  config_vm_box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  config.vm.define config_vm_default do |config|
+    config.vm.box = config_vm_box
+    config.vm.box_url  = config_vm_box_url
+    puts "Configuring '#{config.vm.box}'"
+    config.vm.network 'forwarded_port', guest: 5901, host: 5901, id: 'vnc', auto_correct: true
+    config.vm.host_name = 'linux.example.com'
+    config.vm.hostname = 'linux.example.com'
+    # Configure common synced folder
+    config.vm.synced_folder './' , '/vagrant'
+    # Configure common port forwarding
+    config.vm.network 'forwarded_port', guest: 4444, host: 4444, id: 'selenium', auto_correct:true
+    config.vm.network 'forwarded_port', guest: 3000, host: 3000, id: 'reactor', auto_correct:true
+
+    config.vm.provider 'virtualbox' do |vb|
+      vb.gui = box_gui
+      vb.customize ['modifyvm', :id, '--cpus', box_cpus ]
+      vb.customize ['modifyvm', :id, '--memory', box_memory ]
+      vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
+      vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
+      vb.customize ['modifyvm', :id, '--ioapic', 'on'] 
+      vb.customize ['modifyvm', :id, '--audio', 'none']
+      vb.customize ['modifyvm', :id, '--usb', 'off']
+    end
+
+    # Provision software
+    puts "Provision software for '#{config.vm.box}'"
+    case config_vm_box
+      when /ubuntu/
+          # Use shell provisioner to install latest puppet
+          config.vm.provision 'shell',  inline: <<-END_SCRIPT
+          export GITHUB_LOGIN='#{github_login}'
+          export GITHUB_PASS='#{github_pass}'
+          export AURELIA_PROJECT='#{aurelia_project}'
+
+          # origin: 
+          # https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
+          echo "[PROVISION] Adding nodejs source to apt-get cache"
+          curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
+          echo "[PROVISION] Installing latest version of nodejs and npm"
+          sudo apt-get install -y nodejs
+          echo "[PROVISION] Installing git"
+          sudo apt-get install -y git
+          echo "[PROVISION] Reconfiguring npm to install global modules to /home/vagrant/npm"
+          npm config set prefix ~/npm
+          echo "[PROVISION] Modifying paths and such in /home/vagrant/.bashrc"
+          echo 'export PATH="$PATH:$HOME/npm/bin"' >> ~/.bashrc
+          echo 'export NODE_PATH="$NODE_PATH:$HOME/npm/lib/node_modules"' >> ~/.bashrc
+          echo 'cd /vagrant/project' >> ~/.bashrc
+          echo 'echo "starting gulp watch..."' >> ~/.bashrc
+          echo 'gulp watch' >> ~/.bashrc
+          echo "[PROVISION] Reloading bashrc"
+          . ~/.bashrc
+          echo "[PROVISION] Adding your git credentials to ~/.netrc (required for jspm)"
+          echo "machine github.com" >> ~/.netrc
+          echo "login $GITHUB_LOGIN" >> ~/.netrc
+          echo "password $GITHUB_PASS" >> ~/.netrc
+          echo "[PROVISION] Installing gulp"
+          sudo npm install -g gulp
+          echo "[PROVISION] Installing jspm"
+          sudo npm install -g jspm
+          # /home/vagrant/npm/bin/jspm: -No such file or directory
+          # if you are using windows, either open cmd window as administrator OR uncomment
+          # the following line:
+          # npm config set bin-links false
+
+          pushd /vagrant
+          # TODO: add logic to  skip re-cloning project if one already exists
+          if [ "$CLEAN" != "" ] ; then
+          if [-d "/vagrant/project"] ; then
+          echo "[PROVISION] Removing Aurelia skeleton workspace"
+          rm -rf "/vagrant/project"
+          fi
+          echo "[PROVISION] Cloning Aurelia skeleton to /vagrant/project"
+          git clone https://github.com/aurelia/skeleton-navigation.git /vagrant/project
+          fi
+          cd /vagrant/project
+          git checkout master
+          echo "[PROVISION] Running 'npm install' in Aurelia skeleton project"
+          cd "${AURELIA_PROJECT}"
+          sudo npm install
+          echo "[PROVISION] Running 'jspm install' in Aurelia skeleton project"
+          jspm install -y
+          # sudo npm install -g require-dir run-sequence gulp-changed gulp-changed gulp-plumber gulp-courcemaps gulp-sourcemaps object.assign gulp-notify gulp-tsb aurelia-bundler del vinyl-paths aurelia-tools
+          gulp watch
+          END_SCRIPT
+
+    end
+  end
+end
