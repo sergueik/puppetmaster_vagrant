@@ -83,9 +83,9 @@ puts 'Puppet Agent last run status: ' +  status
 
 "@
 
-$ruby_script | Out-File './test.rb' -Encoding ascii
+$ruby_script | Out-File 'c:/windows/temp/test.rb' -Encoding ascii
 # Run Ruby script in the Puppet Agent environent
-iex 'ruby.exe ./test.rb'
+iex 'ruby.exe c:/windows/temp/test.rb'
 
 EOF
   ) do

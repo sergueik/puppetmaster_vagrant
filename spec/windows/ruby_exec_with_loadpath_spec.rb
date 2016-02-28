@@ -53,14 +53,12 @@ pp raw_summary
 status = puppet_transaction_report.status
 puts 'Puppet Agent last run status: ' +  status
 
-"@ | out-file $script_file -encoding ascii
-
 EOF
 
   Specinfra::Runner::run_command(<<-END_COMMAND
   @"
   #{ruby_script}
-  "@ | out-file '#{script_file}' -encoding ascii
+"@ | out-file '#{script_file}' -encoding ascii
   
   END_COMMAND
   )
