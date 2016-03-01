@@ -1,6 +1,10 @@
 $application_name ='<%= @application_name %>'
 # $application_identifying_number ='<%= @application_identifying_number %>'
-$application_handle = get-wmiobject -class win32_product | where-object { $_.Name -match $application_name }
+
+$application_name_regex = New-Object Regex (($application_name -replace '\\[','\\[' -replace '\\]','\\]'  -replace '\\(','\\(' -replace '\\)','\\)'))
+# TODO: Assert
+# $application_name -match $application_name_regex
+$application_handle = get-wmiobject -class win32_product | where-object { $_.Name -match $application_name_regex }
 $application_identifying_number = $application_handle.IdentifyingNumber
 write-output "Application IdentifyingNumber = ${application_identifying_number}"
 $application_handle | get-member -membertype method | select-object -property Name
