@@ -1,0 +1,13 @@
+$application_name ='<%= @application_name %>'
+# $application_identifying_number ='<%= @application_identifying_number %>'
+$application_handle = get-wmiobject -class win32_product | where-object { $_.Name -match $application_name }
+$application_identifying_number = $application_handle.IdentifyingNumber
+write-output "Application IdentifyingNumber = ${application_identifying_number}"
+$application_handle | get-member -membertype method | select-object -property Name
+$application_handle.Uninstall()
+$application_handle = get-wmiobject -class win32_product | where-object { $_.IdentifyingNumber -match $application_identifying_number }
+$status = ($application_handle -eq $null)
+write-output "Uninstalled: ${status}"
+$exitcode = [int]( -not ( $status ))
+write-output "Exit with ${exitcode}"
+exit $exitcode
