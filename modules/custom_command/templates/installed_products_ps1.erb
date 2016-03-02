@@ -1,0 +1,52 @@
+# origin : specinfra (with modifications)
+# https://github.com/mizzy/specinfra/blob/master/lib/specinfra/backend/powershell/support/find_installed_application.ps1
+function FindInstalledApplication {
+  param($application_name,$application_version)
+  # Write-Host ('application_name  = "{0}", application_version={1}' -f $application_name,$application_version)
+  $application_name_regex = New-Object Regex (($application_name -replace '\[','\[' -replace '\]','\]'))
+
+  if ((Get-WmiObject win32_operatingsystem).OSArchitecture -notmatch '64')
+  {
+    $keys = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*')
+    $possible_path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    if (Test-Path $possible_path)
+    {
+      $keys += (Get-ItemProperty $possible_path)
+    }
+  }
+  else
+  {
+    $keys = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
+    $possible_path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    if (Test-Path $possible_path)
+    {
+      $keys += (Get-ItemProperty $possible_path)
+    }
+    $possible_path = 'HKCU:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    if (Test-Path $possible_path)
+    {
+      $keys += (Get-ItemProperty $possible_path)
+    }
+  }
+
+  if ($application_version -eq $null) {
+    @( $keys | Where-Object { $application_name_regex.ismatch($_.DisplayName) -or $application_name_regex.ismatch($_.PSChildName) }).Length -gt 0
+  }
+  else {
+    @( $keys | Where-Object { $application_name_regex.ismatch($_.DisplayName) -or $application_name_regex.ismatch($_.PSChildName) } | Where-Object { $_.DisplayVersion -eq $application_version }).Length -gt 0
+  }
+}
+$application_version = $null
+$application_name ='<%= @application_name %>'
+
+$exitcode = 1
+$ProgressPreference = 'SilentlyContinue'
+try {
+  $status = ((FindInstalledApplication -application_name $application_name -application_version $application_version) -eq $true)
+  if ($status -is [boolean] -and $status) {
+    $exitcode = 0 }
+} catch {
+  Write-Output $_.Exception.Message
+}
+write-output "Exit with ${exitcode}"
+exit $exitcode

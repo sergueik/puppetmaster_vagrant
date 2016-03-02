@@ -18,7 +18,7 @@ define custom_command::exec_uninstall_msiexec_command(
     cwd       => 'c:\windows\temp',
     logoutput => true,
     # declare always
-    # onlyif    => template('custom_command/uninstall_msiexec_ps1.erb'), 
+    onlyif    => template('custom_command/installed_products_ps1.erb'), 
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   } ->
@@ -28,7 +28,7 @@ define custom_command::exec_uninstall_msiexec_command(
     cwd       => 'c:\windows\temp',
     logoutput => true,
     # declare always
-    # onlyif    => template('custom_command/uninstall_msiexec_ps1.erb'), 
+    onlyif    => template('custom_command/installed_products_ps1.erb'), 
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   }
