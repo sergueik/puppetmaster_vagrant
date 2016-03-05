@@ -77,3 +77,10 @@ EOF
   end
 
 end
+
+context 'Junctions and Symlinks - Basic' do
+  link_name = 'splunkuniversalforwarder'
+  describe command(' cmd /c dir /L "c:\Program Files"') do
+    its(:stdout) { should contain "<SYMLINKD>     #{link_name}" }
+  end
+end
