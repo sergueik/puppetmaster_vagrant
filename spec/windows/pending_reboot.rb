@@ -63,4 +63,25 @@ context 'Pending reboots' do
     # }
     #
   end
+  context 'UpdateExeVolatile' do
+    
+    describe command(<<-EOF
+    $status = 0
+    pushd HKLM:
+    if (test-path -path 'SOFTWARE\Microsoft\Updates\UpdateExeVolatile') {
+      $flags = (get-itemProperty -path 'SOFTWARE\Microsoft\Updates\UpdateExeVolatile' -name 'Flags').'Flags'
+      if (($UpdateExeVolatileFlags -eq '1' ) -or ($flags -eq '2' ) ) {  
+        write-output 'Reboot Pending'
+        write-output ('Flags = {0}' -f $flags )
+      }
+    }
+    write-output 'Success'
+  EOF
+  
+  )
+  do 
+    its(:exit_status) { should be 0 }
+    its(:stdout) { should match /Success/i }
+  end
+  end
 end 
