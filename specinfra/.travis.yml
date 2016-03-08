@@ -1,0 +1,19 @@
+language: ruby
+
+rvm:
+  - 1.8.7
+  - 1.9.3
+  - 2.0.0
+  - 2.1.1
+
+before_install:
+  - gem update bundler
+
+script:
+  - bundle exec rake spec
+
+sudo: false
+cache: bundler
+notifications:
+  slack:
+    secure: OhClKo2Gn26gevN773CRR2NAHzmkrzGrVTHsAKm4dgNFqnaBVZGNv2kzjAFsy0CEjZJw3433NtaJdrWpLozdHFA5g7fhOTqB2y7Oh+8PsoS4qWsosKcjtCYt7BmNbEFkGaHKAdQjO/vGFml7tAOk/DtVRnfX6QgVUBjky2ao7XM=
