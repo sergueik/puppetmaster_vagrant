@@ -6,6 +6,7 @@ context 'Pending reboots' do
       it{ should_not have_property('RebootPending')}
     end
   end
+# TODO:
 # 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update'
 # 'AcceleratedInstallRequired' 
   context 'UAS' do
@@ -39,10 +40,24 @@ context 'Pending reboots' do
       its(:stdout) { should match /No Reboot Needed/i }
     end
   end
-
+  # NOTE: unstable fails in first run, passes in subsequent runs
   context 'Reboot watch' do
+    describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate') do
+      it{ should exist}
+    end
     describe windows_registry_key('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Reporting\RebootWatch') do
       it{ should exist}
+    end
+    describe command(<<-EOF
+    $status = 0
+    pushd HKLM:
+    if (test-path -path 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Reporting\\RebootWatch') {
+      write-output 'Found RebootWatch key'
+    }
+    EOF
+    ) do
+      its(:exit_status) { should be 0 }
+      its(:stdout) { should match /Found RebootWatch key/i }
     end
   end
   context 'WindowsUpdate Auto Update' do 
