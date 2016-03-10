@@ -92,7 +92,32 @@ context 'Pending reboots' do
     end
     
   end
+  
   context 'Domain join operation' do
+    # Review commit #https://github.com/sergueik/puppetmaster_vagrant/commit/30ab64bab7b02e2f29cc7ec47b2d7311c484a456 
+    describe command(<<-EOF
+    $registry_key = 'SYSTEM\\CurrentControlSet\\Services\\Netlogon'
+    $subkey_names = (Get-item  -path "HKLM:${registry_key}").GetSubKeyNames()
+    if (($subkeys.snames -contains 'JoinDomain') -or ($subkeys.snames -contains 'AvoidSpnSet')){
+       write-output 'Reboot Pending: Join Domain'
+    } else {
+      write-output 'No Reboot Needed'
+    }
+    $subkeys_full_names = Get-childitem -path "HKLM:${registry_key}" | select-object -expandproperty Name 
+    $subkey_names = $subkeys_full_names | foreach-object { return  ($_ -replace '^.*\\\\', '') }
+    if (($subkeys.snames -contains 'JoinDomain') -or ($subkeys.snames -contains 'AvoidSpnSet')){
+       write-output 'Reboot Pending: Join Domain'
+    } else {
+      write-output 'No Reboot Needed'
+    }
+    EOF
+    ) do
+      its(:exit_status) { should be 0 }
+      its(:stdout) { should match /No Reboot Needed/i }
+    end
+  end
+  
+  context 'Domain join operation Unused' do
     describe command(<<-EOF  
     $HKLM = 2147483650
     $key = 'SYSTEM\\CurrentControlSet\\Services\\Netlogon'
