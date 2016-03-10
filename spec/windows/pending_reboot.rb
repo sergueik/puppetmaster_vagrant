@@ -76,15 +76,12 @@ context 'Pending reboots' do
   context 'Pending ComputerName vs. ActiveComputerName operation' do
     
     describe command(<<-EOF
-    $PendDomJoin = $false 
     pushd HKLM:
     $ActiveComputerName = (get-itemProperty -path 'SYSTEM\\CurrentControlSet\\Control\\ComputerName\\ActiveComputerName' -name 'ComputerName').'ComputerName'
     $ComputerName       = (get-itemProperty -path 'SYSTEM\\CurrentControlSet\\Control\\ComputerName\\ComputerName' -name 'ComputerName').'ComputerName'
 
-    If (($ActiveComputerName -ne $ComputerName) -or $PendDomJoin) {
-
+    if ( $ActiveComputerName -ne $ComputerName ) {
        write-output 'Reboot Pending: computer rename'
-    #  $CompPendRen = $true
     } else {
       write-output 'No Reboot Needed'
     }
@@ -96,9 +93,42 @@ context 'Pending reboots' do
     
   end
   context 'Domain join operation' do
-    # TODO:
-    # $snames = $WMI_Reg.EnumKey($HKLM,"SYSTEM\CurrentControlSet\Services\Netlogon").sNames
-    # $PendDomJoin = ($snames -contains 'JoinDomain') -or ($snames -contains 'AvoidSpnSet')
-    #
+    describe command(<<-EOF  
+    $HKLM = 2147483650
+    $key = 'SYSTEM\\CurrentControlSet\\Services\\Netlogon'
+    # System.Management.ManagementClass#ROOT\\default\\StdRegProv
+    # NOTE: use forward slashes here 
+    $WMI_Reg = [WMIClass]'\\\\.\\root\\default:StdRegprov'
+    $subkeys = $WMI_Reg.EnumKey($HKLM, $key)
+    if (($subkeys.snames -contains 'JoinDomain') -or ($subkeys.snames -contains 'AvoidSpnSet')){
+       write-output 'Reboot Pending: Join Domain'
+    } else {
+      write-output 'No Reboot Needed'
+    }
+    $subkey_names = (Get-item  -path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Netlogon').GetSubKeyNames()
+    $subkeys_full_names = Get-childitem  -path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Netlogon' | select-object -expandproperty Name 
+    $subkey_names = $subkeys_full_names | foreach-object { return  ($_ -replace '^.*\\\\', '') }
+
+    # NOTE: 
+    # if a 'property' used instead of 'expandproperty' in the following 
+    $subkeys_full_names = Get-childitem  -path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Netlogon' | select-object -property Name 
+    # there appears a bogus curly bracket added by -replace  
+    # $subkeys_full_names | foreach-object  { return ($_ -replace '^.*\\\\', '') }
+    # 
+    # Name
+    # ----
+    # HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters
+    # 'Parameters}'
+    # HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Private
+    # 'Private}'
+
+    # HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters
+    # HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Private
+
+    EOF
+    ) do
+      its(:exit_status) { should be 0 }
+      its(:stdout) { should match /No Reboot Needed/i }
+    end
   end
 end 
