@@ -24,14 +24,15 @@ context 'Pending reboots' do
   context 'Shutdown Flags' do
     describe command (<<-EOF
       $reboot_flag = 16
-      # TODO : verify the 0x13 
+      # Pending reboot: 0x13 
+      # After accepting pending reboot: 0x09
       # https://social.technet.microsoft.com/Forums/windows/en-US/aedfc165-5b2c-4f6c-ada8-144b2c7094e6/shutdownflags-registry-entry?forum=w7itprogeneral
       # https://msdn.microsoft.com/en-us/library/windows/desktop/aa376885%28v=vs.85%29.aspx
-      $shutdown_detected = (((Get-Item 'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon').GetValue('ShutdownFlags') -band $reboot_flag -bxor (65535 -bxor $reboot_flag) ) -eq 65535)                              
+      $shutdown_detected = (((Get-Item 'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon').GetValue('ShutdownFlags') -band $reboot_flag -bxor (65535 -bxor $reboot_flag) ) -eq 65535) 
       if ($shutdown_detected ){ 
-        write-output 'No Reboot Needed'
+        write-output 'Pending Reboot detected'
       } else {
-        write-output 'Failure'
+        write-output 'No Reboot Needed'
       }
     EOF
     ) do
