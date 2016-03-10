@@ -2,7 +2,21 @@ require "bundler/gem_tasks"
 begin
   require "rspec/core/rake_task"
   require "octorelease"
+  #  # To inspect last_run_report locally, load puppet libraries
+  #  rubyopt = 'rubygems'    
+  #
+  #  puppet_home = 'c:/Program Files/Puppet Labs/Puppet'
+  #  $LOAD_PATH.insert(0, "#{puppet_home}/facter/lib")
+  #  $LOAD_PATH.insert(0, "#{puppet_home}/hiera/lib")
+  #  $LOAD_PATH.insert(0, "#{puppet_home}/puppet/lib")
+  #  $LOAD_PATH.insert(0, "#{puppet_home}/puppet/sys/ruby/lib")
+  #  $LOAD_PATH.insert(0, "#{puppet_home}/puppet/sys/ruby/lib/ruby/gems")
+  #  # also need to install locally win32-dir, win32-security, win32-process,win32-service 
+  #  require 'yaml'
+  #  require 'puppet' 
+  #  require 'pp'
 rescue LoadError
+
 end
 
 if defined?(RSpec)

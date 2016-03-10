@@ -1,5 +1,17 @@
 class Specinfra::Command::Windows::Base::YamlFile< Specinfra::Command::Windows::Base
   class << self
+    # To inspect last_run_report locally, load puppet libraries
+    puppet_home = 'c:/Program Files/Puppet Labs/Puppet'
+    $LOAD_PATH.insert(0, "#{puppet_home}/facter/lib")
+    $LOAD_PATH.insert(0, "#{puppet_home}/hiera/lib")
+    $LOAD_PATH.insert(0, "#{puppet_home}/puppet/lib")
+    $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby")
+    # need to install locally win32-dir, win32-security, win32-process,win32-service
+    # the other option is to have two YamlFile classes and run Backend::Exec / Backend::Cmd
+    rubyopt = 'rubygems'    
+    require 'yaml'
+    require 'puppet' 
+    require 'pp'
     def check_has_resource(name, resource_name, resource_type)
       cmd = generate_command name, resource_name, resource_type, 'FindResource'
       Backend::PowerShell::Command.new do
