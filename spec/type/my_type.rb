@@ -6,10 +6,6 @@ module Serverspec
   module Type
   
     class MyType < Base
-
-      def valid?
-        # check if the files are valid
-      end
     
       def initialize(file) 
       
@@ -74,7 +70,6 @@ module Serverspec
           status = puppet_transaction_report.status
           result['status'] = status
           puts 'Puppet Agent last run status: ' + status
-          # Do basic smoke test ( temporarily )
           `$stderr.puts YAML.dump(result)
           EOF
           Specinfra::Runner::run_command(<<-END_COMMAND
@@ -88,14 +83,26 @@ module Serverspec
           @data = YAML.load(@content)
         end
       end   
-      def has_key?(key)
-        
+      def has_key?(key)        
         @data.has_key?(key)
       end
 
       def has_key_value?(key, value)        
         @data.has_key?(key) && @data[key] == value
       end
+      
+      def has_resource?(resource)        
+        @data.has_key?('resources') && @data['resources'].include?(resource)
+      end
+
+      def has_summary_resources?(key, value)        
+        @data.has_key?('summary') && @data['summary'].has_key?('resources') && @data['summary']['resources'][key] == value
+      end
+
+      def valid?
+        # check if the files are valid
+      end
+
     end
     def my_type(file)
       MyType.new(file)    
