@@ -1,6 +1,9 @@
 require 'serverspec'
 require 'winrm'
 
+# additional requirements
+require 'type/json_config'
+
 set :backend, :winrm
 set :os, :family => 'windows' 
 
