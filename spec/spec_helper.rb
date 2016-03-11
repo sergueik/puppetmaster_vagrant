@@ -43,3 +43,5 @@ set :ssh_options, options
 # Set PATH
 # set :path, '/sbin:/usr/local/sbin:$PATH'
 
+
+require 'type/my_type'
