@@ -24,7 +24,8 @@ p "Running spectests on #{host}"
 `vagrant up #{host}`
 
 config = Tempfile.new('', Dir.tmpdir)
-`vagrant ssh-config #{host} > #{config.path}`
+config.write(`vagrant ssh-config #{host}`)
+config.close
 
 options = Net::SSH::Config.for(host, [config.path])
 
