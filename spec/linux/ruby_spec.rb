@@ -1,18 +1,7 @@
 require 'spec_helper'
+context 'Splunk UniversalForwarder Product' do
 
 context 'Puppet Last Run Report' do
-  context 'Last Run Report Rotation Basics' do
-    puppet = 'puppet'
-    describe command(<<-EOF
-      $STATEDIR=$(#{puppet} config print statedir)
-      pushd $STATEDIR
-      ls -1 last_run_report.yaml.? | wc -l
-    EOF
-    ) do
-        # this test is not finished. 
-        its(:stdout) { should  match /\d/ }
-    end
-  end
   context 'Execute Puppet Agent embedded Ruby to examine Last Run Report' do
     script_file = '/tmp/test.rb'
     ruby_script = <<-EOF
@@ -76,5 +65,32 @@ context 'Puppet Last Run Report' do
       # TODO: provide example of differently quoted shell script
       Specinfra::Runner::run_command("echo \"#{ruby_script}\" > #{script_file}")
     end
+    
+    context 'First Run' do 
+      lines = [ 
+        'answer: 42',
+        'Status: changed',
+        '"failed" =>0', # resources
+        '"failure"=>0', # events
+      ]
+
+      describe command(<<-EOF
+        export RUBYOPT='rubygems'
+        ruby #{script_file} --run=1 2> /tmp/a.log
+      EOF
+      ) do
+        # NOTE: Ruby may not be available system-wide, but it will be present in the Agent
+        let(:path) { '/opt/puppet/bin:/opt/puppetlabs/bin:/opt/puppetlabs/puppet/bin:/sbin:/bin:/usr/sbin:/usr/bin' } 
+        its(:stderr) { should be_empty }
+        its(:exit_status) {should eq 0 }
+        lines.each do |line| 
+          its(:stdout) do
+            should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
+          end
+        end
+      end
+    end
   end
 end
+
+# /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/transaction/event.rb:36:in `initialize_from_hash': undefined method `[]' for #<Puppet::Transaction::Event:0x00000001f5d088> (NoMethodError)
