@@ -4,7 +4,12 @@ context 'Splunk UniversalForwarder Product' do
 context 'Puppet Last Run Report' do
   context 'Execute Puppet Agent embedded Ruby to examine Last Run Report' do
     script_file = '/tmp/test.rb'
+    puppet_lib_home = '/opt/puppetlabs/puppet/lib/ruby/vendor_ruby/'
     ruby_script = <<-EOF
+
+      \\$LOAD_PATH.insert(0, '#{puppet_lib_home}/facter/lib')
+      \\$LOAD_PATH.insert(0, '#{puppet_lib_home}/hiera/lib')
+      \\$LOAD_PATH.insert(0, '#{puppet_lib_home}/puppet/lib')
       require 'puppet'
       require 'yaml'
       require 'pp'
@@ -93,4 +98,9 @@ context 'Puppet Last Run Report' do
   end
 end
 
-# /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/transaction/event.rb:36:in `initialize_from_hash': undefined method `[]' for #<Puppet::Transaction::Event:0x00000001f5d088> (NoMethodError)
+# /opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/transaction/event.rb:36:in
+# `initialize_from_hash': undefined method `[]' 
+# for #<Puppet::Transaction::Event:0x00000001f5d088> (NoMethodError)
+# ...
+# from from /tmp/test.rb:32:in `<main>'
+# puppet_transaction_report = YAML.load(data)
