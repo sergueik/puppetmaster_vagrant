@@ -1,5 +1,3 @@
-# origin : https://github.com/gnumike/serverspec/tree/master/spec
-# http://arlimus.github.io/articles/custom.resource.types.in.serverspec/  
 require 'yaml'
 
 module Serverspec
@@ -44,7 +42,6 @@ module Serverspec
             result = { 'answer' => 42 }
             
             # Read Puppet Agent last run report
-            # NOTE: escaping special characters to prevent execution by shell 
             puppet_last_run_report = \\`puppet config print 'lastrunreport'\\`.chomp
             if options[:run]
               puppet_last_run_report = puppet_last_run_report + '.' + options[:run].to_s
@@ -64,8 +61,8 @@ module Serverspec
 
             events = metrics['events']
             puts 'Events:'
-            pp events.values
-            # puts events.values.to_yaml
+            result['events'] = { 'events' => events.values }
+            pp events.values 
 
             resources = metrics['resources']
             puts 'Resources:'
@@ -95,10 +92,6 @@ module Serverspec
           EOF
           ).stderr
           @data = YAML.load(@content)
-          # One can avoid creating intermediate Ruby file via:
-          # @content  = Specinfra::Runner::run_command("ruby -e \"#{ruby_script}\" > c:\\windows\\temp\\a.log").stderr
-          # but it does not appear to gain any performance, is harder to debug, and does not work well under Windows
-
         elsif ['windows'].include?(os[:family])
           # Windows related environment spec
           puppet_home = 'C:/Program Files/Puppet Labs/Puppet'
@@ -132,12 +125,19 @@ module Serverspec
           puts 'Puppet Agent resources:'
           pp puppet_resource_statuses.keys
           result['resources'] = puppet_resource_statuses.keys
-          # Get summary
+          
+          events = metrics['events']
+          puts 'Events:'
+          result['events'] = { 'events' => events.values }
+          pp events.values 
+
+          # Summary
           raw_summary = puppet_transaction_report.raw_summary
           puts 'Puppet Agent Last Run Summary:'
           pp raw_summary
           result['summary'] = raw_summary
-          # Get status
+
+          # Status
           status = puppet_transaction_report.status
           result['status'] = status
           puts 'Puppet Agent last run status: ' + status
@@ -180,5 +180,7 @@ module Serverspec
     end
   end
 end
+# origin : https://github.com/gnumike/serverspec/tree/master/spec
+# http://arlimus.github.io/articles/custom.resource.types.in.serverspec/  
 
 include Serverspec::Type

@@ -1,4 +1,5 @@
 require_relative '../windows_spec_helper'
+
 describe 'Puppet Last Run Report  Processing' do
   describe my_type('last_run_report.yaml') do
     it { should have_key('resources') }
