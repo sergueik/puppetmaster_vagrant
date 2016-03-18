@@ -53,3 +53,5 @@ EOF
     its(:exit_status) {should eq 0 }
   end
 end
+
+# $log = get-eventlog -logname 'application' | where-object { $_.'EventID' -eq 1 } |  where-object { $_.'Message' -match 'WhatsUp' } | where-object {$_.entrytype -eq 'Error' } | select-object -first 1;  write-output $log.'Source', $log.'TimeGenerated', $log.'Message'; $log.'entrytype'",
