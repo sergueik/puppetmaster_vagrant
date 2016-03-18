@@ -3,6 +3,7 @@ require_relative '../windows_spec_helper'
 context 'Junctions ans Reparse Points' do
 
   describe command( <<-EOF
+
 # Confirm that a given path is a Windows NT symlink
 function Test-SymLink([string]$test_path) {
   $file_object = Get-Item $test_path -Force -ErrorAction Continue
@@ -84,3 +85,22 @@ context 'Junctions and Symlinks - Basic' do
     its(:stdout) { should contain "<SYMLINKD>     #{link_name}" }
   end
 end
+
+context 'Junctions and Symlinks - Powershell Host 3.0+' do
+  link_name = 'splunkuniversalforwarder'
+  describe command(<<-EOF
+[System.IO.File]::GetAttributes([System.IO.FileInfo]($file_reparsepoint_link))
+# Archive, ReparsePoint, NotContentIndexed
+ [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($regular_directory))
+# Directory, NotContentIndexed
+ [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($directory_reparsepoint_link))
+# Directory, ReparsePoint, NotContentIndexed
+# https://msdn.microsoft.com/en-us/library/system.io.fileattributes%28v=vs.110%29.aspx
+$expected = @([System.IO.FileAttributes]::Archive, [System.IO.FileAttributes]::ReparsePoint,, [System.IO.FileAttributes]::NotContentIndexed ) -join ', '
+#Archive, ReparsePoint, NotContentIndexed
+  EOF
+  ) do
+    its(:exit_status) {should eq 0 }
+  end
+end
+
