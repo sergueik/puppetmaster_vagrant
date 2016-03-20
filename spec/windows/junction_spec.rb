@@ -86,7 +86,8 @@ context 'Junctions and Symlinks - Basic' do
   end
 end
 
-context 'Junctions and Symlinks - Powershell Host 3.0+' do
+# origin: https://raw.githubusercontent.com/guitarrapc/PowerShellUtil/master/SymbolicLink/Get-SynbolicLink.ps1
+context 'Junctions and Symlinks - Powershell calling C# SymbolicLink' do
   link_name = 'splunkuniversalforwarder'
   describe command(<<-EOF
 [System.IO.File]::GetAttributes([System.IO.FileInfo]($file_reparsepoint_link))
