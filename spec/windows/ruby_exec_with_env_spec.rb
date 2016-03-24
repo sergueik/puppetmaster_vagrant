@@ -1,5 +1,3 @@
-require_relative '../windows_spec_helper'
-
 context 'Execute embedded Ruby from Puppet Agent' do
   context 'With Environment' do
     # TODO: http://www.rake.build/fascicles/003-clean-environment.html
@@ -7,10 +5,10 @@ context 'Execute embedded Ruby from Puppet Agent' do
       'answer: 42',
       'status: changed'
     ]
-    puppet_home = 'C:/Program Files/Puppet Labs/Puppet'
-    puppet_statedir = 'C:/ProgramData/PuppetLabs/puppet/var/state'
+    puppet_home = 'C:/Program Files (x86)/Puppet Labs/Puppet'
+    puppet_statedir = 'C:/ProgramData/PuppetLabs/Puppet Enterprise/var/state'
     last_run_report = "#{puppet_statedir}/last_run_report.yaml"
-    rubylib = "#{puppet_home}/facter/lib;#{puppet_home}/hiera/lib;#{puppet_home}/puppet/lib;"
+    rubylib = "#{puppet_home}/facter/lib;#{puppet_home}/hiera/lib;#{puppet_home}/Puppet Enterprise/lib;"
     rubyopt = 'rubygems' 
     script_file = 'c:/windows/temp/test.rb'
     ruby_script = <<-EOF
@@ -50,8 +48,6 @@ pp raw_summary
 # Get status
 status = puppet_transaction_report.status
 puts 'Puppet Agent last run status: ' +  status
-
-"@ | out-file $script_file -encoding ascii
   
   EOF
   
@@ -70,10 +66,10 @@ puts 'Puppet Agent last run status: ' +  status
   iex "ruby.exe '#{script_file}'"
   EOF
   ) do
-      let(:path) { 'C:/Program Files/Puppet Labs/Puppet/sys/ruby/bin' }
+      let(:path) { 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/sys/ruby/bin' }
       # does not work:
       # let(:rubylib) { rubylib }
-      # let(:rubylib) {'C:/Program Files/Puppet Labs/Puppet/facter/lib;C:/Program Files/Puppet Labs/Puppet/hiera/lib;C:/Program Files/Puppet Labs/Puppet/puppet/lib;'}
+      # let(:rubylib) {'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/facter/lib;C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/hiera/lib;C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/puppet/lib;'}
       # let(:rubyopt) { 'rubygems' }
       lines.each do |line| 
         its(:stdout) do
