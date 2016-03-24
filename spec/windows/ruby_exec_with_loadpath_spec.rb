@@ -1,12 +1,19 @@
-require_relative '../windows_spec_helper'
-
 context 'Execute embedded Ruby from Puppet Agent' do
   context 'With LOAD_PATH' do
     lines = [ 
       'answer: 42',
       'status: changed'
     ]
-    puppet_home = 'C:/Program Files/Puppet Labs/Puppet'
+    
+    if os[:arch] == 'i386'
+      # 32bit environment, 
+      # NOTE: also using Puppet Community Edition
+      puppet_home = 'C:/Program Files/Puppet Labs/Puppet Enterprise'
+    else
+      # 64-bt Puppet Enterprise
+      puppet_home = 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise'
+    end
+    # This path is for Puppet 3.2
     puppet_statedir = 'C:/ProgramData/PuppetLabs/puppet/var/state'
     last_run_report = "#{puppet_statedir}/last_run_report.yaml"
     rubylib = "#{puppet_home}/facter/lib;#{puppet_home}/hiera/lib;#{puppet_home}/puppet/lib;"
@@ -65,7 +72,14 @@ EOF
   
   
     describe command("iex \"ruby.exe '#{script_file}'\"") do
+    if os[:arch] == 'i386'
+      # 32bit environment, 
+      # NOTE: also using Puppet Community Edition
       let(:path) { 'C:/Program Files/Puppet Labs/Puppet/sys/ruby/bin' }
+    else
+      # 64-bt Puppet Enterprise
+      let(:path) { 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/sys/ruby/bin' }
+    end
       lines.each do |line| 
         its(:stdout) do
           should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
