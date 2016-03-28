@@ -7,44 +7,37 @@ require_relative  '../windows_spec_helper'
   context 'Servermanager Test' do
     feature_display_name = 'Windows Search Service'
     feature_name = 'Search-Service'
-    describe windows_feature(feature_display_name) do
-      # will fail
-      xit{ should be_installed } 
-    end
 
     describe windows_feature(feature_name) do
-      # will fail
-      xit{ should be_installed }
+      it{ should be_installed.by('powershell') }
     end
 
-  context 'Powershell test 1' do
+  context 'Powershell Test' do
               
-  describe command( <<-EOF
-
-  $ProgressPreference = "SilentlyContinue"
-
-  Import-Module Servermanager
+    describe command( <<-EOF
   
-  get-windowsfeature |
-  where-object {$_.DisplayName -eq '#{feature_display_name}' } |
-  select-object -property 'Installed','DisplayName','Name'|
-  format-list
-  EOF
-  ) do
-
-    its(:stdout) { should  contain 'Installed   : True'}
-    its(:stdout) { should  contain 'DisplayName : Windows Search Service'}
-
+    $ProgressPreference = "SilentlyContinue"
+      Import-Module Servermanager
+      get-windowsfeature |
+      where-object {$_.DisplayName -eq '#{feature_display_name}' } |
+      select-object -property 'Installed','DisplayName','Name' |
+      format-list
+    EOF
+    ) do
+  
+      its(:stdout) { should  contain 'Installed   : True'}
+      its(:stdout) { should  contain 'DisplayName : Windows Search Service'}
+  
+    end
   end
-end
-
-context 'Powershell test 2' do
-              
-  describe command( <<-EOF
-    Import-Module Servermanager | out-null ; $count = @(get-windowsfeature | where-object {$_.DisplayName -eq '#{feature_display_name}' } | where-object {$_.Installed -eq $true } ).count; if ( $count  -eq 0  ) {write-output 'absent'}  else {write-output 'present'} 
-  EOF
-  ) do
-   its(:stdout) { should  contain 'present'}
+  
+  context 'ProgressPreference-ignorant Powershell Test' do
+                
+    describe command( <<-EOF
+      Import-Module Servermanager | out-null ; $count = @(get-windowsfeature | where-object {$_.DisplayName -eq '#{feature_display_name}' } | where-object {$_.Installed -eq $true } ).count; if ( $count  -eq 0  ) {write-output 'absent'}  else {write-output 'present'} 
+    EOF
+    ) do
+     its(:stdout) { should  contain 'present'}
+    end
   end
-end
 end  
