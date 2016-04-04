@@ -62,6 +62,49 @@ end
 
 VAGRANTFILE_API_VERSION = '2'
 
+centos_bootstrap = <<-EOF
+
+yum list puppet > /dev/null
+if [ "$?" == "0" ]
+then
+   echo "Puppet $(puppet --version) is already installed"
+else
+   if true
+   then
+      # echo 'Install Puppet'
+      yum -y install puppet
+      # echo "Install Puppet 3.1 server"
+      # yum -y install ntp
+      # chkconfig ntpd on
+      # service ntpd start
+      # setenforce 0
+      # rpm -ivh 'http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm'
+      # yum -y install puppet-server
+   else
+      # this installs Puppet 3.8.1 and Ruby 2.4.7. This is very slow
+      cd /tmp
+      wget 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
+      rpm -Uvh 'epel-release-6-8.noarch.rpm'
+      yum -y update
+      yum -y groupinstall 'Development Tools'
+      yum -y install libxslt-devel libyaml-devel libxml2-devel zlib-devel openssl-devel libyaml-devel readline-devel curl-devel openssl-devel git
+      yum -y install rubygems
+      gem install puppet --no-ri --no-rdoc --version 3.8.1 --bindir /usr/bin
+   fi
+fi
+
+
+EOF
+
+windows_bootstrap = <<-EOF
+
+& echo "Running Facter"
+& facter.bat hostname
+& echo "Installing puppetlabs-powershell from Puppet Forge"
+& puppet.bat module install puppetlabs-powershell
+
+EOF
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Configure Proxy authentication
 
@@ -144,36 +187,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         when /centos/
           if config_vm_newbox
             # Use shell provisioner to install latest puppet
-            config.vm.provision 'shell', inline: <<-EOF
-yum list puppet > /dev/null
-if [ "$?" == "0" ]
-then
-   echo "Puppet $(puppet --version) is already installed"
-else
-   if true
-   then
-      # echo 'Install Puppet'
-      yum -y install puppet
-      # echo "Install Puppet 3.1 server"
-      # yum -y install ntp
-      # chkconfig ntpd on
-      # service ntpd start
-      # setenforce 0
-      # rpm -ivh 'http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm'
-      # yum -y install puppet-server
-   else
-      # this installs Puppet 3.8.1 and Ruby 2.4.7. This is very slow
-      cd /tmp
-      wget 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
-      rpm -Uvh 'epel-release-6-8.noarch.rpm'
-      yum -y update
-      yum -y groupinstall 'Development Tools'
-      yum -y install libxslt-devel libyaml-devel libxml2-devel zlib-devel openssl-devel libyaml-devel readline-devel curl-devel openssl-devel git
-      yum -y install rubygems
-      gem install puppet --no-ri --no-rdoc --version 3.8.1 --bindir /usr/bin
-   fi
-fi
-EOF
+            config.vm.provision 'shell', inline: centos_bootstrap
           end
           puppet_options = if debug then '--verbose --modulepath /vagrant/modules --pluginsync --debug' else '--verbose --modulepath /vagrant/modules --pluginsync' end 
           config.vm.provision :puppet do |puppet|
@@ -214,12 +228,7 @@ EOF
             # The splatting operator '@' cannot be used to reference variables in an expression. 
             # '@puppet' can be used only as an 
             # argument to a command. To reference variables in an expression use '$puppet'.
-            config.vm.provision :shell, inline: <<-END_SCRIPT2
-& echo "Running Facter"
-& facter.bat hostname
-& echo "Installing puppetlabs-powershell from Puppet Forge"
-& puppet.bat module install puppetlabs-powershell
-        END_SCRIPT2
+            config.vm.provision :shell, :inline => windows_bootstrap
           end
           # Use chef provisioner
           # config.vm.provision :chef_solo do |chef|
