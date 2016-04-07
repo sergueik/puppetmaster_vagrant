@@ -1,10 +1,30 @@
 # https://raw.githubusercontent.com/ripienaar/puppet-reportprint/master/report_print.rb
 # the repository consists of a single file
 # that can be included inline 
-# 
-$report_print = <<EOF
-#!/usr/bin/env ruby
+# this is done in this spec.
 
+require_relative '../windows_spec_helper'
+context 'Execute embedded Ruby from Puppet Agent' do
+  context 'With Environment' do
+    # TODO: http://www.rake.build/fascicles/003-clean-environment.html
+    lines = [ 
+      'answer: 42',
+      'status: changed'
+    ]
+    
+    puppet_home_folder = 'Puppet Enterprise' # varies between PE  and Puppet community 
+    puppet_home = 'C:/Program Files (x86)/Puppet Labs/' + puppet_home_folder
+    puppet_statedir = 'C:/ProgramData/PuppetLabs/puppet/var/state'
+    last_run_report = "#{puppet_statedir}/last_run_report.yaml"
+    rubylib = "#{puppet_home}/facter/lib;#{puppet_home}/hiera/lib;#{puppet_home}/puppet/lib;"
+    rubyopt = 'rubygems' 
+    script_file = 'c:/windows/temp/test.rb'
+    ruby_script = <<-'EOF'
+$LOAD_PATH.insert(0, 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/facter/lib')
+$LOAD_PATH.insert(0, 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/hiera/lib')
+$LOAD_PATH.insert(0, 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/puppet/lib')
+
+require 'yaml'
 require 'puppet'
 require 'pp'
 require 'optparse'
@@ -24,6 +44,8 @@ class ::Numeric
     end
   end
 end
+
+
 
 def load_report(path)
   YAML.load_file(path)
@@ -45,199 +67,12 @@ def resources_of_type(report, type)
   report_resources(report).select{|r_name, r| r.resource_type == type}
 end
 
-def color(code, msg, reset=false)
-  colors = {
-    :red       => "[31m",
-    :green     => "[32m",
-    :yellow    => "[33m",
-    :cyan      => "[36m",
-    :bold      => "[1m",
-    :underline => "[4m",
-    :reset     => "[0m",
-  }
-
-  colors.merge!(
-    :changed   => colors[:yellow],
-    :unchanged => colors[:green],
-    :failed    => colors[:red],
-  )
-
-  return "%s%s%s%s" % [colors.fetch(code, ""), msg, colors[:reset], reset ? colors.fetch(reset, "") : ""] if @options[:color]
-
-  msg
-end
 
 def print_report_summary(report)
-  puts color(:bold, "Report for %s in environment %s at %s" % [color(:underline, report.host, :bold), color(:underline, report.environment, :bold), color(:underline, report.time, :bold)])
-  puts
-  puts "             Report File: %s" % @options[:report]
-  puts "             Report Kind: %s" % report.kind
-  puts "          Puppet Version: %s" % report.puppet_version
-  puts "           Report Format: %s" % report.report_format
-  puts "   Configuration Version: %s" % report.configuration_version
-  puts "                    UUID: %s" % report.transaction_uuid rescue nil
-  puts "               Log Lines: %s %s" % [report.logs.size, @options[:logs] ? "" : "(show with --log)"]
-
-  puts
+# TODO : escaping
+  puts "Report for " + report.host +  " in environment " + report.environment
 end
 
-def print_report_motd(report, motd_path)
-  motd = []
-  header = "# #{report.host} #"
-  headline = "#" * header.size
-  motd << headline << header << headline << ''
-
-  motd << "Last puppet run happened at %s in environment %s." % [report.time, report.environment]
-
-  motd << "The result of this puppet run was %s." % color(report.status.to_sym, report.status)
-
-  if report.metrics.empty? or report.metrics["events"].nil?
-    motd << 'No Report Metrics.'
-  else
-    motd << 'Events:'
-    report.metrics["events"].values.each do |metric|
-      i, m, v = metric
-      motd.last << ' ' << [m, v].join(': ') << '.'
-    end
-  end
-
-  motd << '' << ''
-
-  File.write(motd_path, motd.join("\n"))
-end
-
-def print_report_metrics(report)
-  if report.metrics.empty?
-    puts color(:bold, "No Report Metrics")
-    puts
-    return
-  end
-
-  puts color(:bold, "Report Metrics:")
-  puts
-
-  padding = report.metrics.map{|i, m| m.values}.flatten(1).map{|i, m, v| m.size}.sort[-1] + 6
-
-  report.metrics.sort_by{|i, m| m.label}.each do |i, metric|
-    puts "   %s:" % metric.label
-
-    metric.values.sort_by{|j, m, v| v}.reverse.each do |j, m, v|
-      puts "%#{padding}s: %s" % [m, v]
-    end
-
-    puts
-  end
-
-  puts
-end
-
-def print_summary_by_type(report)
-  summary = {}
-
-  report_resources(report).each do |resource|
-    if resource[0] =~ /^(.+?)\[/
-      name = $1
-
-      summary[name] ||= 0
-      summary[name] += 1
-    else
-      STDERR.puts "ERROR: Cannot parse type %s" % resource[0]
-    end
-  end
-
-  puts color(:bold, "Resources by resource type:")
-  puts
-
-  summary.sort_by{|k, v| v}.reverse.each do |type, count|
-    puts "   %4d %s" % [count, type]
-  end
-
-  puts
-end
-
-def print_slow_resources(report, number=20)
-  if report.report_format < 4
-    puts color(:red, "   Cannot print slow resources for report versions %d" % report.report_format)
-    puts
-    return
-  end
-
-  resources = resource_by_eval_time(report)
-
-  number = resources.size if resources.size < number
-
-  puts color(:bold, "Slowest %d resources by evaluation time:" % number)
-  puts
-
-  resources[(0-number)..-1].reverse.each do |r_name, r|
-    puts "   %7.2f %s" % [r.evaluation_time, r_name]
-  end
-
-  puts
-end
-
-def print_logs(report)
-  puts color(:bold, "%d Log lines:" % report.logs.size)
-  puts
-
-  report.logs.each do |log|
-    puts "   %s" % log.to_report
-  end
-
-  puts
-end
-
-def print_summary_by_containment_path(report, number=20)
-  resources = resource_with_evaluation_time(report)
-
-  containment = Hash.new(0)
-
-  resources.each do |r_name, r|
-    r.containment_path.each do |containment_path|
-      #if containment_path !~ /\[/
-        containment[containment_path] += r.evaluation_time
-      #end
-    end
-  end
-
-  number = containment.size if containment.size < number
-
-  puts color(:bold, "%d most time consuming containment" % number)
-  puts
-
-  containment.sort_by{|c, s| s}[(0-number)..-1].reverse.each do |c_name, evaluation_time|
-    puts "   %7.2f %s" % [evaluation_time, c_name]
-  end
-
-  puts
-end
-
-def print_files(report, number=20)
-  resources = resources_of_type(report, "File")
-
-  files = {}
-
-  resources.each do |r_name, r|
-    if r_name =~ /^File\[(.+)\]$/
-      file = $1
-
-      if File.exist?(file) && File.readable?(file) && File.file?(file) && !File.symlink?(file)
-        files[file] = File.size?(file) || 0
-      end
-    end
-  end
-
-  number = files.size if files.size < number
-
-  puts color(:bold, "%d largest managed files" % number) + " (only those with full path as resource name that are readable)"
-  puts
-
-  files.sort_by{|f, s| s}[(0-number)..-1].reverse.each do |f_name, size|
-    puts "   %9s %s" % [size.bytes_to_human, f_name]
-  end
-
-  puts
-end
 
 def initialize_puppet
   require 'puppet/util/run_mode'
@@ -291,13 +126,38 @@ if @options[:motd]
   print_report_motd(report, @options[:motd_path])
 else
   print_report_summary(report)
-  print_report_metrics(report)
-  print_summary_by_type(report)
-  print_slow_resources(report, @options[:count])
-  print_files(report, @options[:count])
-  print_summary_by_containment_path(report, @options[:count])
-  print_logs(report) if @options[:logs]
+#  print_report_metrics(report)
+#  print_summary_by_type(report)
+#  print_slow_resources(report, @options[:count])
+# print_files(report, @options[:count])
+# print_summary_by_containment_path(report, @options[:count])
+# print_logs(report) if @options[:logs]
 end
-
+ 
 EOF
-
+ 
+  Specinfra::Runner::run_command(<<-END_COMMAND
+  $script_file = '#{script_file}'
+  @'
+#{ruby_script}
+'@ | out-file $script_file -encoding ascii
+  
+  END_COMMAND
+  )
+  
+  
+  describe command(<<-EOF
+  $env:RUBYLIB="#{rubylib}"
+  $env:RUBYOPT="#{rubyopt}"
+  iex "ruby.exe '#{script_file}' '--report' #{last_run_report}"
+  EOF
+  ) do
+      let(:path) { 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/sys/ruby/bin' }
+      lines.each do |line| 
+        its(:stdout) do
+          should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
+        end
+      end
+    end
+  end
+end
