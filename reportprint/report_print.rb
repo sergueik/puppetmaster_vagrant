@@ -1,5 +1,4 @@
-#!/usr/bin/env ruby
-
+require 'yaml'
 require 'puppet'
 require 'pp'
 require 'optparse'
@@ -40,84 +39,34 @@ def resources_of_type(report, type)
   report_resources(report).select{|r_name, r| r.resource_type == type}
 end
 
-def color(code, msg, reset=false)
-  colors = {
-    :red       => "[31m",
-    :green     => "[32m",
-    :yellow    => "[33m",
-    :cyan      => "[36m",
-    :bold      => "[1m",
-    :underline => "[4m",
-    :reset     => "[0m",
-  }
-
-  colors.merge!(
-    :changed   => colors[:yellow],
-    :unchanged => colors[:green],
-    :failed    => colors[:red],
-  )
-
-  return "%s%s%s%s" % [colors.fetch(code, ""), msg, colors[:reset], reset ? colors.fetch(reset, "") : ""] if @options[:color]
-
-  msg
-end
-
 def print_report_summary(report)
-  puts color(:bold, "Report for %s in environment %s at %s" % [color(:underline, report.host, :bold), color(:underline, report.environment, :bold), color(:underline, report.time, :bold)])
-  puts
-  puts "             Report File: %s" % @options[:report]
-  puts "             Report Kind: %s" % report.kind
-  puts "          Puppet Version: %s" % report.puppet_version
-  puts "           Report Format: %s" % report.report_format
-  puts "   Configuration Version: %s" % report.configuration_version
-  puts "                    UUID: %s" % report.transaction_uuid rescue nil
-  puts "               Log Lines: %s %s" % [report.logs.size, @options[:logs] ? "" : "(show with --log)"]
-
-  puts
-end
-
-def print_report_motd(report, motd_path)
-  motd = []
-  header = "# #{report.host} #"
-  headline = "#" * header.size
-  motd << headline << header << headline << ''
-
-  motd << "Last puppet run happened at %s in environment %s." % [report.time, report.environment]
-
-  motd << "The result of this puppet run was %s." % color(report.status.to_sym, report.status)
-
-  if report.metrics.empty? or report.metrics["events"].nil?
-    motd << 'No Report Metrics.'
-  else
-    motd << 'Events:'
-    report.metrics["events"].values.each do |metric|
-      i, m, v = metric
-      motd.last << ' ' << [m, v].join(': ') << '.'
-    end
-  end
-
-  motd << '' << ''
-
-  File.write(motd_path, motd.join("\n"))
+  puts sprintf( "Report for %s in environment %s at %s", report.host, report.environment,  report.time )
+  puts sprintf( "             Report File: %s" ,  @options[:report] )
+  puts sprintf( "             Report Kind: %s" , report.kind )
+  puts sprintf( "          Puppet Version: %s" , report.puppet_version )
+  puts sprintf( "           Report Format: %s" , report.report_format )
+  puts sprintf( "   Configuration Version: %s" , report.configuration_version)
+  puts sprintf( "                    UUID: %s" , report.transaction_uuid )
+  puts sprintf( "               Log Lines: %s %s" , report.logs.size, @options[:logs] ? "" : "(show with --log)" )
 end
 
 def print_report_metrics(report)
   if report.metrics.empty?
-    puts color(:bold, "No Report Metrics")
+    puts "No Report Metrics"
     puts
     return
   end
 
-  puts color(:bold, "Report Metrics:")
+  puts "Report Metrics:"
   puts
 
   padding = report.metrics.map{|i, m| m.values}.flatten(1).map{|i, m, v| m.size}.sort[-1] + 6
 
   report.metrics.sort_by{|i, m| m.label}.each do |i, metric|
-    puts "   %s:" % metric.label
+    puts sprintf( "   %s:" , metric.label )
 
     metric.values.sort_by{|j, m, v| v}.reverse.each do |j, m, v|
-      puts "%#{padding}s: %s" % [m, v]
+      puts sprintf( "%20s: %s", m, v )
     end
 
     puts
@@ -140,11 +89,11 @@ def print_summary_by_type(report)
     end
   end
 
-  puts color(:bold, "Resources by resource type:")
+  puts "Resources by resource type:"
   puts
 
   summary.sort_by{|k, v| v}.reverse.each do |type, count|
-    puts "   %4d %s" % [count, type]
+    puts sprintf( "   %4d %s" , count, type )
   end
 
   puts
@@ -152,7 +101,7 @@ end
 
 def print_slow_resources(report, number=20)
   if report.report_format < 4
-    puts color(:red, "   Cannot print slow resources for report versions %d" % report.report_format)
+    puts sprintf( "   Cannot print slow resources for report versions %d" , report.report_format  )
     puts
     return
   end
@@ -161,22 +110,22 @@ def print_slow_resources(report, number=20)
 
   number = resources.size if resources.size < number
 
-  puts color(:bold, "Slowest %d resources by evaluation time:" % number)
+  puts sprintf( "Slowest %d resources by evaluation time:" , number )
   puts
 
   resources[(0-number)..-1].reverse.each do |r_name, r|
-    puts "   %7.2f %s" % [r.evaluation_time, r_name]
+    puts sprintf( "   %7.2f %s" , r.evaluation_time, r_name )
   end
 
   puts
 end
 
 def print_logs(report)
-  puts color(:bold, "%d Log lines:" % report.logs.size)
+  puts sprintf( "%d Log lines:" , report.logs.size )
   puts
 
   report.logs.each do |log|
-    puts "   %s" % log.to_report
+    puts sprintf( "   %s" , log.to_report )
   end
 
   puts
@@ -197,11 +146,11 @@ def print_summary_by_containment_path(report, number=20)
 
   number = containment.size if containment.size < number
 
-  puts color(:bold, "%d most time consuming containment" % number)
+  puts sprintf( "%d most time consuming containment" , number )
   puts
 
   containment.sort_by{|c, s| s}[(0-number)..-1].reverse.each do |c_name, evaluation_time|
-    puts "   %7.2f %s" % [evaluation_time, c_name]
+    puts sprintf(  "   %7.2f %s" , evaluation_time, c_name )
   end
 
   puts
@@ -224,11 +173,12 @@ def print_files(report, number=20)
 
   number = files.size if files.size < number
 
-  puts color(:bold, "%d largest managed files" % number) + " (only those with full path as resource name that are readable)"
+  puts sprintf( "%d largest managed files" , number )
+  puts "only those with full path as resource name that are readable"
   puts
 
   files.sort_by{|f, s| s}[(0-number)..-1].reverse.each do |f_name, size|
-    puts "   %9s %s" % [size.bytes_to_human, f_name]
+    puts sprintf(  "   %9s %s" , size.bytes_to_human, f_name )
   end
 
   puts
