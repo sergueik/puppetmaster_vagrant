@@ -3,11 +3,11 @@ require_relative '../windows_spec_helper'
 context 'Execute Chunk-Written Ruby script from Puppet Agent' do
   context 'With Environment' do
     lines = [ 
-      'answer: 42'
+      'answer: 42',
+      'Report for windows7 in environment production'
     ]
-    
-    puppet_home_folder = 'Puppet Enterprise' # varies between PE  and Puppet community 
-    puppet_home = 'C:/Program Files (x86)/Puppet Labs/' + puppet_home_folder
+    puppet_home_folder = 'Puppet' # varies between PE  and Puppet community 
+    puppet_home = 'C:/Program Files/Puppet Labs/' + puppet_home_folder
     puppet_statedir = 'C:/ProgramData/PuppetLabs/puppet/var/state'
     last_run_report = "#{puppet_statedir}/last_run_report.yaml"
     rubylibs = [
@@ -73,23 +73,25 @@ end
     
 EOF
 	)
-# chunk 3 is lost  
+# some chunk is lost  
   ruby_script_chunks.push(<<-'EOF'
 # 3  
 def print_report_summary(report)
-  puts "Report for %s in environment %s at %s" % [ report.host, report.environment,  report.time]
-  puts
-  puts "             Report File: %s" % @options[:report]
-  puts "             Report Kind: %s" % report.kind
-  puts "          Puppet Version: %s" % report.puppet_version
-  puts "           Report Format: %s" % report.report_format
-  puts "   Configuration Version: %s" % report.configuration_version
-  puts "                    UUID: %s" % report.transaction_uuid rescue nil
-  puts "               Log Lines: %s %s" % [report.logs.size, @options[:logs] ? "" : "(show with --log)"]
-
-  puts
-
+  puts sprintf( "Report for %s in environment %s at %s", report.host, report.environment,  report.time )
+  puts sprintf( "             Report File: %s" ,  @options[:report] )
+  puts sprintf( "             Report Kind: %s" , report.kind )
+  puts sprintf( "          Puppet Version: %s" , report.puppet_version )
+  puts sprintf( "           Report Format: %s" , report.report_format )
+  puts sprintf( "   Configuration Version: %s" , report.configuration_version)
+  puts sprintf( "                    UUID: %s" , report.transaction_uuid )
+  puts sprintf( "               Log Lines: %s %s" , report.logs.size, @options[:logs] ? "" : "(show with --log)" )
 end  
+EOF
+	)
+# some chunk is lost  
+  ruby_script_chunks.push(<<-'EOF'
+# 4  
+
 def print_report_metrics(report)
   if report.metrics.empty?
     puts "No Report Metrics"
@@ -103,10 +105,10 @@ def print_report_metrics(report)
   padding = report.metrics.map{|i, m| m.values}.flatten(1).map{|i, m, v| m.size}.sort[-1] + 6
 
   report.metrics.sort_by{|i, m| m.label}.each do |i, metric|
-    puts "   %s:" % metric.label
+    puts sprintf( "   %s:" , metric.label )
 
     metric.values.sort_by{|j, m, v| v}.reverse.each do |j, m, v|
-      puts "%#{padding}s: %s" % [m, v]
+      puts sprintf( "%20s: %s", m, v )
     end
 
     puts
@@ -115,6 +117,11 @@ def print_report_metrics(report)
   puts
 end
 
+EOF
+	)
+# some chunk is lost  
+  ruby_script_chunks.push(<<-'EOF'
+# 5  
 def print_summary_by_type(report)
   summary = {}
 
@@ -133,15 +140,20 @@ def print_summary_by_type(report)
   puts
 
   summary.sort_by{|k, v| v}.reverse.each do |type, count|
-    puts "   %4d %s" % [count, type]
+    puts sprintf( "   %4d %s" , count, type )
   end
 
   puts
 end
+EOF
+	)
+# some chunk is lost  
+  ruby_script_chunks.push(<<-'EOF'
+# 6  
 
 def print_slow_resources(report, number=20)
   if report.report_format < 4
-    puts "   Cannot print slow resources for report versions %d" % report.report_format 
+    puts sprintf( "   Cannot print slow resources for report versions %d" , report.report_format  )
     puts
     return
   end
@@ -150,26 +162,31 @@ def print_slow_resources(report, number=20)
 
   number = resources.size if resources.size < number
 
-  puts "Slowest %d resources by evaluation time:" % number
+  puts sprintf( "Slowest %d resources by evaluation time:" , number )
   puts
 
   resources[(0-number)..-1].reverse.each do |r_name, r|
-    puts "   %7.2f %s" % [r.evaluation_time, r_name]
+    puts sprintf( "   %7.2f %s" , r.evaluation_time, r_name )
   end
 
   puts
 end
 
 def print_logs(report)
-  puts "%d Log lines:" % report.logs.size 
+  puts sprintf( "%d Log lines:" , report.logs.size ) 
   puts
 
   report.logs.each do |log|
-    puts "   %s" % log.to_report
+    puts sprintf( "   %s" , log.to_report )
   end
 
   puts
 end
+EOF
+	)
+# some chunk is lost  
+  ruby_script_chunks.push(<<-'EOF'
+# 7  
 
 def print_summary_by_containment_path(report, number=20)
   resources = resource_with_evaluation_time(report)
@@ -186,15 +203,20 @@ def print_summary_by_containment_path(report, number=20)
 
   number = containment.size if containment.size < number
 
-  puts "%d most time consuming containment" % number
+  puts sprintf( "%d most time consuming containment" , number )
   puts
 
   containment.sort_by{|c, s| s}[(0-number)..-1].reverse.each do |c_name, evaluation_time|
-    puts "   %7.2f %s" % [evaluation_time, c_name]
+    puts sprintf(  "   %7.2f %s" , evaluation_time, c_name )
   end
 
   puts
 end
+EOF
+	)
+# some chunk is lost  
+  ruby_script_chunks.push(<<-'EOF'
+# 8  
 
 def print_files(report, number=20)
   resources = resources_of_type(report, "File")
@@ -213,12 +235,12 @@ def print_files(report, number=20)
 
   number = files.size if files.size < number
 
-  puts "%d largest managed files" % number 
+  puts sprintf( "%d largest managed files" , number ) 
   puts "only those with full path as resource name that are readable"
   puts
 
   files.sort_by{|f, s| s}[(0-number)..-1].reverse.each do |f_name, size|
-    puts "   %9s %s" % [size.bytes_to_human, f_name]
+    puts sprintf(  "   %9s %s" , size.bytes_to_human, f_name )
   end
 
   puts
@@ -227,7 +249,7 @@ end
 EOF
 	)
   ruby_script_chunks.push( <<-'EOF'
-# 4
+# 9
 def initialize_puppet
   require 'puppet/util/run_mode'
   Puppet.settings.preferred_run_mode = :agent
@@ -294,7 +316,8 @@ EOF
 	)
   
 	puts 'chunks: ' + ruby_script_chunks.size.to_s
-  
+  # ruby_script_chunks.each { |line| puts line} 
+  puts ruby_script_chunks[2]
   ruby_script_chunks.each do |ruby_script|
   Specinfra::Runner::run_command(<<-END_COMMAND
   $script_file = '#{script_file}'
