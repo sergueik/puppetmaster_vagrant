@@ -3,6 +3,34 @@ require 'puppet'
 require 'pp'
 require 'optparse'
 
+require 'puppet/util/run_mode'
+Puppet.settings.preferred_run_mode = :agent
+Puppet.settings.initialize_global_settings([])
+Puppet.settings.initialize_app_defaults(Puppet::Settings.app_defaults_for_run_mode(Puppet.run_mode))
+
+opt = OptionParser.new
+@options = {
+  :logs      => false,
+  :count     => 20,
+  :report    => Puppet[:lastrunreport]}
+
+opt.on('--logs', 'Show logs') do |val|
+  @options[:logs] = val
+end
+
+opt.on('--count [RESOURCES]', Integer, 'Number of resources to show evaluation times for') do |val|
+  @options[:count] = val
+end
+
+opt.on('--report [REPORT]', 'Path to the Puppet last run report') do |val|
+  abort(sprintf('Could not find report %s' , val)) unless File.readable?(val)
+  @options[:report] = val
+end
+
+
+opt.parse!
+
+
 class ::Numeric
   def bytes_to_human
     # Prevent nonsense values being returned for fractions
@@ -40,27 +68,28 @@ def resources_of_type(report, type)
 end
 
 def print_report_summary(report)
+  colwitdh =  24
   puts sprintf( "Report for %s in environment %s at %s", report.host, report.environment,  report.time )
-  puts sprintf( "             Report File: %s" ,  @options[:report] )
-  puts sprintf( "             Report Kind: %s" , report.kind )
-  puts sprintf( "          Puppet Version: %s" , report.puppet_version )
-  puts sprintf( "           Report Format: %s" , report.report_format )
-  puts sprintf( "   Configuration Version: %s" , report.configuration_version)
-  puts sprintf( "                    UUID: %s" , report.transaction_uuid )
-  puts sprintf( "               Log Lines: %s %s" , report.logs.size, @options[:logs] ? "" : "(show with --log)" )
+  {
+    'Report File' => @options[:report],
+    'Report Kind' => report.kind ,
+    'Puppet Version' => report.puppet_version,
+    'Report Format' => report.report_format,
+    'Configuration Version' => report.configuration_version,
+    'UUID' => report.transaction_uuid,
+    'Log Lines' => report.logs.size
+  }.each do |key,value|
+    puts sprintf( "%s: %s" ,  key.rjust(colwitdh), value  )
+  end
 end
 
 def print_report_metrics(report)
   if report.metrics.empty?
-    puts "No Report Metrics"
-    puts
+    puts "No Report Metrics\n"
     return
   end
 
-  puts "Report Metrics:"
-  puts
-
-  padding = report.metrics.map{|i, m| m.values}.flatten(1).map{|i, m, v| m.size}.sort[-1] + 6
+  puts "Report Metrics:\n"
 
   report.metrics.sort_by{|i, m| m.label}.each do |i, metric|
     puts sprintf( "   %s:" , metric.label )
@@ -85,13 +114,11 @@ def print_summary_by_type(report)
       summary[name] ||= 0
       summary[name] += 1
     else
-      STDERR.puts "ERROR: Cannot parse type %s" % resource[0]
+      STDERR.puts sprintf("ERROR: Cannot parse type %s" , resource[0])
     end
   end
 
-  puts "Resources by resource type:"
-  puts
-
+  puts "Resources by resource type:\n"
   summary.sort_by{|k, v| v}.reverse.each do |type, count|
     puts sprintf( "   %4d %s" , count, type )
   end
@@ -101,17 +128,13 @@ end
 
 def print_slow_resources(report, number=20)
   if report.report_format < 4
-    puts sprintf( "   Cannot print slow resources for report versions %d" , report.report_format  )
-    puts
+    puts sprintf( "   Cannot print slow resources for report versions %d\n" , report.report_format  )
     return
   end
 
   resources = resource_by_eval_time(report)
-
   number = resources.size if resources.size < number
-
-  puts sprintf( "Slowest %d resources by evaluation time:" , number )
-  puts
+  puts sprintf( "Slowest %d resources by evaluation time:\n" , number )
 
   resources[(0-number)..-1].reverse.each do |r_name, r|
     puts sprintf( "   %7.2f %s" , r.evaluation_time, r_name )
@@ -121,9 +144,7 @@ def print_slow_resources(report, number=20)
 end
 
 def print_logs(report)
-  puts sprintf( "%d Log lines:" , report.logs.size )
-  puts
-
+  puts sprintf( "%d Log lines:\n" , report.logs.size )
   report.logs.each do |log|
     puts sprintf( "   %s" , log.to_report )
   end
@@ -184,62 +205,11 @@ def print_files(report, number=20)
   puts
 end
 
-def initialize_puppet
-  require 'puppet/util/run_mode'
-  Puppet.settings.preferred_run_mode = :agent
-  Puppet.settings.initialize_global_settings([])
-  Puppet.settings.initialize_app_defaults(Puppet::Settings.app_defaults_for_run_mode(Puppet.run_mode))
-end
-
-initialize_puppet
-
-opt = OptionParser.new
-
-@options = {
-  :logs      => false,
-  :motd      => false,
-  :motd_path => '/etc/motd',
-  :count     => 20,
-  :report    => Puppet[:lastrunreport],
-  :color     => STDOUT.tty?}
-
-opt.on("--logs", "Show logs") do |val|
-  @options[:logs] = val
-end
-
-opt.on("--motd", "Produce an output suitable for MOTD") do |val|
-  @options[:motd] = val
-end
-
-opt.on("--motd-path [PATH]", "Path to the MOTD file to overwrite with the --motd option") do |val|
-  @options[:motd_path] = val
-end
-
-opt.on("--count [RESOURCES]", Integer, "Number of resources to show evaluation times for") do |val|
-  @options[:count] = val
-end
-
-opt.on("--report [REPORT]", "Path to the Puppet last run report") do |val|
-  abort("Could not find report %s" % val) unless File.readable?(val)
-  @options[:report] = val
-end
-
-opt.on("--[no-]color", "Colorize the report") do |val|
-  @options[:color] = val
-end
-
-opt.parse!
-
 report = load_report(@options[:report])
-
-if @options[:motd]
-  print_report_motd(report, @options[:motd_path])
-else
-  print_report_summary(report)
-  print_report_metrics(report)
-  print_summary_by_type(report)
-  print_slow_resources(report, @options[:count])
-  print_files(report, @options[:count])
-  print_summary_by_containment_path(report, @options[:count])
-  print_logs(report) if @options[:logs]
-end
+print_report_summary(report)
+print_report_metrics(report)
+print_summary_by_type(report)
+print_slow_resources(report, @options[:count])
+print_files(report, @options[:count])
+print_summary_by_containment_path(report, @options[:count])
+print_logs(report) if @options[:logs]
