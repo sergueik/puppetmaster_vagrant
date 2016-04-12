@@ -1,0 +1,4 @@
+Info
+----
+
+Reusable Puppet facts
