@@ -11,7 +11,7 @@ fact_name = 'rpm_package_version'
 # Code of the fact
 def rpm_package_get_version
   package_name = 'package_name'
-  qx /rpm -qa --queryformat '%{V}.%{R}.0' '#{package_name}'/
+  Facter::Util::Resolution.exec("rpm -qa --queryformat '%{V}.%{R}.0' '#{package_name}'")
 end
 Facter.add(fact_name) do
   confine :kernel => :linux
