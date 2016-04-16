@@ -1,54 +1,42 @@
-#!/usr/bin/env ruby
+# This is snapshot of serverspec-generated  Ruby script that is tailored 
+# to run on the Windows node provisioned by Puppet Enterprise 3.2
+# see `spec/windows/ruby_powershell_spec.rb` for alternative discovery
+
+# Puppet 3.8, Windows 7, 32-bit
+$LOAD_PATH.insert(0, 'C:/Program Files/Puppet Labs/Puppet/facter/lib')
+$LOAD_PATH.insert(0, 'C:/Program Files/Puppet Labs/Puppet/hiera/lib')
+$LOAD_PATH.insert(0, 'C:/Program Files/Puppet Labs/Puppet/puppet/lib')
+
+# Puppet Enterprise 3.2, Windows Server 2008, 64-bit
+# $LOAD_PATH.insert(0, 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/facter/lib')
+# $LOAD_PATH.insert(0, 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/hiera/lib')
+# $LOAD_PATH.insert(0, 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/puppet/lib')
+
+require 'yaml'
+require 'puppet'
+require 'pp'
+
+# custom fact 
 
 require 'facter'
 
-# Name of this fact.
-fact_name = 'venafi_version'
-# code of the fact ...
+# name of the fact.
+fact_name = 'fact_name'
 
-if Facter.value(:kernel) == 'windows'
-  venafi_exe = 'C:/Program Files/Venafi/Platform/VAgent.exe'
-  if File.exists?(venafi_exe)
-    venafi_exe = "\"#{venafi_exe}\"" if Facter.value(:kernel) == 'windows'
-    Facter.add(fact_name) do
-      setcode do
+# code of the fact 
+# frequent choices are
+# 'Win32API' , 'digest/md5' , 'ffi', 
+# NOTE - separate checks required with 64 bit binaries
+# file
+# To run:  
+# "c:\Program Files (x86)\Puppet Labs\Puppet Enterprise\sys\ruby\bin\ruby.exe" test.rb
 
-      	version = nil
-
-        if output = Facter::Util::Resolution.exec("#{venafi_exe} -h")
-        
-          version_line = output.split("\n").first       
-          versions = version_line.scan /\bv\d+\.\d+\.[\d\-]+\b/
-          version = versions[0].gsub( /\-\d+/, '.0').gsub('v','')
-          version 
-     
-      	end
-      end
-    end
-  end
-else
-  def xml_get_version
-    version_file = '/opt/venafi/agent/agent_product.xml'
-    return nil if not File.readable?(version_file)
-    begin
-      # ini file
-      # version = File.read(version_file).each_line.grep(/^Version=/i)[0].chomp.split('=')[1]
-      version_line = File.read(version_file).each_line.grep(/Product name="Venafi Agent"/).grep(/version/)[0]
-      # xml config file
-      version = version_line.scan(/[\d\.]+/)    
-    rescue
-      return nil
-    end
-    return version
-  end
-  def rpm_get_version
-    package_name = 'vagent'
-    qx /rpm -qa --queryformat '%{V}.%{R}.0' '#{package_name}'/
-  end
-  Facter.add(fact_name) do
-    setcode do
-      # rpm_get_version
-      xml_get_version
-    end
+Facter.add(fact_name) do
+  setcode do
+    'sample fact value'
   end
 end
+# end of custom fact
+
+# should not fail
+puts Facter.value(fact_name.to_sym)

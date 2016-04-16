@@ -1,8 +1,15 @@
 Info
 ----
+Reusable Puppet facts. Skeleton Ruby script to test the facter code snippets on Windows target is provided.
+```
+PATH=%PATH%;"c:\Program Files\Puppet Labs\Puppet\sys\ruby\bin"
+ruby fact_wrapper.rb
+sample fact value
+```
 
-Reusable Puppet facts
-
+Note
+----
+On Windows platform facter role is often reduced to dispatching the fact generation to `WMI`, `Powershell`, `netsh` and similar utilities which have their own metadata schemas
 
 See also
 --------
