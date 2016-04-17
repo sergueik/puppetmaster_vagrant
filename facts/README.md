@@ -9,7 +9,7 @@ sample fact value
 
 Note
 ----
-On Windows platform facter role is often reduced to dispatching the fact generation to `WMI`, `Powershell`, `netsh` and similar utilities which have their own metadata schemas
+Windows facts are returned by running the appropriate WMI query and in general  facter role is often reduced to dispatching the fact derivatinon to `WMI`, `Powershell`, `netsh` and similar utilities which have their own metadata schemas
 
 See also
 --------

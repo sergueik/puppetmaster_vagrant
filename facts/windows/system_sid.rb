@@ -24,4 +24,3 @@ Facter.add('windows_sid') do
     end
   end
 end
-
