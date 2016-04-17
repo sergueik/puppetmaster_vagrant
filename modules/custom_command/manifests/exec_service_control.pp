@@ -17,7 +17,7 @@ define custom_command::exec_service_control(
     command   => template('custom_command/stop_service_ps1.erb'),
     cwd       => 'c:\windows\temp',
     logoutput => true,
-    onlyif    => template("custom_command/query_is_running_service_ps1.erb"), 
+    onlyif    => template('custom_command/query_is_running_service_ps1.erb'), 
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   } ->
@@ -26,7 +26,7 @@ define custom_command::exec_service_control(
     command   =>  template('custom_command/delete_service_ps1.erb'),
     cwd       => 'c:\windows\temp',
     logoutput => true,
-    onlyif    => template("custom_command/query_service_ps1.erb"),
+    onlyif    => template('custom_command/query_service_ps1.erb'),
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
   }  
