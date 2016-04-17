@@ -11,8 +11,8 @@ wmi_field = 'Caption'
 # 'VideoModeDescription', 'CurrentVerticalResolution', 'CurrentHorizontalResolution'
 # also available but not always written by driver vendor
 Facter.add(fact_name) do
-  confine :operatingsystem => :windows
   setcode do
+    confine :operatingsystem => :windows
     result = ''
     require 'win32ole'
     wmi = WIN32OLE.connect(wmi_namespace)
@@ -21,7 +21,7 @@ Facter.add(fact_name) do
       result = o.send(wmi_field.to_sym)
       break
     end
-      puts "#{wmi_field} = '#{result}'" 
-    return result
+    puts "#{wmi_field} = '#{result}'" 
+    result
   end
 end
