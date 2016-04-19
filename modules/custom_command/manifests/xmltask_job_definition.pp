@@ -20,8 +20,28 @@ define windows_xmltask::job_definition(
   $taskname = regsubst($title, '[$/\\|:, ]', '_', 'G')
   # NOTE: use backslashes in generate tool path 
   $task_year = regsubst(regsubst(generate('c:\windows\system32\cmd.exe', '/c date /t'), '^.+/', ''), '\n', '')
-  # NOTE: scheduled_tast idempotency issue -  trigger/start_date accepts only MM/DD/yyyy but returns YYYY-MM-DD
-  scheduled_task {
+
+  $scheduled_task_name = 'SampleJob'
+  $filename = "c:\Windows\Tasks\${scheduled_task_name}.job"
+  
+  $generate_noop = generate('C:\windows\system32\WindowsPowerShell\v1.0\powershell.exe', "\$filename = '${filename}'; \$status = (test-path -path \$filename -ErrorAction SilentlyContinue ); write-output \$status.toString()" )
+  case $generate_noop {
+    /true/: {
+      $noop = true
+    }
+    /false/: {
+      $noop = false
+    }
+    default: {
+      $noop = false
+    }
+  }
+  # default provider 
+  # NOTE: scheduled_task resource has an idempotency issue -  trigger only accepts MM/DD/YYYY format for start_date but reads the data written in the actual task as YYYY-MM-DD
+  # {'every' => '1', 'on' => ['mon'], 'schedule' => 'weekely', 'start_date' => '2016-1-1', 'start_time' => '23:0:00' }
+  # to
+  # ['day_of_week' => ['mon'], 'schedule' => 'weekly' , 'start_date' => '01/01/2016', start_time => '23:00:00']
+  scheduled_task { $scheduled_task_name:
     ensure => present,
     enabled => true,
     command => 'c:/windows/system32/windowspowershell/v1.0/powershell.exe',
@@ -31,13 +51,10 @@ define windows_xmltask::job_definition(
       day_of_week => ['mon',],
       start_time => '23:00:00',
       start_date => "01/01/${task_year}"
-      # will report trigger changed 
-      # {'every' => '1', 'on' => ['mon'], 'schedule' => 'weekely', 'start_date' => '2016-1-1', 'start_time' => '23:0:00' }
-      # to
-      # ['day_of_week' => 'mon', 'schedule' => 'weekly' , 'start_date' => '01/01/2016', start_time => '23:00:00']
-    }
+    },
+    noop => $noop,
   } 
-  
+  # custom provider  
   # generate job definition from template
   file { "c:\\windows\\temp\\${script}.xml":
     ensure             => file,
