@@ -6,7 +6,7 @@
 
 require 'facter'
 
-fact_name = 'file_check'
+fact_name = 'cert_check'
 filename = 'c:\Windows\Tasks\SampleJob.job'
 
 if Facter.value(:kernel) == 'windows'
@@ -15,8 +15,9 @@ if Facter.value(:kernel) == 'windows'
     exe = "\"#{exe}\"" if Facter.value(:kernel) == 'windows'
     Facter.add(fact_name) do
       setcode do
+        cert_thumbprint = 'A88FD9BDAA06BC0F3C491BA51E231BE35F8D1AD5'       
       	status = nil
-      	script = "$filename = '#{filename}'; $status = (test-path -path $filename -ErrorAction SilentlyContinue ); write-output $status.toString()" 
+      	script = "$cert_thumbprint = '#{cert_thumbprint}'; $certpath= 'LocalMachine\\TrustedPublisher'; pushd cert: ; cd '\\'; cd $certpath; $status = ((get-childitem -ErrorAction SilentlyContinue | where-object { $_.thumbprint -eq $cert_thumbprint }  ).count -ne 0 ); write-output $status.toString()" 
         # extract vendor application version from the help screen.
         if output = Facter::Util::Resolution.exec("#{exe} #{script}")
           status = output.split("\n").first
