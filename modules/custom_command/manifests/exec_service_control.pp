@@ -29,5 +29,21 @@ define custom_command::exec_service_control(
     onlyif    => template('custom_command/query_service_ps1.erb'),
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
-  }  
+  }
+  # example: 
+  # Verify MSDTC is enabled and running under the correct account
+
+  # Even if MSTDC is already installed, the
+  # msdtc.exe -install 
+  # command resets the service to run using the "NT Authority\NetworkServices" account.
+  $required_service_acount = 'NT AUTHORITY\NetworkService'
+  
+  exec { "${title}_msdtc_install":
+    command   =>'&  "c:/windows/system32/msdtc.exe" "-install"',
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+    logoutput => true,
+    unless    => "\$required_service_acount = '${required_service_acount}' ; \$registry_path  =  '/SYSTEM/CurrentControlSet/Services/MSDTC'; pushd HKLM: ; cd \$registry_path; \$account = get-itemproperty -name 'ObjectName'  -path \$registry_path ; \$status = (\$account.objectname -eq  \$required_service_acount  ); write-output \$status.toString() ; popd ; \$exitcode = [int]( -not (\$status)) ; exit \$exitcode;",
+  }
+
 }
