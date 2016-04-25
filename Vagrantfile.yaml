@@ -11,7 +11,7 @@
   :config_vm_newbox: true
   :config_vm_default: windows
   :config_vm_box: windows7
-  :config_vm_box_name: vagrant-win7-ie10-updated.box
+  :config_vm_box_name: trusty-server-cloudimg-i386-vagrant-disk1.box
 
 # ubuntu 14.04 x64
 'trusty64':
@@ -63,7 +63,7 @@
   :box_memory: 1024
   :box_cpus: 1
   :box_gui: true
-  :config_vm_newbox: true
+  :config_vm_newbox: false
   :config_vm_default: windows
   :config_vm_box: windows7
   :config_vm_box_name: vagrant-win7-ie10-updated.box
@@ -71,13 +71,13 @@
 
  # https://atlas.hashicorp.com/ferventcoder/boxes/win7pro-x64-nocm-lite
 'windows7_nocm':
-  :box_name: windows7
+  :box_name: windows7_nocm
   :box_memory: 1024
   :box_cpus: 1
   :box_gui: true
   :config_vm_newbox: true
   :config_vm_default: windows
-  :config_vm_box: windows7
+  :config_vm_box: windows7_nocm
   :config_vm_box_name: win7pro-x64-nocm-lite.box
 
 # never used,
@@ -112,7 +112,6 @@
   :config_vm_box: centos
   :config_vm_box_name: centos_6-5_i386.box
 
-# Warning: Puppet not preinstalled
 'centos65_x64':
   :box_name: centos65_x64
   :box_memory: 512
@@ -134,11 +133,12 @@
   :config_vm_box: centos
   :config_vm_box_name: centos-6.6-x86_64.box
 
+# Openstack base test. Warning: Puppet not preinstalled
 # centos 7 with puppet 3.x 
 'centos7_x64':
   :box_name: centos7_x64
-  :box_memory: 512
-  :box_cpus: 1
+  :box_memory: 8192
+  :box_cpus: 4
   :box_gui: false
   :config_vm_newbox: false
   :config_vm_default: linux
@@ -146,7 +146,7 @@
   :config_vm_box_name: centos-7.0-x86_64.box
 
 # ubuntu 12.04 x64 with Puppet v3.1.1.
--# NOTE: non-standard path to ruby: /opt/ruby/bin/ruby
+# NOTE: non-standard path to ruby: /opt/ruby/bin/ruby
 'precise64':
   :box_name: precise64
   :box_memory: 512
@@ -156,3 +156,13 @@
   :config_vm_default: linux
   :config_vm_box: ubuntu
   :config_vm_box_name: ubuntu-server-12042-x64-vbox4210.box
+
+'windows2008_ssh':
+  :box_name: windows2008_ssh
+  :box_memory: 1024
+  :box_cpus: 1
+  :box_gui: true
+  :config_vm_newbox: false
+  :config_vm_default: windows
+  :config_vm_box: windows2008_ssh
+  :config_vm_box_name: win2008-x64-ssh.box

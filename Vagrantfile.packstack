@@ -1,0 +1,96 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+require 'pp'
+
+HOSTNAME = 'packstack.dev'
+
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+# overrides the setting in Vagrantfile.yaml
+
+box_name = 'centos7_x64'
+vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
+if File.exists?(vagrantfile_yaml)
+  puts "Loading '#{vagrantfile_yaml}'"
+  config_yaml = YAML::load_file( vagrantfile_yaml )
+  if box_name !~ /\S/
+    box_config = config_yaml[config_yaml[:boot]]
+    box_name = box_config[:box_name]
+  else
+    box_config = config_yaml[box_name]  
+  end
+  box_cpus = box_config[:box_cpus].to_i
+  box_memory = box_config[:box_memory].to_i
+  pp box_config
+end
+
+VAGRANTFILE_API_VERSION = '2'
+
+BOX_URL = "https://github.com/2creatives/vagrant-centos/releases/download/v6.5.3/centos65-x86_64-20140116.box"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.box = box_name
+  config.vm.hostname = HOSTNAME
+  config_vm_default = box_config[:config_vm_default]
+  config_vm_box_name = box_config[:config_vm_box_name]
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  puts "Configuring '#{config.vm.box}'"
+
+  config.vm.network 'public_network'
+
+  config.vm.provider 'virtualbox' do |vb|
+    vb.customize ['modifyvm', :id, '--cpus', box_cpus ]
+    vb.customize ['modifyvm', :id, '--memory', box_memory ]
+    vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
+    vb.customize ["modifyvm", :id, "--pae", "on"]
+    vb.customize ['modifyvm', :id, '--ioapic', 'on'] 
+    vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
+    vb.customize ['modifyvm', :id, '--audio', 'none']
+    vb.customize ['modifyvm', :id, '--usb', 'off']
+  end
+
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+    # nfs doesnt work on bridged networks
+    #  config.cache.synced_folder_opts = {
+    #    type: :nfs,
+    #    mount_options: ['rw', 'vers=3', 'tcp', 'nolock']
+    #  }
+  end
+
+  $script = <<SCRIPT
+    # packstack sshes back into the vagrant instance with this key
+    [ ! -f ~/.ssh/id_rsa ] && sudo ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+    sudo cat ~/.ssh/id_rsa.pub > ~/.ssh/authorized_keys
+
+    # iptables exits with 6 if this file doesn't exist and the packstack recipes fail
+    sudo touch /etc/sysconfig/iptables
+
+    sudo yum update -y
+
+    sudo yum install -y http://rdo.fedorapeople.org/rdo-release.rpm
+    sudo yum install -y openstack-packstack vim
+    sudo yum install "openstack-heat-*" python-heatclient
+    # if [ $INSTALL ]
+    #then
+      sudo packstack --allinone                     \
+                     --os-heat-install=y            \
+                     --os-heat-cloudwatch-install=y \
+                     --os-heat-cfn-install=y
+  
+      sudo sed -i 's/^virt_type=kvm/virt_type=qemu/g' /etc/nova/nova.conf
+      sudo service openstack-nova-compute restart
+     
+      date | sudo tee /etc/vagrant_provisioned_at
+    #fi 
+SCRIPT
+
+  config.vm.provision "shell", inline: $script
+end
