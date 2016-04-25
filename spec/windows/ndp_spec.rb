@@ -55,7 +55,7 @@ public class GetCLRVersion {
     end
   end
   context 'Powershell Stackoverflow example' do
-    # NOTE: only processes Full
+    
     describe command(<<-END_COMMAND
 # http://stackoverflow.com/questions/3487265/powershell-script-to-return-versions-of-net-framework-on-a-machine
 $versions = 
@@ -63,6 +63,7 @@ Get-ChildItem 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP' -Recurse |
 Get-ItemProperty -Name Version,Release -ErrorAction SilentlyContinue |
 # Where { $_.PSChildName -match '^(?!S)\p{L}'} |
 # Where-Object { -not ($_.PSChildName -match 'Setup|^\d+$') } |
+# Select Full
 Where-Object { $_.PSChildName -match 'Full' } |
 Select PSChildName, Version, Release, @{
   name = 'Product'
