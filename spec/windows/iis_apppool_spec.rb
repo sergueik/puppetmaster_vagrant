@@ -3,7 +3,7 @@ require_relative '../windows_spec_helper'
 context 'IIS App Pools' do
 
   describe command( <<-EOF
-  [Xml]$raw_data = invoke-expression -command 'C:\\Windows\\system32\\inetsrv\appcmd.exe list apppool /xml';
+  [Xml]$raw_data = invoke-expression -command 'C:\\Windows\\system32\\inetsrv\\appcmd.exe list apppool /xml';
 
   # puppet module also uses appcmd.exe
   # https://github.com/simondean/puppet-iis/tree/master/lib/puppet/type
@@ -19,13 +19,22 @@ context 'IIS App Pools' do
   $raw_data.SelectNodes("/appcmd//*[@state = 'Started']")|foreach-object { 
     $name = $_.'APPPOOL.NAME';
     # skip pre-installed 
+
     if ((-not ( $name -match 'DefaultAppPool' )) `
       -and  `
-      (-not ($name -match 'Classic .NET AppPool')) `
+      (-not ($name -match '^.NET v4.5 Classic$')) `
       -and  `
-      (-not ($name -match 'ASP.NET v4.0 Classic')) `
+      (-not ($name -match '^.NET v4.5$')) `
       -and  `
-      (-not ($name -match 'ASP.NET v4.0')) `
+      (-not ($name -match '^.NET v2.0 Classic$')) `
+      -and  `
+      (-not ($name -match '^.NET v2.0$')) `
+      -and  `
+      (-not ($name -match '^Classic .NET AppPool$')) `
+      -and  `
+      (-not ($name -match '^ASP.NET v4.0 Classic$')) `
+      -and  `
+      (-not ($name -match '^ASP.NET v4.0$')) `
       ) {
       $row = New-Object PSObject   
       $row | add-member Noteproperty Name            ('{0}' -f $name             )
@@ -38,16 +47,16 @@ context 'IIS App Pools' do
     }
   }
 
-  $grid | format-table -autosize
+  $grid | format-list
 
   EOF
   ) do
     its(:exit_status) {should eq 0 }
     expected_console_output = <<-EOF
-    Name           : test
-    PipelineMode   : integrated
-    RuntimeVersion : 
-    Row            : 
+      Name           : my-test-app
+      PipelineMode   : Integrated
+      RuntimeVersion : v4.0
+      Row            : 0
     EOF
     expected_console_output.split(/\n/).each do |line|
       line.gsub!(/^\s+/,'').gsub!(/\s+$/,'')
