@@ -2,13 +2,56 @@ require_relative '../windows_spec_helper'
 
 context 'IIS App Pools' do
 
+  before(:all) do
+    app_pool_name = 'my-test-app'
+    app_pool_dotnet_version = 'v4.0'
+    iis_app_name = 'my-test-app.test'
+    directory_path = 'D:\SomeFolder'
+    port = 8000
+    Specinfra::Runner::run_command(<<-END_COMMAND
+    
+    # origin : http://geekswithblogs.net/QuandaryPhase/archive/2013/02/24/create-iis-app-pool-and-site-with-windows-powershell.aspx
+
+    Import-Module WebAdministration
+
+    $iisAppPoolName = '#{app_pool_name}'
+    $iisAppPoolDotNetVersion = '#{app_pool_dotnet_version}'
+    $iisAppName = '#{iis_app_name}'
+    $directoryPath = '#{directory_path}'
+    $port = #{port}
+
+    mkdir $directoryPath
+    # navigate to the app pools root
+    pushd IIS:\\AppPools\\
+
+    #check if the app pool exists
+    if (!(Test-Path $iisAppPoolName -pathType container))
+    {
+        #create the app pool
+        $appPool = New-Item $iisAppPoolName
+        $appPool | Set-ItemProperty -Name 'managedRuntimeVersion' -Value $iisAppPoolDotNetVersion
+    }
+    popd
+
+    # navigate to the sites root
+    pushd IIS:\\Sites\\
+
+    # check if the site exists
+    if (Test-Path $iisAppName -pathType container)
+    {
+        return
+    }
+    # create the site
+    $iisApp = New-Item $iisAppName -bindings @{protocol='http';bindingInformation=":${port}:" + $iisAppName} -physicalPath $directoryPath
+    # create the app pool
+    $iisApp | Set-ItemProperty -Name 'applicationPool' -Value $iisAppPoolName
+    popd    
+    END_COMMAND
+    )
+  end
+  
   describe command( <<-EOF
   [Xml]$raw_data = invoke-expression -command 'C:\\Windows\\system32\\inetsrv\\appcmd.exe list apppool /xml';
-
-  # puppet module also uses appcmd.exe
-  # https://github.com/simondean/puppet-iis/tree/master/lib/puppet/type
-  # puppet module uses WebAdministration 
-  # https://github.com/puppet-community/puppet-iis/blob/master/manifests/manage_app_pool.pp
  
   $raw_data.SelectNodes("/appcmd//*[@state = 'Started']") | out-null
 
@@ -64,3 +107,4 @@ context 'IIS App Pools' do
     end
   end
 end
+  
