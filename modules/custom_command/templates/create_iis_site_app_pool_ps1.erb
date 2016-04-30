@@ -1,0 +1,36 @@
+# origin : http://geekswithblogs.net/QuandaryPhase/archive/2013/02/24/create-iis-app-pool-and-site-with-windows-powershell.aspx
+
+Import-Module WebAdministration
+
+$iisAppPoolName = '@app_pool_name'
+$iisAppPoolDotNetVersion = '@app_pool_dotnet_version'
+$iisAppName = '@iis_app_name'
+$directoryPath = '@directory_path'
+$port = @port
+
+mkdir $directoryPath
+# navigate to the app pools root
+pushd IIS:\AppPools\
+
+#check if the app pool exists
+if (!(Test-Path $iisAppPoolName -pathType container))
+{
+    #create the app pool
+    $appPool = New-Item $iisAppPoolName
+    $appPool | Set-ItemProperty -Name 'managedRuntimeVersion' -Value $iisAppPoolDotNetVersion
+}
+popd
+
+# navigate to the sites root
+pushd IIS:\Sites\
+
+# check if the site exists
+if (Test-Path $iisAppName -pathType container)
+{
+    return
+}
+# create the site
+$iisApp = New-Item $iisAppName -bindings @{protocol='http';bindingInformation=":${port}:" + $iisAppName} -physicalPath $directoryPath
+# create the app pool
+$iisApp | Set-ItemProperty -Name 'applicationPool' -Value $iisAppPoolName
+popd    
