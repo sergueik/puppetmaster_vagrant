@@ -1,0 +1,28 @@
+$expected_app_pool_name = '@app_pool_name'
+
+[Xml]$raw_data = invoke-expression -command 'C:\Windows\system32\inetsrv\appcmd.exe list apppool /xml';
+
+$raw_data.SelectNodes("/appcmd//*[@state = 'Started']") | out-null
+
+$cnt  = 0
+$grid = @()
+
+$raw_data.SelectNodes("/appcmd//*[@state = 'Started']")|foreach-object { 
+  $name = $_.'APPPOOL.NAME';
+  # skip pre-installed 
+
+  if ( $name -match $expected_app_pool_name )  {
+    $row = New-Object PSObject   
+    $row | add-member Noteproperty Name            ('{0}' -f $name             )
+    $row | add-member Noteproperty PipelineMode    ('{0}' -f $_.PipelineMode   )
+    $row | add-member Noteproperty RuntimeVersion  ('{0}' -f $_.RuntimeVersion )
+    $row | add-member Noteproperty Row             ('{0}' -f $cnt              )
+    $cnt ++
+    $grid  += $row
+    $row = $null 
+  }
+}
+
+$exitcode = [int]( -not ( $grid.Count  == 1 ))
+write-output "will exit with ${exitcode}"
+exit $exitcode
