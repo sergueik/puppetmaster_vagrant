@@ -7,7 +7,7 @@ define custom_command::exec_check_path_environment(
   $debug = false
 )   { 
   # Validate install parameters.
-  validate_string($application_path)
+  validate_absolute_path($application_path)
   validate_bool($debug)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
   $template = 'check_path_environment'
