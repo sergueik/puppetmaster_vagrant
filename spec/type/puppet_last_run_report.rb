@@ -182,5 +182,5 @@ module Serverspec
 end
 # origin : https://github.com/gnumike/serverspec/tree/master/spec
 # http://arlimus.github.io/articles/custom.resource.types.in.serverspec/  
-
+# https://github.com/uroesch/serverspec_plus
 include Serverspec::Type
