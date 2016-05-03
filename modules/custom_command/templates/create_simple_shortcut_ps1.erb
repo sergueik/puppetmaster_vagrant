@@ -1,10 +1,15 @@
 $link_basename = '<%=@link_basename -%>'
 $link_pathname = "<%=@link_pathname -%>"
-$link_path = ('{0}\{1}.lnk' -f $link_pathname, $link_basename  )
+$destination_link_path = ('{0}\{1}.lnk' -f $link_pathname, $link_basename  )
 $target_path = '<%=@target_path -%>'
+# origin: https://github.com/gangstanthony/PowerShell/blob/master/Create-Shortcut.ps1
+function Release-Ref ($ref) {
+  ([System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$ref) -gt 0)
+  [System.GC]::Collect()
+  [System.GC]::WaitForPendingFinalizers()
+}
 $o = new-object -ComObject 'WScript.Shell'
-$s = $o.CreateShortcut($link_path)
-$s.TargetPath = $target_path 
+$s = $o.CreateShortcut($destination_link_path)
 $s.TargetPath = $target_path 
 <% if @target_args -%>
 $s.Arguments = '<%=@target_args -%>'
@@ -20,3 +25,4 @@ $s.WorkingDirectory = "<%= @target_workdir %>";
 <% end -%>
 write-output 'Save shortcut'
 $s.Save()
+$o, $s | foreach-object {$null = Release-Ref $_}

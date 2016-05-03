@@ -21,6 +21,6 @@ if ($current_path_environment.ToLower().Contains($application_path.ToLower())) {
   [environment]::SetEnvironmentVariable('PATH',($new_path_array -join $path_separator),[System.EnvironmentVariableTarget]::Machine)
 
 } else {
-  Write-Host ('MACHINE PATH environment doew not include "{0}". ' -f $application_path)
+  Write-Host ('MACHINE PATH environment does not include "{0}". ' -f $application_path)
 }
 
