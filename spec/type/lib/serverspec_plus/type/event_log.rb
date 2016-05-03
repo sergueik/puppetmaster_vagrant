@@ -7,7 +7,7 @@ module Serverspec # :nodoc:
         super
         @user      = args[:user]
         @directory = args[:directory]
-        @base_cmd  = << EOF        
+        @base_cmd  = <<-EOF        
         $event_log_id = '#{event_log_id}'
         $log_name = '#{log_name}'
         if ($log_name -eq '' ) { 
@@ -21,7 +21,7 @@ module Serverspec # :nodoc:
         select-object -first 1 |
         select-object -property Message |
         ConvertTo-Json -Depth 10
-        EOF  
+        EOF
       end
       
       # TODO: change to meaninfgul parameters 
