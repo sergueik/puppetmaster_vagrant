@@ -1,6 +1,3 @@
-# This is snapshot of serverspec-generated  Ruby script that is tailored 
-# to run on the Windows node provisioned by Puppet Enterprise 3.2
-# see `spec/windows/ruby_powershell_spec.rb` for alternative discovery
 
 # Puppet 3.8, Windows 7, 32-bit
 $LOAD_PATH.insert(0, 'C:/Program Files/Puppet Labs/Puppet/facter/lib')
@@ -16,20 +13,20 @@ require 'yaml'
 require 'puppet'
 require 'pp'
 
-# custom fact 
-
 require 'facter'
 
-# name of the fact.
+# name of the custom fact
 fact_name = 'fact_name'
 
-# code of the fact 
+# code of the fact to follow
+
 # frequent choices are
-# 'Win32API' , 'digest/md5' , 'ffi', 
+# 'Win32API' , 'digest/md5' , 'ffi', 'powershell'
 # NOTE - separate checks required with 64 bit binaries
 # file
 # To run:  
 # "c:\Program Files (x86)\Puppet Labs\Puppet Enterprise\sys\ruby\bin\ruby.exe" test.rb
+# see `spec/windows/ruby_powershell_spec.rb` for alternative discovery
 
 Facter.add(fact_name) do
   setcode do
@@ -38,5 +35,4 @@ Facter.add(fact_name) do
 end
 # end of custom fact
 
-# should not fail
-puts Facter.value(fact_name.to_sym)
+puts "#{fact_name} = '#{Facter.value(fact_name.to_sym)}'"
