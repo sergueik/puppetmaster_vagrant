@@ -2,11 +2,10 @@
 # and libraries in vendor_ruby and already in $LOAD_PATH
 # otherwise use find the appropriate Pupppet's Ruby home
 
-# PUPPET_HOME='/opt/puppetlabs/puppet'
-puppet_lib_home='/opt/puppetlabs/puppet'
-# PUPPET_HOME='/usr/share/ruby/vendor_ruby'
-puppet_lib_home='/usr/share/ruby/vendor_ruby'
-$LOAD_PATH.insert(0, '#{puppet_lib_home}/facter/lib')
+puppet_lib_home='/usr/share/ruby/vendor_ruby' # for atlas 
+puppet_lib_home='/opt/puppetlabs/puppet/lib/ruby/vendor_ruby' # for enterprise
+
+$LOAD_PATH.insert(0, '#{puppet_lib_home}/facter/lib') # absent for enterprise 
 $LOAD_PATH.insert(0, '#{puppet_lib_home}/hiera/lib')
 $LOAD_PATH.insert(0, '#{puppet_lib_home}/puppet/lib')
 
@@ -30,3 +29,4 @@ end
 # end of custom fact
 
 puts "#{fact_name} = '#{Facter.value(fact_name.to_sym)}'"
+
