@@ -1,0 +1,96 @@
+################################################################################
+#
+# Test centos64 server
+#
+################################################################################
+
+# ip address $1:interface  expected: ipaddress/mask
+@test : ip_address eth0 : 192.168.176.131/24
+@test : ip_address eth0 : 192.168.176.130/24
+@test : ip_address eth1 : 192.168.176.131/24
+@test : ip_address      : 192.168.176.130/24
+
+# hostname expected: host name
+@test : hostname : centos64.dandelion
+@test : hostname : centos64
+
+# /etc/hosts entry $1:hostname expected:ip address
+@test : hosts centos64 : 192.168.176.131
+@test : hosts centos64 : 192.168.176.130
+@test : hosts centos65 : 192.168.176.131
+@test : hosts          : 192.168.176.131
+
+# directory $1:directory expected: owner,group,permission
+@test : directory ./test    : root,root,755
+@test : directory ./test    : user,root,755
+@test : directory ./test    : root,user,755
+@test : directory ./test    : root,user,644
+@test : directory ./text    : root,root,755
+@test : directory ./LICENSE : root,root,755
+@test : directory           : root,root,755
+
+# file $1:file expected: owner,group,permission
+@test : file ./test/a.txt : root,root,644
+@test : file ./test/a.txt : user,root,644
+@test : file ./test/a.txt : root,user,644
+@test : file ./test/a.txt : root,root,640
+@test : file ./test/b.txt : root,root,644
+@test : file ./test       : root,root,644
+@test : file              : root,root,644
+
+# file $1:file expected: owner,group,permission
+@test : symbolic_link ./bin/s4 : ../libexec/main.sh
+@test : symbolic_link ./bin/s4 : ../libexec/a.sh
+@test : symbolic_link ./bin    : ../libexec/main.sh
+@test : symbolic_link          : ../libexec/main.sh
+
+# user $1:username expected: uid,gid,home,shell
+@test : user mysql  : 497,497,/var/lib/mysql,/sbin/nologin
+@test : user mysql  : 490,497,/var/lib/mysql,/sbin/nologin
+@test : user mysql  : 497,490,/var/lib/mysql,/sbin/nologin
+@test : user mysql  : 497,497,/home/mysql,/sbin/nologin
+@test : user mysql  : 497,497,/var/lib/mysql,/bin/bash
+@test : user mysqq  : 497,497,/var/lib/mysql,/sbin/nologin
+@test : user mysqld : 497,497,/var/lib/mysql,/sbin/nologin
+@test : user        : 497,497,/var/lib/mysql,/sbin/nologin
+
+# group $1:groupname expected: gid
+@test : group mysql  : 497
+@test : group mysql  : 496
+@test : group mysqq  : 497
+@test : group mysqld : 497
+@test : group        : 497
+
+# sysctl $1:key expected: value
+@test : sysctl net.core.somaxconn : 128
+@test : sysctl net.core.somaxconn : 127
+@test : sysctl net.core.somaxcomm : 128
+@test : sysctl                    : 128
+
+# ulimit $1:user $2:key expected: value
+@test : ulimit test core      : unlimited
+@test : ulimit test core      : 0
+@test : ulimit test corr      : unlimited
+@test : ulimit test           : unlimited
+@test : ulimit                : unlimited
+@test : ulimit test data      : unlimited
+@test : ulimit test fsize     : unlimited
+@test : ulimit test memlock   : 64
+@test : ulimit test nofile    : 1024
+@test : ulimit test rss       : unlimited
+@test : ulimit test stack     : 10240
+@test : ulimit test cpu       : unlimited
+@test : ulimit test nproc     : 128
+@test : ulimit test as        : unlimited
+@test : ulimit test locks     : unlimited
+@test : ulimit test sigpending: 22592
+@test : ulimit test msgqueue  : 819200
+@test : ulimit test nice      : 0
+@test : ulimit test rtprio    : 0
+
+# conf file $1:filename expected: contatins value
+@test : file_contains /etc/httpd/conf/httpd.conf : ^MaxClients\\s*300\\s*$
+@test : file_contains /etc/httpd/conf/httpd.conf : ^MaxClients\\s*200\\s*$
+@test : file_contains                            : ^MaxClients\\s*300\\s*$
+@test : file_contains /etc/httpd/conf/httpp.conf : ^MaxClients\\s*300\\s*$
+
