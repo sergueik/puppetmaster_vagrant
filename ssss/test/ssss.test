@@ -1,0 +1,18 @@
+# sensitive to line endings
+
+@test : hostname : crucible-rhel72-20152.puppet.localdomain 
+@test : hostname : crucible-rhel72-20152
+
+@test : process : java
+@test : process : crucible
+
+@test : port : 8059
+@test : port : 8999
+
+# TODO:
+@test : package_version puppet-agent  :  1.2.7-1.el7
+
+@test : file /apps/crucible/fecru-3.3.4/config.xml : fisheye,fisheye,644
+@test : file_contains /apps/crucible/fecru-3.3.4/config.xml : web-server context=\\"foo\\"
+
+

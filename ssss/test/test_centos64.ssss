@@ -11,32 +11,20 @@
 @test : ip_address      : 192.168.176.130/24
 
 # hostname expected: host name
-@test : hostname : centos64.dandelion
-@test : hostname : centos64
+@test : hostname : linux.example.com
+@test : hostname : linux
 
 # /etc/hosts entry $1:hostname expected:ip address
-@test : hosts centos64 : 192.168.176.131
-@test : hosts centos64 : 192.168.176.130
-@test : hosts centos65 : 192.168.176.131
-@test : hosts          : 192.168.176.131
+@test : hosts linux.example.com : 127.0.0.1
 
 # directory $1:directory expected: owner,group,permission
-@test : directory ./test    : root,root,755
+@test : directory /var    : root,root,755
 @test : directory ./test    : user,root,755
-@test : directory ./test    : root,user,755
-@test : directory ./test    : root,user,644
-@test : directory ./text    : root,root,755
 @test : directory ./LICENSE : root,root,755
 @test : directory           : root,root,755
 
 # file $1:file expected: owner,group,permission
 @test : file ./test/a.txt : root,root,644
-@test : file ./test/a.txt : user,root,644
-@test : file ./test/a.txt : root,user,644
-@test : file ./test/a.txt : root,root,640
-@test : file ./test/b.txt : root,root,644
-@test : file ./test       : root,root,644
-@test : file              : root,root,644
 
 # file $1:file expected: owner,group,permission
 @test : symbolic_link ./bin/s4 : ../libexec/main.sh
