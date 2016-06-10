@@ -62,10 +62,18 @@ define custom_command::exec_uru(
   } ->
 
   exec { "Execute uru ${name}": 
-    command  => "powershell.exe -executionpolicy remotesigned -file ${script_path}",
-    require  => File[ "${name} launcher script"],
-    path     => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-    provider => 'powershell',
+    command   => "powershell.exe -executionpolicy remotesigned -file ${script_path}",
+    require   => File[ "${name} launcher script"],
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+    logoutput => true,
+  } ->
+
+  exec { "Add serverspec log to console ${name}": 
+    command   => "type ${toolspath}\\reports\\report_.json",
+    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+    provider  => 'powershell',
+    logoutput => true,
   } ->
 
   notify { "Done ${name}.":}
