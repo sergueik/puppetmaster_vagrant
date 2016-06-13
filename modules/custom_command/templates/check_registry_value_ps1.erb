@@ -1,0 +1,20 @@
+$registry_key_path = '<%= @registry_key_path %>'
+# e.g. HKLM:\SYSTEM\CurrentControlSet\services\AudioSrv
+$registry_value_name = '<%= @registry_value_name %>'
+# e.g. Start
+$status = Test-Path $registry_key_path
+if ( -not $status ) {
+  write-output "Registry path not found: '${registry_key_path}'"
+} else {
+    write-output "Registry path found: '${registry_key_path}'"
+    $value = Get-ItemProperty -path $registry_key_path -name $registry_value_name -errorAction SilentlyContinue
+    $status = $value -ne $null
+    if ( -not $status ) {
+      write-output "Value not found: '${registry_value_name}'" 
+    } else {
+      write-output "Value exists: '${registry_value_name}'"
+    }
+  }
+$exitcode = [int]( -not ( $status ))
+write-output "will exit with ${exitcode}"
+exit $exitcode
