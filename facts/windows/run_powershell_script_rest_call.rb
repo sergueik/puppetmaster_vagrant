@@ -31,6 +31,28 @@ if Facter.value(:kernel) == 'windows'
         Invoke-WebRequest -uri $url -Headers $headers
 #        Invoke-WebRequest -uri $url -Headers $headers -Method POST -body $body -ContentType 'application/json' -UseBasicParsing
         
+        
+                # Powershell 2.0 does not have 'Invoke-WebRequest' either..
+        # http://technet.rapaport.com/Info/Prices/SampleCode/Full_Example.aspx
+        $req = [System.Net.WebRequest]::Create($url) 
+        $req.Method = 'POST'
+        [System.Collections.Specialized.NameValueCollection]$o = new-object System.Collections.Specialized.NameValueCollection
+        $o.Add($auth_key , $auth_value )
+              
+        $req.ContentType = 'application/json'
+        # [System.Net.WebHeaderCollection]
+        $req.Headers.Add($o)
+        # [Stream] 
+        Write-output ("The HttpHeaders are \n{0}" -f $req.Headers )
+        $reqStream = $req.GetRequestStream()
+        [string] $postData = $Body
+        [byte[]] $postArray = [System.Text.Encoding]::GetEncoding('ASCII').GetBytes($postData)
+        $reqStream.Write($postArray, 0, $postArray.Length)
+        $reqStream.Close()
+        [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($req.GetResponse().GetResponseStream())
+        [string]$Result = $sr.ReadToEnd()
+        write-output $Result 
+
       EOF
       ) 
       status_prefix = 'StatusCode'
