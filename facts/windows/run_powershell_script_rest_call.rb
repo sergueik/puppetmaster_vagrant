@@ -46,7 +46,7 @@ if Facter.value(:kernel) == 'windows'
         $req.ContentType = 'application/json'
         # [System.Net.WebHeaderCollection]
         $req.Headers.Add($o)
-        # Write-output ("The HttpHeaders are \n{0}" -f $req.Headers )
+        # Write-output ("The HttpHeaders are \\n{0}" -f $req.Headers )
         [System.IO.Stream]$reqStream = $req.GetRequestStream()
         [string] $postData = $Body
         [byte[]] $postArray = [System.Text.Encoding]::GetEncoding('ASCII').GetBytes($postData)
