@@ -32,7 +32,11 @@ if Facter.value(:kernel) == 'windows'
 #        Invoke-WebRequest -uri $url -Headers $headers -Method POST -body $body -ContentType 'application/json' -UseBasicParsing
         
         
-                # Powershell 2.0 does not have 'Invoke-WebRequest' either..
+        # override validation
+        # The underlying connection was closed: Could not establish trust relationship for the SSL/TLS secure channel
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+        
+        # Powershell 2.0 does not have 'Invoke-WebRequest' either..
         # http://technet.rapaport.com/Info/Prices/SampleCode/Full_Example.aspx
         $req = [System.Net.WebRequest]::Create($url) 
         $req.Method = 'POST'
@@ -42,16 +46,21 @@ if Facter.value(:kernel) == 'windows'
         $req.ContentType = 'application/json'
         # [System.Net.WebHeaderCollection]
         $req.Headers.Add($o)
-        # [Stream] 
-        Write-output ("The HttpHeaders are \n{0}" -f $req.Headers )
-        $reqStream = $req.GetRequestStream()
+        # Write-output ("The HttpHeaders are \n{0}" -f $req.Headers )
+        [System.IO.Stream]$reqStream = $req.GetRequestStream()
         [string] $postData = $Body
         [byte[]] $postArray = [System.Text.Encoding]::GetEncoding('ASCII').GetBytes($postData)
         $reqStream.Write($postArray, 0, $postArray.Length)
         $reqStream.Close()
-        [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($req.GetResponse().GetResponseStream())
-        [string]$Result = $sr.ReadToEnd()
-        write-output $Result 
+        try { 
+          [System.Net.WebResponse] $response =  $req.GetResponse()
+          # NOTE: no HTTP status code in this snippet
+          [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($response.GetResponseStream())
+          [string]$Result = $sr.ReadToEnd()
+          write-output ('Content: {0}' -f  $Result ) 
+        } catch [Exception] {
+           write-output 'exception : ' , $_
+        }
 
       EOF
       ) 
