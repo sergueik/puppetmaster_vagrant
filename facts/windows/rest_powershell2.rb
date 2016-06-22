@@ -55,15 +55,18 @@ if Facter.value(:kernel) == 'windows'
         [byte[]]$postArray = [System.Text.Encoding]::GetEncoding('ASCII').GetBytes($postData)
         $webRequestStream.Write($postArray, 0, $postArray.Length)
         $webRequestStream.Close()
-        try {
-          [System.Net.WebResponse]$response = $webRequest.GetResponse()
-
-          [System.IO.StreamReader]$responseReader = New-Object System.IO.StreamReader ($response.GetResponseStream())
-          [string]$Result = $responseReader.ReadToEnd()
-          Write-Output ('Content: {0}' -f $Result)
-        } catch [exception]{
-          Write-Output 'Exception : ', $_
+        try { 
+          [System.Net.WebResponse] $response =  $req.GetResponse()
+          # NOTE: no HTTP status code in this snippet
+          [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($response.GetResponseStream())
+          [string]$Result = $sr.ReadToEnd()
+          write-output ('Content: {0}' -f  $Result ) 
+        } catch [Exception] {
+	        # System.Management.Automation.ErrorRecord -> System.Net.WebException
+           $exception = $_[0].Exception
+           write-output ("Exception : Status: '{0}'  StatusCode: '{1}' Message: '{2}'" -f  $exception.Status,  $exception.Response.StatusCode, $exception.Message )
         }
+
 
       EOF
       )
