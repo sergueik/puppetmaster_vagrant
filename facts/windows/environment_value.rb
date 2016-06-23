@@ -11,10 +11,8 @@ if Facter.value(:kernel) == 'windows'
 
     setcode do
       File.write('c:/windows/temp/test.ps1', <<-EOF
-      $Result = $env:LOCALAPPDATA
-      # 'user' will not work 
-      $Result = [environment]::GetEnvironmentVariable('LOCALAPPDATA')
-      # This is sparsely populated 
+      # note many variables are actually special folders
+      # https://msdn.microsoft.com/en-us/library/system.environment.specialfolder(v=vs.110).asp
       $Result = [environment]::GetEnvironmentVariable('LOCALAPPDATA',[System.EnvironmentVariableTarget]::User)
         write-output ('Content: "{0}"' -f  $Result ) 
       EOF
