@@ -6,8 +6,9 @@ $RAKE_VERSION = '10.1.0'
 $RUBY_VERSION = '2.1.7'
 
 
-mkdir "${env:USERPROFILE}\.uru" -erroraction silentlycontinue
-# http://annaken.blogspot.com/2015/07/automated-serverspec-logstash-kibana-part2.html
+$userprofile = [Environment]::GetFolderPath('UserProfile') 
+# [Environment+SpecialFolder]::GetNames([Environment+SpecialFolder])
+mkdir "${UserProfile}\.uru" -erroraction silentlycontinue
 @"
 
 {
@@ -28,9 +29,10 @@ pushd $ToolsPath
 $PWD =  pwd | select-object -expandproperty PATH
 $env:PATH="${env:PATH};${PWD}"
 # write-output $env:PATH
+invoke-expression -command 'uru_rt.exe admin add ruby\bin'
 $data = invoke-expression -command "uru_rt.exe ls"
 write-output ("data = '{0}'" -f $data )
-# $data -match '^\s+\b(\w+)\b.*$'
+if ( -not $data -match '^\s+\b(\w+)\b.*$') { exit 1}
 $tag = ($data -replace '^\s+\b(\w+)\b.*$', '$1')
 write-output ("tag = '{0}'" -f $tag )
 $env:URU_INVOKER = 'powershell'
