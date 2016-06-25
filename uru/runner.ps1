@@ -24,20 +24,24 @@ mkdir "${UserProfile}\.uru" -erroraction silentlycontinue
     }
   }
 }
-"@ |out-file -FilePath "${env:USERPROFILE}\.uru\rubies.json" -encoding ASCII
+"@ |out-file -FilePath "${UserProfile}\.uru\rubies.json" -encoding ASCII
 pushd $ToolsPath
 $PWD =  pwd | select-object -expandproperty PATH
 $env:PATH="${env:PATH};${PWD}"
 # write-output $env:PATH
 invoke-expression -command 'uru_rt.exe admin add ruby\bin'
-$data = invoke-expression -command "uru_rt.exe ls"
-write-output ("data = '{0}'" -f $data )
-if ( -not $data -match '^\s+\b(\w+)\b.*$') { exit 1}
+$data = invoke-expression -command 'uru_rt.exe ls'
+# write-output ("data = '{0}'" -f $data )
+# if ( -not $data -match '^\s+\b(\w+)\b.*$') { exit 1}
 $tag = ($data -replace '^\s+\b(\w+)\b.*$', '$1')
-write-output ("tag = '{0}'" -f $tag )
+# write-output ("tag = '{0}'" -f $tag )
 $env:URU_INVOKER = 'powershell'
 uru_rt.exe $tag
 uru_rt.exe ruby "${RubyPath}\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSION}\bin\rake" spec
 
 popd 
-type "${ReportsPath}\\report_.json"
+
+# type "${ReportsPath}\report_.json"
+
+$report = get-content -path "${ReportsPath}\report_.json" |convertfrom-json
+write-output ($report.'summary_line')
