@@ -30,3 +30,15 @@ TAG=$(./uru_rt  ls 2>& 1|awk -e '{print $1}')
 ./uru_rt ls --verbose
 ./uru_rt gem list
 ./uru_rt ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
+
+
+# Process the results
+
+./uru_rt ruby <<EOF
+require 'json'
+require 'pp'
+REPORT='reports/report_.json'
+report = File.open(REPORT)
+z = JSON.parse(report.read, symbolize_names: true)
+pp z[:summary_line]
+EOF
