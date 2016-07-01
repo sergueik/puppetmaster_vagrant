@@ -248,5 +248,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             # puppet.options        = '--verbose --parser'
           end
       end
+      config.vm.provision :serverspec do |spec|
+        spec.pattern = 'spec/linux/*_spec.rb'
+          # NOTE: cannot process results of the backend command e.g
+          # Failure/Error: 
+          # SystemStackError:
+          # stack level too deep
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:7:in `os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
+          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
+
+      end
     end
 end
