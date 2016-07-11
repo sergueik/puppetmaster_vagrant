@@ -7,10 +7,11 @@ if Facter.value(:kernel) == 'windows'
     tool = 'C:/Windows/system32/reg.exe'
     argument = 'query hklm\software\classes\installer\products /f "JRE " /s'
     if output = Facter::Util::Resolution.exec("#{tool} #{argument}")
-      version = output.split("\n").grep(/#{data_prefix}/).last
-      version.gsub!(/^.*REG_SZ\s+/,'')
-      if version
-        versions.push( version)
+      output.split("\n").grep(/#{data_prefix}/).each do |version|
+        version.gsub!(/^.*REG_SZ\s+/,'')
+        if version        
+          versions.push( version)
+        end
       end
     end
     if versions.length > 0 
@@ -19,3 +20,5 @@ if Facter.value(:kernel) == 'windows'
       setcode { '' }    
     end
   end
+end
+
