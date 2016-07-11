@@ -17,8 +17,8 @@ $license_status_codes = @{
 
 # Terse form
 # $license_status = Get-CimInstance -ClassName SoftwareLicensingProduct | 
-                    where PartialProductKey | 
-                    select LicenseStatus
+#                   where PartialProductKey | 
+#                   select LicenseStatus
 
 
 # Longer form - presumably will work with Powershell 2.0
