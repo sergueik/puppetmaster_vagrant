@@ -10,8 +10,9 @@ fact_name = 'msi_query'
 if Facter.value(:kernel) == 'windows'
   Facter.add(fact_name) do
   
-    property = 'c:\vagrant\jre1.8.0_92-64+wf-01.msi'
-    path = 'UpgradeCode'
+          
+    path = 'c:\Windows\Installer\16f6d0.msi'
+    property =  'UpgradeCode'
     
     setcode do 
       File.write('c:/windows/temp/test.ps1', <<-EOF
@@ -22,10 +23,9 @@ param(
  
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet('ProductCode', 'ProductVersion', 'ProductName', 'Manufacturer', 'ProductLanguage', 'FullVersion' , 'UpgradeCode', 'PatchLevel', 'PackageCode' )]
+    [ValidateSet('ProductCode', 'ProductVersion', 'ProductName', 'Manufacturer', 'ProductLanguage', 'FullVersion' , 'UpgradeCode' )]
     [string]$Property
 )
-Process {
     try {
         # Read property from MSI database
         $WindowsInstaller = New-Object -ComObject WindowsInstaller.Installer
@@ -43,34 +43,27 @@ Process {
         $View = $null
  
         # Return the value
-        return $Value
+        write-output ('{0}: "{1}"' -f $Property , $Value )
     } 
     catch {
         Write-Warning -Message $_.Exception.Message ; break
     }
-}
-End {
     # Run garbage collection and release ComObject
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($WindowsInstaller) | Out-Null
     [System.GC]::Collect()
-}
       EOF
       ) 
-      status_prefix = 'StatusCode'
-      data_prefix = 'Content'
+      data_prefix = property
       data = nil
-      arguments = "-Path '#{path}' -Property '#{property}'"
-      if output = Facter::Util::Resolution.exec('C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned -file "c:/windows/temp/test.ps1"')
-        status_line = output.split("\n").grep(/#{status_prefix}/).first       
-        status = status_line.scan(/[\d\.]+/).first
-        if status =~ /200/ 
-          data_line = output.split("\n").grep(/#{data_prefix}/).first       
-          data = data_line.scan(/"[^"]+"/).first
-        end
+      # NOTE use double quotes with arguments
+      arguments = "-Path \"#{path}\" -Property \"#{property}\""
+      if output = Facter::Util::Resolution.exec("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -executionpolicy remotesigned -file \"c:/windows/temp/test.ps1\" #{arguments}")
+        # puts "output = #{output}"
+        # puts "command = " +  "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -executionpolicy remotesigned -file \"c:/windows/temp/test.ps1\" #{arguments}"
+        data_line = output.split("\n").grep(/#{data_prefix}/i).first       
+        data = data_line.scan(/"[^"]+"/).first
       end
       data
     end 
   end
 end
-
-
