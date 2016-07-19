@@ -42,6 +42,9 @@ uru_rt.exe ruby "${RubyPath}\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSI
 popd 
 
 # type "${ReportsPath}\report_.json"
+# extract summary_line
+# $report = get-content -path "${ReportsPath}\report_.json"; $summary_line = $report -replace '.+\"summary_line\"', 'serverspec result: '; write-output $summary_line;
 
+# convertFrom-json requires Powershell 3.
 $report = get-content -path "${ReportsPath}\report_.json" |convertfrom-json
 write-output ($report.'summary_line')
