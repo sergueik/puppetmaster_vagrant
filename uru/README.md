@@ -151,39 +151,36 @@ The results are nicely formatted in a standalone HTML report:
 and json:
 ```
 {
-    "version": "3.5.0.beta3",
+    "version": "3.5.0.beta4",
     "examples": [{
-        "description": "should be listening with udp",
-        "full_description": "Port \"3389\" should be listening with udp",
-        "status": "passed",
-        "file_path": "./spec/localhost/sample_spec.rb",
-        "line_number": 4,
-        "run_time": 0.390625,
-        "pending_message": null
-    }, {
-        "description": "should be listening with tcp",
-        "full_description": "Port \"3389\" should be listening with tcp",
-        "status": "passed",
-        "file_path": "./spec/localhost/sample_spec.rb",
-        "line_number": 5,
-        "run_time": 0.439453,
-        "pending_message": null
-    }, {
         "description": "should be directory",
         "full_description": "File \"c:/windows\" should be directory",
         "status": "passed",
-        "file_path": "./spec/localhost/sample_spec.rb",
-        "line_number": 10,
-        "run_time": 0.328125,
+        "file_path": "./spec/local/windows_spec.rb",
+        "line_number": 4,
+        "run_time": 0.470411,
         "pending_message": null
+    }, {
+        "description": "should be file",
+        "full_description": "File \"c:/test\" should be file",
+        "status": "failed",
+        "file_path": "./spec/local/windows_spec.rb",
+        "line_number": 8,
+        "run_time": 0.545683,
+        "pending_message": null,
+        "exception": {
+            "class": "RSpec::Expectations::ExpectationNotMetError",
+            "message": "expected `File \"c:/test\".file?` to return true, got false",
+            "backtrace": ["c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-support-3.5.0.beta4/lib/rspec/support.rb:87:in `block in <module:Support>'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-support-3.5.0.beta4/lib/rspec/support.rb:96:in `call'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-support-3.5.0.beta4/lib/rspec/support.rb:96:in `notify_failure'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-expectations-3.5.0.beta4/lib/rspec/expectations/fail_with.rb:27:in `fail_with'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-expectations-3.5.0.beta4/lib/rspec/expectations/handler.rb:40:in `handle_failure'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-expectations-3.5.0.beta4/lib/rspec/expectations/handler.rb:50:in `block in handle_matcher'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-expectations-3.5.0.beta4/lib/rspec/expectations/handler.rb:27:in `with_matcher'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-expectations-3.5.0.beta4/lib/rspec/expectations/handler.rb:48:in `handle_matcher'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/memoized_helpers.rb:81:in `should'", "C:/uru/spec/local/windows_spec.rb:8:in `block (2 levels) in <top (required)>'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:252:in `instance_exec'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:252:in `block in run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:494:in `block in with_around_and_singleton_context_hooks'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:451:in `block in with_around_example_hooks'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/hooks.rb:471:in `block in run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/hooks.rb:609:in `run_around_example_hooks_for'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/hooks.rb:471:in `run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:451:in `with_around_example_hooks'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:494:in `with_around_and_singleton_context_hooks'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example.rb:249:in `run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example_group.rb:613:in `block in run_examples'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example_group.rb:609:in `map'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example_group.rb:609:in `run_examples'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/example_group.rb:575:in `run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:119:in `block (3 levels) in run_specs'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:119:in `map'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:119:in `block (2 levels) in run_specs'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/configuration.rb:1837:in `with_suite_hooks'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:118:in `block in run_specs'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/reporter.rb:77:in `report'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:117:in `run_specs'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:93:in `run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:78:in `run'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/lib/rspec/core/runner.rb:45:in `invoke'", "c:/uru/ruby/lib/ruby/gems/2.1.0/gems/rspec-core-3.5.0.beta4/exe/rspec:4:in `<main>'"]
+        }
     }],
     "summary": {
-        "duration": 1.18164,
-        "example_count": 3,
-        "failure_count": 0,
+        "duration": 1.054691,
+        "example_count": 2,
+        "failure_count": 1,
         "pending_count": 0
     },
-    "summary_line": "3 examples, 0 failures"
+    "summary_line": "2 examples, 1 failure"
 }
 ```
 
