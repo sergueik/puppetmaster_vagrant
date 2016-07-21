@@ -18,6 +18,7 @@ describe command(<<-EOF
  popd
   EOF
 ) do
+  # will fail as long as the .gems are put under $HOME
   its(:stdout) { should match Regexp.new('_U1_;c:/uru\\\\ruby\\\\bin;_U2_;') }
 end
 
