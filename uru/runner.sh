@@ -1,9 +1,11 @@
 #!/bin/sh
 pushd /uru
+export URU_HOME=`pwd`
 export URU_INVOKER=bash
 export GEM_VERSION=2.1.0
 export RAKE_VERSION=10.1.0
 export RUBY_VERSION=2.1.9
+export LD_LIBRARY_PATH=${URU_HOME}/ruby/lib
 # TODO: prevent gems from installing to ~/.gem/ruby/2.1.0/gems
 cat <<EOF>'$HOME/.uru/rubies.json'
 {
@@ -13,8 +15,8 @@ cat <<EOF>'$HOME/.uru/rubies.json'
     "ID": "2.1.9-p490",
     "TagLabel": "219p490",
     "Exe": "ruby",
-    "Home": "/uru/ruby/bin",
-    "GemHome": "/uru/ruby/lib/ruby/gems/${GEM_VERSION}/gems",
+    "Home": "${URU_HOME}/ruby/bin",
+    "GemHome": "${URU_HOME}/.gem/ruby/${GEM_VERSION}",
     "Description": "ruby 2.1.9p490 (2016-03-30 revision 54437) [x86_64-linux]"
     }
  }
