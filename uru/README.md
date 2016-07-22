@@ -50,10 +50,31 @@ copy the home directory of a Ruby installation under the `uru` folder and
 and install all required gems via `uru.bat gem install serverspec specinfra winrm`, 
 then pack the directory.
 
-On Linux, the process is similar to provisioning the `.rvm` directory via tarball to an internet-disconnected Linux box. 
-One builds ruby from source (rpm is not relocable), and installs it to `/uru/ruby` then switches to isolated environment and 
-installs the required gem dependencies making sure gems are installed under `uru/ruby/lib/ruby/gems` rather then the 
-into a hidden `.gem` directory.
+On Linux, the process is somewhat similar to provisioning the `.rvm` directory via tarball to an internet-disconnected Linux box. 
+One builds ruby from source (rpm is not relocable), with a prefix `/uru/ruby`:
+```
+wget https://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.9.tar.gz
+tar xzvf ruby-2.1.9.tar.gz
+pushd ruby-2.1.9
+./configure --prefix=/uru/ruby
+make
+sudo make install
+```
+then switches to isolated environment 
+```
+./uru_rt admin add ruby/bin
+./uru_rt ls
+./uru_rt 219p490
+```
+and 
+installs the required gem dependencies 
+```
+./uru_rt gem list
+./uru_rt gem install --no-ri --no-rdoc rspec serverspec rake rspec_junit_formatter
+cp -R ~/.gem .
+```
+With `$GEM_HOME` one can make sure gems are installed under `uru/ruby/lib/ruby/gems` rather then the 
+into a hidden `$HOME/.gem` directory (this may not work correctly, if there is an error, copy the `.gem` to `$HOME`.
 
 In the `spec` directory one places a trimmed down `windows_spec_helper.rb` and `spec_helper.rb` both of which contain:
 ```
