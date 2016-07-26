@@ -1,9 +1,15 @@
+#!/usr/bin/env ruby
+
+require 'facter'
+
+fact_name = 'windows_sid'
+
 # based on: https://github.com/liamjbennett/puppet-win_facts/blob/master/lib/facter/windows_sid.rb
 # there is a number of other keys to convert to facts
 # the other option is to exec the native tool 'gpresult.exe /scope computer /v'
 # http://www.windowsnetworking.com/articles-tutorials/netgeneral/Under-Hood-Group-Policy.html
 
-Facter.add('windows_sid') do
+Facter.add(fact_name) do
   confine :kernel => 'windows'
   setcode do  
     begin

@@ -1,3 +1,7 @@
+#!/usr/bin/env ruby
+
+require 'facter'
+
 fact_name = 'jre_installed'
 
 if Facter.value(:kernel) == 'windows'
@@ -5,7 +9,7 @@ if Facter.value(:kernel) == 'windows'
     versions = []
     data_prefix = 'ProductName'
     tool = 'C:/Windows/system32/reg.exe'
-    argument = 'query hklm\software\classes\installer\products /f "JRE " /s'
+    argument = 'query HKLM\SOFTWARE\CLASSES\INSTALLER\PRODUCTS /f "JRE " /s'
     if output = Facter::Util::Resolution.exec("#{tool} #{argument}")
       output.split("\n").grep(/#{data_prefix}/).each do |version|
         version.gsub!(/^.*REG_SZ\s+/,'')
@@ -21,4 +25,3 @@ if Facter.value(:kernel) == 'windows'
     end
   end
 end
-
