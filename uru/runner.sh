@@ -8,17 +8,10 @@ export RUBY_VERSION=2.1.9
 export LD_LIBRARY_PATH=${URU_HOME}/ruby/lib
 
 pushd ${URU_HOME}
-
+if false 
+then
 # TODO: ./uru_rt admin refresh
 # if the  ~/.uru/rubies.json is different, in particular the GemHome
-# TODO: remove uru/ruby/lib/ruby/gems/2.1.0/gems/gems/
-echo Y |./uru_rt  admin rm  219p490
-./uru_rt admin add ruby/bin
-
-export TAG=$(./uru_rt  ls 2>& 1|awk -e '{print $1}')
-./uru_rt $TAG
-./uru_rt ls --verbose
-
 mkdir $HOME/.uru
 rm "$HOME/.uru/rubies.json"
 cat <<EOF>"$HOME/.uru/rubies.json"
@@ -36,6 +29,15 @@ cat <<EOF>"$HOME/.uru/rubies.json"
  }
 }
 EOF
+
+fi
+echo Y |./uru_rt  admin rm  219p490 > /dev/null 
+./uru_rt admin add ruby/bin
+
+./uru_rt ls --verbose
+export TAG=`./uru_rt ls 2>& 1|awk '{print $1}'`
+./uru_rt $TAG
+
 # TODO: fix it properly
 # Copy .gems to default location
 
@@ -46,12 +48,11 @@ cp -R .gem ~
 if [ $? != 0 ] ; then
   echo 'WARNING: serverspec gem is not found in this environment:'
   ./uru_rt gem list
-  # exit 1
+  exit 1
 fi
 
 # Actually run the spec
 ./uru_rt ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
-
 
 # Process the results
 
@@ -71,3 +72,4 @@ report_obj[:examples].each do |example|
 end
 pp report_obj[:summary_line]
 EOF
+
