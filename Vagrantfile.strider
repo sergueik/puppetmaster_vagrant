@@ -1,0 +1,66 @@
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'vagrant-strider')
+
+basedir = basedir.gsub('\\', '/')
+
+# standalone ubuntu box with strider
+# origin : https://github.com/virtualles/vagrant-strider/blob/master/provision/script.sh
+
+VAGRANTFILE_API_VERSION = '2'
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = 'ubuntu/trusty64'
+  config_vm_box_name ='trusty-server-cloudimg-amd64-vagrant-disk1.box'
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}" 
+
+  config.vm.network :forwarded_port, host: 3000, guest: 3000
+  config.vm.box = box_hostname
+  config.ssh.forward_agent = true
+  
+  config.vm.network :private_network, ip: '192.168.33.10'
+
+  config.vm.provision 'shell', inline: <<-END_OF_SHELL_PROVISION
+
+echo "start provision script"
+
+# set -e # Exit script on first error
+set -x # Print commands as executed
+
+# Update packages
+sudo apt-get -qqy update 
+
+# Install required packages
+sudo apt-get -qqy install nodejs sudo mongodb curl git g++ vim
+
+sudo chown -R vagrant:vagrant /usr/local/bin
+sudo chown -R vagrant:vagrant /usr/local/lib
+sudo ln -s /usr/bin/nodejs  /usr/bin/node
+
+# Install NPM
+wget https://npmjs.org/install.sh 
+sudo chmod +x install.sh
+sudo ./install.sh
+
+# Install Strider
+git clone https://github.com/Strider-CD/strider.git
+cd ~vagrant/strider && npm install
+
+cd ~vagrant/strider && npm install nodemon nomnom step underscore bcrypt lodash mongoose everypaas winston passport pw apres async nodemailer moment jade ansiparse request socket.io cookie express passport-github passport-local connect-mongo validator swig strider-extension-loader stylus gitane gumshoe strider-simple-worker
+
+# Start/Restart services/
+sudo service mongodb restart
+
+# Start Strider
+cd ~vagrant/strider && nodemon bin/strider
+  END_OF_SHELL_PROVISION
+
+  config.vm.provider :virtualbox do |vb|
+    vb.gui = true
+    vb.customize ['modifyvm', :id, '--memory', box_memory ]
+    vb.customize ['modifyvm', :id, '--cpus', '2']
+    vb.customize ['modifyvm', :id, '--ioapic', 'on']
+    vb.customize ['modifyvm', :id, '--natdnshostresolver1', 'on']
+  end
+end
+
