@@ -19,6 +19,6 @@ describe command(<<-EOF
   EOF
 ) do
   # will fail as long as the .gems are put under $HOME
-  its(:stdout) { should match Regexp.new('_U1_;c:/uru\\\\ruby\\\\bin;_U2_;') }
+  its(:stdout) { should match Regexp.new('_U1_;c:\\\\uru\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
 end
 
