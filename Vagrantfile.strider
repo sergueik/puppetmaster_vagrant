@@ -1,3 +1,4 @@
+tag = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
 box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
@@ -22,7 +23,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provision 'shell', inline: <<-END_OF_SHELL_PROVISION
 
-echo "start provision script"
+echo 'Start provision script'
 
 # set -e # Exit script on first error
 set -x # Print commands as executed
@@ -44,15 +45,56 @@ sudo ./install.sh
 
 # Install Strider
 git clone https://github.com/Strider-CD/strider.git
-cd ~vagrant/strider && npm install
 
-cd ~vagrant/strider && npm install nodemon nomnom step underscore bcrypt lodash mongoose everypaas winston passport pw apres async nodemailer moment jade ansiparse request socket.io cookie express passport-github passport-local connect-mongo validator swig strider-extension-loader stylus gitane gumshoe strider-simple-worker
+# pull tag before 'Use template strings'
+cd ~vagrant/
+cd strider
+sudo chown -R vagrant:vagrant . 
+git checkout 'v1.7.5' 
 
+npm install
+
+npm install nodemon \
+nomnom \
+step \
+underscore \
+bcrypt \
+lodash \
+mongoose \
+everypaas \
+winston \
+passport \
+pw \
+apres \
+async \
+nodemailer \
+moment \
+jade \
+ansiparse \
+request \
+socket.io \
+cookie express \
+passport-github \
+passport-local \
+connect-mongo \
+validator \
+swig \
+strider-extension-loader \
+stylus \
+gitane \
+gumshoe \
+strider-simple-worker \
+strider-ecosystem-client \
+strider-cli
+
+cd node_modules/strider-cli
+npm install strider-ecosystem-client
 # Start/Restart services/
 sudo service mongodb restart
 
 # Start Strider
-cd ~vagrant/strider && nodemon bin/strider
+# nodemon bin/strider
+~vagrant/strider/bin/strider & 
   END_OF_SHELL_PROVISION
 
   config.vm.provider :virtualbox do |vb|
