@@ -6,8 +6,11 @@ $RAKE_VERSION = '10.1.0'
 $RUBY_VERSION = '2.1.7'
 
 
-$userprofile = [Environment]::GetFolderPath('UserProfile') 
+# $userprofile = [Environment]::GetFolderPath('UserProfile') 
 # [Environment+SpecialFolder]::GetNames([Environment+SpecialFolder])
+$userprofile = ([Environment]::GetFolderPath('Personal')) -replace '\\Documents', '' 
+write-output "userprofile=${userprofile}"
+
 mkdir "${UserProfile}\.uru" -erroraction silentlycontinue
 @"
 
