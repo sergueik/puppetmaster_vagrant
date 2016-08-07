@@ -4,7 +4,7 @@ require 'optparse'
 require 'rubygems'
 require 'json'
 require 'pp'
-puts 'x'
+
 opt = OptionParser.new
 
 @options = {
@@ -39,17 +39,16 @@ else
 end
 
 report_path = "#{@options[:directory]}/#{@options[:report]}"
-
-report_obj = JSON.parse(File.read(report_path))
-
+puts "Reading: '#{report_path}'"
+report_obj = JSON.parse(File.read(report_path), symbolize_names: true)
 count = 1
 
-report_obj['examples'].each do |example|
-  if example['status'] !~ Regexp.new(ignore_statuses,Regexp::IGNORECASE)
-    pp [example['status'],example['full_description']]
+report_obj[:examples].each do |example|
+  if example[:status] !~ Regexp.new(ignore_statuses,Regexp::IGNORECASE)
+    pp [example[:status],example[:full_description]]
     count = count + 1
     break if @options[:maxcount] > 0 and count > @options[:maxcount]
   end
 end
-
+puts 'Summary:'
 pp report_obj[:summary_line]

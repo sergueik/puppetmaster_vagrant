@@ -4,14 +4,15 @@ export URU_HOME='/uru'
 export URU_INVOKER=bash
 export GEM_VERSION=2.1.0
 export RAKE_VERSION=10.1.0
-export RUBY_VERSION=2.1.9
-export LD_LIBRARY_PATH=${URU_HOME}/ruby/lib
+export RUBY_VERSION=2.1.0
 
+export LD_LIBRARY_PATH=${URU_HOME}/ruby/lib
+export URU_RUNNER="${URU_HOME}/uru_rt"
 pushd ${URU_HOME}
-if false 
-then
-# TODO: ./uru_rt admin refresh
+# TODO: $URU_RUNNER admin refresh
 # if the  ~/.uru/rubies.json is different, in particular the GemHome
+
+export HOME='/root'
 mkdir $HOME/.uru
 rm "$HOME/.uru/rubies.json"
 cat <<EOF>"$HOME/.uru/rubies.json"
@@ -30,46 +31,28 @@ cat <<EOF>"$HOME/.uru/rubies.json"
 }
 EOF
 
-fi
-echo Y |./uru_rt  admin rm  219p490 > /dev/null 
-./uru_rt admin add ruby/bin
+echo Y |$URU_RUNNER  admin rm  219p490 > /dev/null 
+$URU_RUNNER admin add ruby/bin
 
-./uru_rt ls --verbose
-export TAG=`./uru_rt ls 2>& 1|awk '{print $1}'`
-./uru_rt $TAG
+$URU_RUNNER ls --verbose
+export TAG=`$URU_RUNNER ls 2>& 1|awk '{print $1}'`
+$URU_RUNNER $TAG
 
 # TODO: fix it properly
 # Copy .gems to default location
 
-cp -R .gem ~
+cp -R .gem $HOME
 
 # Verify the gems
-./uru_rt gem list| grep -qi serverspec
+$URU_RUNNER gem list --local
+
+# Check it the required gems are present
+$URU_RUNNER gem list| grep -qi serverspec
 if [ $? != 0 ] ; then
   echo 'WARNING: serverspec gem is not found in this environment:'
-  ./uru_rt gem list
   exit 1
 fi
 
-# Actually run the spec
-./uru_rt ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
-
-# Process the results
-
-./uru_rt ruby <<EOF
-
-require 'json'
-require 'pp'
-
-REPORT = 'reports/report_.json'
-report_json = File.open(REPORT)
-
-report_obj = JSON.parse(report_json.read, symbolize_names: true)
-report_obj[:examples].each do |example|
-  if example[:status] !~ /passed/i
-    pp [example[:status],example[:full_description]]
-  end
-end
-pp report_obj[:summary_line]
-EOF
+# Run the spec
+$URU_RUNNER ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
 

@@ -46,9 +46,11 @@ On Linux, the tarball creation starts with compiling Ruby from source , with a p
 ```
 wget https://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.9.tar.gz
 tar xzvf ruby-2.1.9.tar.gz
+yum groupinstall -y 'Developer Tools'
+yum install -y zlib-devel openssl-devel
 pushd ruby-2.1.9
-./configure --prefix=/uru/ruby
-make
+./configure --prefix=/uru/ruby --disable-install-rdoc --disable-install-doc
+make clean; make
 sudo make install
 ```
 then one switches to the isolated environment 
@@ -67,7 +69,23 @@ and installs the required gem dependencies
 cp -R ~/.gem .
 ```
 With `$GEM_HOME` one can make sure gems are installed under `.gems` rather then the 
-into a hidden `$HOME/.gem` directory (this may not work correctly, if there is an error, copy the `.gem` to `$HOME`.
+into a hidden `$HOME/.gem` directory (this may not work correctly, if there is an error, or if the command 
+
+```
+./uru_rt gem list --local --verbose
+```
+outputs the  different list of gems than expected, e.g. only the following gems are listed,
+```
+bigdecimal (1.2.4)
+io-console (0.4.3)
+json (1.8.1)
+minitest (4.7.5)
+psych (2.0.5)
+rake (10.1.0)
+rdoc (4.1.0)
+test-unit (2.1.10.0)
+```
+copy the `.gem` directory to `$HOME`.
 
 In the `spec` directory one places a trimmed down `windows_spec_helper.rb` and `spec_helper.rb`:
 ```
