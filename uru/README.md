@@ -1,10 +1,11 @@
 Info
 ----
 
-One can bootstrap a standalone ruby environment to run [serverspec](http://serverspec.org/resource_types.html) .
+One can bootstrap a standalone ruby environment to run [serverspec](http://serverspec.org/resource_types.html). 
 with the help of [uru](https://bitbucket.org/jonforums/uru/wiki/Usage) on an internet-blocked Windows or Linux instance (uru is not the only option for Linux).
 
 One could provision Uru environment from a zip/tar archive, one can also construct a Puppet module for the same.
+This is lightweight alternative to [DracoBlue/puppet-rvm](https://github.com/dracoblue/puppet-rvm) module.
 
 The `$URU_HOME` home directory with Ruby runtime plus a handful of gems has the following structure:
 ```
@@ -25,7 +26,6 @@ rake
 rspec
 rspec_junit_formatter
 serverspec
-winrm
 ```
 
 
@@ -53,7 +53,7 @@ pushd ruby-2.1.9
 make clean; make
 sudo make install
 ```
-then one switches to the isolated environment 
+After Ruby is installed one switches to the isolated environment 
 ```
 pushd $URU_HOME
 wget https://bitbucket.org/jonforums/uru/downloads/uru-0.8.1-linux-x86.tar.gz
@@ -68,6 +68,8 @@ and installs the required gem dependencies
 ./uru_rt gem install --no-ri --no-rdoc rspec serverspec rake rspec_junit_formatter
 cp -R ~/.gem .
 ```
+Finally the `$URU_HOME` is converted to an archive, that can be installed on a clean system.
+
 With `$GEM_HOME` one can make sure gems are installed under `.gems` rather then the 
 into a hidden `$HOME/.gem` directory (this may not work correctly, if there is an error, or if the command 
 
@@ -86,6 +88,14 @@ rdoc (4.1.0)
 test-unit (2.1.10.0)
 ```
 copy the `.gem` directory to `$HOME`.
+
+If the error
+```
+<internal:gem_prelude>:1:in `require': cannot load such file -- rubygems.rb (Loa
+dError)
+
+```
+is returned, you have to use the expand the `uru.tar.gz`  archive into the same path `$URU_HOME` which was specified when Ruby was compiled. Note: [rvm](http://stackoverflow.com/questions/15282509/how-to-change-rvm-install-location) is known to give the same error if the `.rvm` diredctory location was changed .
 
 In the `spec` directory one places a trimmed down `windows_spec_helper.rb` and `spec_helper.rb`:
 ```
