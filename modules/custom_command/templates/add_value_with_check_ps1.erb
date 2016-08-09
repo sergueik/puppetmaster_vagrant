@@ -1,0 +1,28 @@
+<# 
+$hive = '<%= @hive %>'
+$registry_path = '<%= @registry_path %>'
+$name = '<%= @name %>'
+$value = '<%= @value %>'
+$propertyType = 'String'
+#>
+
+pushd $hive
+$status = Test-Path $registry_path
+if ( -not $status ) {
+  write-output "Registry path not found: '${registry_path}'"
+ } else {
+    write-output "Registry path found: '${registry_path}'"
+    $value = Get-ItemProperty -path $registry_path -name $name -errorAction SilentlyContinue
+    $status = $value -ne $null
+    if ( -not $status ) {
+      write-output "Value not found: '${name}'" 
+      New-ItemProperty -Path ('{0}\{1}' -f $hive, $registry_path) -Name $name -Value $value -PropertyType $propertyType
+    } else {
+      write-output "Value exists: '${name}'"
+    }
+  }
+
+popd
+
+write-output "will exit with ${exitcode}"
+exit $exitcode
