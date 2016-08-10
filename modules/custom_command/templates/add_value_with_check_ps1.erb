@@ -1,28 +1,44 @@
-<# 
-$hive = '<%= @hive %>'
+$registry_hive = '<%= @registry_hive %>'
 $registry_path = '<%= @registry_path %>'
-$name = '<%= @name %>'
-$value = '<%= @value %>'
-$propertyType = 'String'
-#>
+$property_name = '<%= @property_name %>'
+$property_value = '<%= @property_value %>'
+$property_type = '<%= @property_type %>'
 
-pushd $hive
+if ($property_type -eq '') {
+  $property_type = 'String'
+}
+if ($registry_hive -eq '') {
+  $registry_hive = 'HKLM:'
+}
+$exitcode = 0
+
+pushd $registry_hive
 $status = Test-Path $registry_path
-if ( -not $status ) {
-  write-output "Registry path not found: '${registry_path}'"
- } else {
-    write-output "Registry path found: '${registry_path}'"
-    $value = Get-ItemProperty -path $registry_path -name $name -errorAction SilentlyContinue
-    $status = $value -ne $null
-    if ( -not $status ) {
-      write-output "Value not found: '${name}'" 
-      New-ItemProperty -Path ('{0}\{1}' -f $hive, $registry_path) -Name $name -Value $value -PropertyType $propertyType
-    } else {
-      write-output "Value exists: '${name}'"
+if (-not $status) {
+  Write-Output "Registry path not found: '${registry_path}'"
+} else {
+  Write-Output "Registry path found: '${registry_path}'"
+  $currentValue = Get-ItemProperty -Path $registry_path -Name $property_name -ErrorAction SilentlyContinue
+  $status = $currentValue -ne $null
+  if (-not $status) {
+    Write-Output ("Creating property '{0}' = '{1}" -f $property_name,$property_value)
+    try {
+      $status = $true
+      New-ItemProperty -Path ('{0}\{1}' -f $registry_hive,$registry_path) -Name $property_name -Value $property_value -PropertyType $property_type -ErrorAction Stop
+    } catch [exception]{
+      Write-Output ("Exception:{0}" -f $Error[0].Exception)
+      Write-Output ("Unable to create property '{0}' = '{1}" -f $property_name,$property_value)
+      $status = $false
     }
+  } else {
+    Write-Output "Value exists: '${property_name}'"
+    $status = $false
   }
+}
 
 popd
 
-write-output "will exit with ${exitcode}"
+# convert status to exitcode
+$exitcode = [int](-not ($status))
+Write-Output "Will exit with ${exitcode}"
 exit $exitcode
