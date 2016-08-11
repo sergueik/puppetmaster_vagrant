@@ -1,5 +1,6 @@
 require_relative '../windows_spec_helper'
-context 'Loading assembly from the CAC' do
+
+context 'Loading assembly from the GAC' do
 
   describe command (<<-EOF 
 [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
