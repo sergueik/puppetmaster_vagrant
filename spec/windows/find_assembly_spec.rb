@@ -4,7 +4,6 @@ context 'Print GAC asm cache information about specific assembly' do
   assembly_name = 'WindowsFormsIntegration'
   token = '31bf3856ad364e35' 
   # origin: https://github.com/gregzakh/alt-ps
-  # TODO: not formatted
   describe command(<<-EOF
  
   function Find-Assembly {
@@ -30,7 +29,8 @@ context 'Print GAC asm cache information about specific assembly' do
       }),
       [UInt32]$ASM_CACHE.GAC
     ))
-    $al
+    # TODO: not formatted
+    $result
   }
   Find-Assembly -AssemblyName '#{assembly_name}' 
   EOF
