@@ -54,6 +54,20 @@ define custom_command::exec_uru(
     source_permissions => ignore,
   } ->
 
+  # Populate the serverspec directory from all covered modules
+  # to scan multiple paths per module, build array ourside of the file resource:
+  # e.g.
+  # $serverspec_directories = unique(flatten([$covered_modules.map |$item| { "${item}/serverspec/${osfamily_platform_directory}" }, $covered_modules.map |$item| { "${item}/serverspec/${::osfamily}" }]))
+
+  file { "${toolspath}\\\spec\\multiple":
+    ensure             => directory,
+    path               => "${root}/spec/serverspec",
+    recurse            => true,
+    source             => $covered_modules.map |$item| { "puppet:///modules/${item}/serverspec/${::osfamily}" },
+    source_permissions => ignore,
+    sourceselect       => all,
+  }
+
   file { "${name} windows_spec_helper.rb":
     ensure             => file,
     path               => "${toolspath}\\spec\\windows_spec_helper.rb",
