@@ -1,0 +1,155 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# origin: https://github.com/rekibnikufesin/puppet-developer/tree/module03-vagrant/vagrant
+tag = ENV.fetch('TAG', '')
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+master_box_memory = ENV.fetch('MASTER_BOX_MEMORY', '2048').to_i
+agent_box_memory = ENV.fetch('AGENT_BOX_MEMORY', '512').to_i
+
+VAGRANTFILE_API_VERSION = '2'
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+	config.hostmanager.enabled = true
+	config.hostmanager.ignore_private_ip = false
+	config.hostmanager.include_offline = true
+
+	config.vm.define 'puppet' do |puppet|
+		# Puppetmaster on CentOS 7
+		config.vm.provider 'virtualbox' do |vb|
+			vb.memory = master_box_memory
+      vb.customize ['modifyvm', :id, '--cpus', '2']
+		end
+		puppet.vm.synced_folder '.', '/vagrant'
+		# NOTE: folders need to be present
+		puppet.vm.synced_folder './code', '/puppet_code'
+		puppet.vm.synced_folder './puppetserver', '/puppet_puppetserver'
+		puppet.vm.box = 'boxcutter/centos72'
+		config_vm_box_name = 'centos-7.0-x86_64.box'
+		puppet.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+		puppet.vm.hostname = 'puppet.example.com'
+		puppet.vm.network :private_network, ip: '10.0.20.10'
+		# Vagrant:
+		# * Unknown configuration section 'hostmanager'.
+		# The machine with the name 'default' was not found configured for this Vagrant environment.
+		# back up the folder ./.vagrant/machines, and delete all instances except puppet, agent1, agent2, agent3
+		puppet.hostmanager.aliases = %w(puppet)
+		puppet.vm.provision 'shell', inline: <<-SHELL
+			# sudo yum update -y
+			sudo rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+			sudo yum install puppetserver -y
+			sudo rm -rf /etc/puppetlabs/code
+			sudo ln -s /puppet_code /etc/puppetlabs/code
+			sudo rm -rf /etc/puppetlabs/puppetserver
+			sudo ln -s /puppet_puppetserver /etc/puppetlabs/puppetserver
+			sudo sed -i 's/2g/512m/g' /etc/sysconfig/puppetserver
+			echo '*.example.com' | sudo tee /etc/puppetlabs/puppet/autosign.conf
+			sudo service puppetserver start
+		SHELL
+	end
+
+	config.vm.define 'agent1' do |agent1|
+		# Puppet agent on CentOS 7
+		agent1.vm.box = 'boxcutter/centos72'
+    agent1.vm.provider :virtualbox do |vb|
+      vb.gui = false
+      vb.customize ['modifyvm', :id, '--memory', agent_box_memory ]
+      vb.customize ['modifyvm', :id, '--ioapic', 'on']
+      vb.customize ['modifyvm', :id, '--usb', 'off']
+      vb.customize ['modifyvm', :id, '--usbehci', 'off']
+    end
+		config_vm_box_name = 'centos-7.0-x86_64.box'
+		agent1.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+		agent1.vm.hostname = 'agent1.example.com'
+		agent1.vm.network :private_network, ip: '10.0.20.11'
+		agent1.hostmanager.aliases = %w(agent1)
+		agent1.vm.provision 'shell', inline: <<-SHELL
+			sudo yum update -y
+			sudo rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+			sudo yum install puppet-agent -y
+			sudo service puppet start
+		SHELL
+	end
+
+	config.vm.define 'agent2' do |agent2|
+		# Puppet agent on Debian
+		agent2.vm.box = 'ARTACK/debian-jessie'
+    agent2.vm.provider :virtualbox do |vb|
+      vb.gui = false
+      vb.customize ['modifyvm', :id, '--memory', agent_box_memory ]
+      vb.customize ['modifyvm', :id, '--ioapic', 'on']
+      vb.customize ['modifyvm', :id, '--usb', 'off']
+      vb.customize ['modifyvm', :id, '--usbehci', 'off']
+    end		
+		agent2.vm.hostname = 'agent2.example.com'
+		# TODO: download version from https://atlas.hashicorp.com/ARTACK/boxes/debian-jessie
+		# config_vm_box_name = 'debian-jessie-x86_64.box'
+		# agent2.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+		agent2.vm.network :private_network, ip: '10.0.20.12'
+		agent2.hostmanager.aliases = %w(agent2)
+		agent2.vm.provision 'shell', inline: <<-SHELL
+			wget https://apt.puppetlabs.com/puppetlabs-release-pc1-jessie.deb
+			sudo dpkg -i puppetlabs-release-pc1-jessie.deb
+			sudo apt-get update
+			sudo apt-get install puppet-agent -y
+			sudo /opt/puppetlabs/bin/puppet agent --enable
+			sudo service puppet start
+		SHELL
+	end
+
+ #	 config.vm.define 'agent3' do |agent3|
+ #		 # Puppet agent on Windows 2012
+ #		 agent3.vm.box = 'devopsguys/Windows2012R2Eval'
+ #		 agent3.vm.hostname = 'agent3'
+ #		 agent3.vm.network :private_network, ip: '10.0.20.13'
+ #		 agent3.hostmanager.aliases = %w(agent3)
+ #		 # Downloads and installs the PuppetLabs Puppet
+ #		 agent3.vm.provision 'shell', inline: <<-SHELL
+ # [string]$MsiUrl = 'https://downloads.puppetlabs.com/windows/puppet-x64-latest.msi'
+ # [string]$PuppetVersion = $null
+ # 
+ # 
+ # if ($PuppetVersion) {
+ #	 $MsiUrl = "https://downloads.puppetlabs.com/windows/puppet-${PuppetVersion}.msi"
+ #	 Write-Host "Puppet version $PuppetVersion specified, updated MsiUrl to'${MsiUrl]'"
+ # }
+ # 
+ # $PuppetInstalled = $false
+ # try {
+ #	 $ErrorActionPreference = 'Stop';
+ #	 Get-Command puppet | Out-Null
+ #	 $PuppetInstalled = $true
+ #	 $PuppetVersion = & puppet '--version'
+ #	 Write-Host "Puppet ${PuppetVersion} is installed. This process does not ensure the exact version or at least version specified, but only that puppet is installed. Exiting..."
+ #	 Exit 0
+ # } catch {
+ #	 Write-Host 'Puppet is not installed, continuing...'
+ # }
+ # 
+ # if (-not $PuppetInstalled ) {
+ #	 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+ #	 if (! ($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))) {
+ #		 Write-Host -ForegroundColor Red 'You must run this script as an administrator.'
+ #		 Exit 1
+ #	 }
+ # 
+ #	 # Install it - msiexec will download from the url
+ #	 $install_args = @('/qn', '/norestart', '/i', $MsiUrl, 'PUPPET_AGENT_CERTNAME=agent3.example.com')
+ #	 Write-Host "Installing Puppet. Running msiexec.exe ${install_args}"
+ #	 $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $install_args -Wait -PassThru
+ #	 if ($process.ExitCode -ne 0) {
+ #		 Write-Host 'Installer failed.'
+ #		 Exit 1
+ #	 }
+ # 
+ #	 # Stop the service that it autostarts
+ #	 Write-Host 'Stopping Puppet service.'
+ #	 Start-Sleep -seconds 5
+ #	 Stop-Service -Name puppet
+ # 
+ #	 Write-Host 'Puppet successfully installed.'
+ # }
+ #		 SHELL
+ #	 end
+end
