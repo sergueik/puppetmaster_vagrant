@@ -3,7 +3,7 @@
 
 define custom_command::exec_uru(
   $toolspath   = 'c:\tools',
-  $version     = '0.2.0'
+  $version     = '0.3.0'
 )   { 
   validate_string($toolspath)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
@@ -53,6 +53,25 @@ define custom_command::exec_uru(
     ensure             => directory,
     source_permissions => ignore,
   } ->
+
+  # Populate the serverspec directory from all covered modules
+  # to scan multiple paths per module, build array ourside of the file resource:
+  # e.g.
+  # $serverspec_directories = unique(flatten([$covered_modules.map |$item| { "${item}/serverspec/${osfamily_platform_directory}" }, $covered_modules.map |$item| { "${item}/serverspec/${::osfamily}" }]))
+  # May also need to provide a custom mount point through `fileserver.conf
+  # https://docs.puppet.com/puppet/latest/reference/file_serving.html
+  # to enable globbing serverspec files by role/ profile 
+  # [<NAME OF MOUNT POINT>]
+  # path <PATH TO DIRECTORY>
+  # allow *
+  file { "${toolspath}\\\spec\\multiple":
+    ensure             => directory,
+    path               => "${root}/spec/serverspec",
+    recurse            => true,
+    source             => $covered_modules.map |$item| { "puppet:///modules/${item}/serverspec/${::osfamily}" },
+    source_permissions => ignore,
+    sourceselect       => all,
+  }
 
   file { "${name} windows_spec_helper.rb":
     ensure             => file,
