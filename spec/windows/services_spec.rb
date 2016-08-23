@@ -1,57 +1,87 @@
+require_relative '../windows_spec_helper'
+
 
 context 'Services' do
   describe command (<<-EOF
+    # passing the switch to Powershell
+    function FindService
+    {
+      param([string]$name,
+        [switch]$run_as_user_account
+      )
+      $local:result = @()
+      $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
 
-function FindService
-{
-  param([string]$name,
-    [switch]$run_as_user_account
-  )
-  $local:result = @()
-  $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
-
-  if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
-    $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
-  }
-    return $local:result
-
-
-}
-
-findService -Name '%' -run_as_user_account | ConvertTo-Json
+      if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
+        $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
+      }
+        return $local:result
 
 
-EOF
-) do
+    }
+
+    findService -Name '%' -run_as_user_account | ConvertTo-Json
+
+  EOF
+  ) do
     its(:stdout) { should be_empty }
     its(:stderr) { should be_empty }
     its(:exit_status) {should eq 0 }
   end
+  # same call, without the switch
   describe command (<<-EOF
-function FindService
-{
-  param([string]$name,
-    [switch]$run_as_user_account
-  )
-  $local:result = @()
-  $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
+    function FindService
+    {
+      param([string]$name,
+        [switch]$run_as_user_account
+      )
+      $local:result = @()
+      $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
 
-  if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
-    $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
-  }
-    return $local:result
-}
+      if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
+        $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
+      }
+        return $local:result
+    }
 
-findService -Name 'puppet' | ConvertTo-Json
-
-
-EOF
-) do
+    findService -Name 'puppet' | ConvertTo-Json
+  EOF
+  ) do
     its(:stdout) { should match /"DisplayName":  "Puppet Agent"/ }
     its(:stdout) { should match /"StartName":  "LocalSystem"/ }
-    its(:stderr) { should be_empty }
+    # its(:stdout) { should be_empty }
     its(:exit_status) {should eq 0 }
   end
-end
 
-# $log = get-eventlog -logname 'application' | where-object { $_.'EventID' -eq 1 } |  where-object { $_.'Message' -match 'WhatsUp' } | where-object {$_.entrytype -eq 'Error' } | select-object -first 1;  write-output $log.'Source', $log.'TimeGenerated', $log.'Message'; $log.'entrytype'",
+  context 'WhatsUp Event Archiver Service' do
+    # real life example,  service uses SMB shares for EventArchiver pipe access 
+    # hence it is required to be run under the domain account with administrator privileges
+    service_name = 'WhatsUp Event Archiver Service'
+    account_name = '!eventservice1'
+    account_domain = 'ad-ent'
+    describe command (<<-EOF
+      function FindService
+      {
+        param([string]$name,
+          [switch]$run_as_user_account
+        )
+        $local:result = @()
+        $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
+
+        if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
+          $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
+        }
+          return $local:result
+      }
+
+      findService -Name '#{service_name}' | ConvertTo-Json
+
+    EOF
+    ) do
+      its(:stdout) { should match /"DisplayName":  "#{service_name}"/i }
+      its(:stdout) { should match /"StartName":  "#{account_domain}\\\\#{account_name}"/i }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
+    end
+  end
+end
