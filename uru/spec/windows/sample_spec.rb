@@ -1,24 +1,28 @@
-require 'spec_helper'
+require_relative '../windows_spec_helper'
 
-describe port(3389) do
-  it { should be_listening.with('udp')  }
-  it { should be_listening.with('tcp')  }
+context 'uru smoke test' do
+  context 'basic os tests' do
+    describe port(3389) do
+      it do
+       should be_listening.with('tcp')
+       should be_listening.with('udp')
+      end
+    end
+
+    describe file('c:/windows') do
+      it { should be_directory }
+    end
+  end
+
+  context 'detect uru environment' do
+    describe command(<<-EOF
+     pushd env:
+     dir 'PATH' | format-list
+     popd
+      EOF
+    ) do
+      # could fail if the .gems are put under $HOME and added to the $PATH
+      its(:stdout) { should match Regexp.new('_U1_;c:\\\\uru\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
+    end
+  end 
 end
-
-
-describe file('c:/windows') do
-  it { should be_directory }
-end
-
-# uru environment is simply a custom PATH prefix
-
-describe command(<<-EOF
- pushd env:
- dir 'PATH' | format-list
- popd
-  EOF
-) do
-  # will fail as long as the .gems are put under $HOME
-  its(:stdout) { should match Regexp.new('_U1_;c:\\\\uru\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
-end
-

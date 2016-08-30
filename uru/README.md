@@ -169,17 +169,29 @@ The `uru` module contains a basic sample serverspec file that is run as a smoke 
 All spec files should be put in the same directory, e.g. `spec\localhost`
 ```
 require 'spec_helper'
+context 'basic tests' do
+  describe port(3389) do
+    it do
+     should be_listening.with('tcp')
+     should be_listening.with('udp')
+    end
+  end
 
-describe port(3389) do
-  it do
-   should be_listening.with('tcp')
-   should be_listening.with('udp')
+  describe file('c:/windows') do
+    it { should be_directory }
   end
 end
-
-describe file('c:/windows') do
-  it { should be_directory }
-end
+context 'detect uru environment through a custom PATH prefix' do
+  describe command(<<-EOF
+   pushd env:
+   dir 'PATH' | format-list
+   popd
+    EOF
+  ) do
+    # will fail as long as the .gems are put under $HOME
+    its(:stdout) { should match Regexp.new('_U1_;c:\\\\uru\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
+  end
+end 
 ```
 
 The results are nicely formatted in a standalone HTML report:
