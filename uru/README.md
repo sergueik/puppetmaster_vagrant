@@ -254,7 +254,7 @@ file {'spec/local':
 ```
 
 Alternatively (when using [roles and profiles](http://www.craigdunn.org/2012/05/239/)) module can collect serverspec files from the profile: `/site/profile/files` is also accessible via `puppet:///modules` URI.
-
+```
 file {'spec/local': 
   ensure             => directory,
   path               => "${tool_root}/spec/local",
@@ -263,11 +263,11 @@ file {'spec/local':
   source_permissions => ignore,,
   sourceselect       => all,
 }
-
+```
 
 Full module is also available in a sibling directory: 
-[exec_uru.pp](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/manifests/exec_uru.pp)
-[uru_runner_ps1.erb](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/templates/uru_runner_ps1.erb)
+ * [exec_uru.pp](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/manifests/exec_uru.pp)
+ * [uru_runner_ps1.erb](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/templates/uru_runner_ps1.erb)
 
 Author
 ------
