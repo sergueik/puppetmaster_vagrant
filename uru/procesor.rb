@@ -49,7 +49,13 @@ count = 1
 
 resultobj[:examples].each do |example|
   if example[:status] !~ Regexp.new(ignore_statuses,Regexp::IGNORECASE)
-    pp [example[:status],example[:full_description]]
+    full_description = example[:full_description]
+    if full_description =~ /\n/
+      short_description = (full_description.split(/\r?\n/).grep(/\S/))[0..1].join(' ')
+    else
+      short_description = full_description
+    end
+    pp [example[:status],short_description]
     count = count + 1
     break if @options[:maxcount] > 0 and count > @options[:maxcount]
   end
