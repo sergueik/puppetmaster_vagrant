@@ -39,7 +39,15 @@ if ($host.Version.Major -gt 2) {
   $count = 0
   foreach ($example in $resultobj.'examples') {
     if ( -not ( $example.'status' -match $statuses_regexp )) {
-      Write-Output ("Test : {0}`r`nStatus: {1}" -f ($example.'full_description'),($example.'status'))
+      # get few non-blank lines of the description
+      # e.g. when the failed test is an inline command w/o a wrapping context 
+      $full_description = $example.'full_description'
+      if ($full_description -match '\n' ){
+        $short_Description = ( $full_description -split '\n' | where-object { $_ -notlike '\s*' } |select-object -first 3 ) -join ' '
+      } else {
+        $short_Description = $full_description
+      }
+      Write-Output ("Test : {0}`r`nStatus: {1}" -f $short_Description,($example.'status'))
       $count++;
       if (($maxcount -ne 0) -and ($maxcount -lt $count)) {
         break
