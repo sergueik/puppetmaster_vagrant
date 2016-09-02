@@ -1,6 +1,6 @@
 @echo OFF
 SETLOCAL
-SET TOOLSPATH=c:\tools
+SET TOOLSPATH=c:\uru
 SET RUBYPATH=%TOOLSPATH%\ruby
 set URU_INVOKER=batch
 pushd %TOOLSPATH%
