@@ -13,16 +13,15 @@
 #> 
 param(
   [Parameter(Mandatory = $false)]
-  [string]$report = 'result.json',
+  [string]$name = 'result.json',
   [Parameter(Mandatory = $false)]
-  [string]$directory = 'results',
+  [string]$directory = 'reports',
   [Parameter(Mandatory = $false)]
   [string]$serverspec = 'spec\local',
-  [int]$maxcount = 0,
+  [int]$maxcount = 100,
   [switch]$warnings
 
 )
-
 
 $statuses = @('passed')
 
@@ -32,12 +31,15 @@ if ( -not ([bool]$PSBoundParameters['warnings'].IsPresent )) {
 
 $statuses_regexp = '(?:' + ( $statuses -join '|' ) +')'
 
-$resultpath = "${directory}/${report}";
-
+$file_path = ("${directory}/${name}" -replace '/' , '\');
+if (-not (Test-Path $file_path)) {
+  write-output ('Results is unavailable: "{0}"' -f $file_path )
+  exit 0  
+}
 if ($host.Version.Major -gt 2) {
-  $resultobj = Get-Content -Path $resultpath | ConvertFrom-Json;
+  $result_obj = Get-Content -Path $file_path | ConvertFrom-Json ; 
   $count = 0
-  foreach ($example in $resultobj.'examples') {
+  foreach ($example in $result_obj.'examples') {
     if ( -not ( $example.'status' -match $statuses_regexp )) {
       # get few non-blank lines of the description
       # e.g. when the failed test is an inline command w/o a wrapping context 
@@ -54,25 +56,25 @@ if ($host.Version.Major -gt 2) {
       }
     }
   }
-  # stats
+  # compute stats - 
+  # NOTE: there is no outer context information in the `result.json`
   $stats = @{}
-  foreach ($example in $report_obj.'examples') {
+  foreach ($example in $result_obj.'examples') {
     $file_path = $example.'file_path'
     if (-not $stats.ContainsKey($file_path)) {
       $stats.Add($file_path,@{ 'passed' = 0; 'failed' = 0; 'pending' = 0; })
     }
     $stats[$file_path][$example.'status']++
   }
-
+  write-output 'Stats:'
   $stats.Keys | ForEach-Object {
     $file_path = $_
     $data = $stats[$file_path]
     $total = $data['passed'] + $data['pending'] + $data['failed']
-    Write-Output ('{0} {1}%' -f $file_path,(([math]::round(100 * $data['passed'] / $total,1))))
+    Write-Output ('{0} {1} %' -f $file_path,(([math]::round(100 * $data['passed'] / $total,1))))
   }
-  Write-Output ($resultobj.'summary_line')
+  write-output 'Summary:'
+  Write-Output ($result_obj.'summary_line')
 } else {
-  $resultbody = Get-Content -Path $resultpath
-  $resultbody = $resultbody -replace '.+\"summary_line\"' , 'serverspec result: '
-  Write-Output $resultbody
+  Write-Output ((Get-Content -Path $file_path) -replace '.+\"summary_line\"' , 'serverspec result: ')
 }
