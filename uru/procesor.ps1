@@ -54,6 +54,22 @@ if ($host.Version.Major -gt 2) {
       }
     }
   }
+  # stats
+  $stats = @{}
+  foreach ($example in $report_obj.'examples') {
+    $file_path = $example.'file_path'
+    if (-not $stats.ContainsKey($file_path)) {
+      $stats.Add($file_path,@{ 'passed' = 0; 'failed' = 0; 'pending' = 0; })
+    }
+    $stats[$file_path][$example.'status']++
+  }
+
+  $stats.Keys | ForEach-Object {
+    $file_path = $_
+    $data = $stats[$file_path]
+    $total = $data['passed'] + $data['pending'] + $data['failed']
+    Write-Output ('{0} {1}%' -f $file_path,(([math]::round(100 * $data['passed'] / $total,1))))
+  }
   Write-Output ($resultobj.'summary_line')
 } else {
   $resultbody = Get-Content -Path $resultpath
