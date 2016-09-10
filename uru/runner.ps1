@@ -1,53 +1,59 @@
 # uru rake serverspec bootstrap script
 
-$ToolsPath = 'C:\uru'
-$ResultsPath = "${ToolsPath}\results"
-$RubyPath = "${ToolsPath}\ruby"
+$URU_PATH = 'C:\uru'
+$RESULTS_PATH = "${URU_PATH}\results"
+$RUBY_PATH = "${URU_PATH}\ruby"
 
 $GEM_VERSION = '2.1.0'
 $RAKE_VERSION = '10.1.0'
 $RUBY_VERSION = '2.1.7'
+$RUBY_VERSION_LONG = '2.1.7-p400'
 
-# when run by Puppet, the user profile environment appears to not be defined
-$userprofile = ([Environment]::GetFolderPath('Personal')) -replace '\\Documents', '' 
-write-debug "userprofile=${userprofile}"
+# Under Puppet, the expression $env:USERPFOFILE expression appears to not be set
+# so instead of [Environment]::GetFolderPath('UserProfile') use 'Personal'
+# http://windowsitpro.com/powershell/easily-finding-special-paths-powershell-scripts
+$USERPROFILE = ([Environment]::GetFolderPath('Personal')) -replace '\\Documents', ''
 
-mkdir "${UserProfile}\.uru" -erroraction silentlycontinue
+# https://richardspowershellblog.wordpress.com/2008/03/20/special-folders/
+# https://msdn.microsoft.com/en-us/library/windows/desktop/bb774096%28v=vs.85%29.aspx
+$ssfPROFILE  = 0x28
+$USERPROFILE = Get-ChildItem ( (New-Object -ComObject Shell.Application).Namespace($ssfPROFILE).Self.Path)
+write-debug "USERPROFILE=${USERPROFILE}"
+
+mkdir "${USERPROFILE}\.uru" -erroraction silentlycontinue
 @"
 
 {
   "Version": "1.0.0",
   "Rubies": {
     "3516592278": {
-      "ID": "2.1.7-p400",
-      "TagLabel": "217p400",
+      "ID": "${RUBY_VERSION_LONG}",
+      "TagLabel": "$($RUBY_PATH -replace '[\-\.]', '')",
       "Exe": "ruby",
-      "Home": "$($RubyPath -replace '\\', '\\')\\bin",
+      "Home": "$($RUBY_PATH -replace '\\', '\\')\\bin",
       "GemHome": "",
-      "Description":  "ruby 2.1.7p400 (2015-08-18 revision 51632) [x64-mingw32]"
+      "Description":  "ruby $($RUBY_PATH -replace '\-', '') (2015-08-18 revision 51632) [x64-mingw32]"
     }
   }
 }
-"@ |out-file -FilePath "${UserProfile}\.uru\rubies.json" -encoding ASCII
-$PWD =  pwd | select-object -expandproperty PATH
-$env:PATH = "${env:PATH};${ToolsPath}"
+"@ |out-file -FilePath "${USERPROFILE}\.uru\rubies.json" -encoding ASCII
+
+$env:PATH = "${env:PATH};${URU_PATH}"
+
 invoke-expression -command 'uru_rt.exe admin add ruby\bin'
 
-$tag = (invoke-expression -command 'uru_rt.exe ls') -replace '^\s+\b(\w+)\b.*$', '$1'
-write-debug ("tag = '{0}'" -f $tag )
+$TAG = (invoke-expression -command 'uru_rt.exe ls') -replace '^\s+\b(\w+)\b.*$', '$1'
+write-debug ("tag = '{0}'" -f $TAG )
 
-# bootstrap Ruby
-
+# bootstrap Rspec
 $env:URU_INVOKER = 'powershell'
-uru_rt.exe $tag
-uru_rt.exe ruby "${RubyPath}\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSION}\bin\rake" spec
 
-popd 
+uru_rt.exe $TAG
+uru_rt.exe ruby "${RUBY_PATH}\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSION}\bin\rake" spec
 
-# type "${ResultsPath}\result.json"
+popd
+
 # extract summary_line
-# $report = get-content -path "${ResultsPath}\result.json"; $summary_line = $report -replace '.+\"summary_line\"', 'serverspec result: '; write-output $summary_line;
-
-# convertFrom-json requires Powershell 3.
-$report = get-content -path "${ResultsPath}\result.json" | convertfrom-json
+# NOTE: convertFrom-json requires Powershell 3.
+$report = get-content -path "${RESULTS_PATH}\result.json" | convertfrom-json
 write-output ($report.'summary_line')
