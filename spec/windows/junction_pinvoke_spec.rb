@@ -1,6 +1,6 @@
 require_relative '../windows_spec_helper'
 
-context 'Junctions ans Reparse Points with pinvoke' do
+context 'Use pinvoke to read Directory Junctions ans Reparse Points' do
   # requires custom specinfra
   context 'Junctions ans Reparse Points' do
     describe file('c:/temp/xxx') do
@@ -9,7 +9,7 @@ context 'Junctions ans Reparse Points with pinvoke' do
   end
   describe command( <<-EOF
 
-# use pinvoke to read directory junction /  symlink target 
+# use pinvoke to read directory junction /  symlink target
 #  http://chrisbensen.blogspot.com/2010/06/getfinalpathnamebyhandle.html
 Add-Type -TypeDefinition @"
 // "
@@ -25,7 +25,6 @@ using Microsoft.Win32.SafeHandles;
 
 public class Utility
 {
-
     private const int FILE_SHARE_READ = 1;
     private const int FILE_SHARE_WRITE = 2;
 
@@ -41,7 +40,6 @@ public class Utility
     public static extern int GetFinalPathNameByHandle(IntPtr handle, [In, Out] StringBuilder path, int bufLen, int flags);
 
     // https://msdn.microsoft.com/en-us/library/aa364953%28VS.85%29.aspx
-
 
     // http://msdn.microsoft.com/en-us/library/aa363858(VS.85).aspx
     // http://www.pinvoke.net/default.aspx/kernel32.createfile
@@ -83,7 +81,7 @@ EOF
 
   describe command( <<-EOF
 
-# use pinvoke to read directory junction /  symlink target 
+# use pinvoke to read directory junction / symlink target
 #  http://chrisbensen.blogspot.com/2010/06/getfinalpathnamebyhandle.html
 Add-Type -TypeDefinition @"
 // "
@@ -116,7 +114,6 @@ public class Utility
 
     // https://msdn.microsoft.com/en-us/library/aa364953%28VS.85%29.aspx
 
-
     // http://msdn.microsoft.com/en-us/library/aa363858(VS.85).aspx
     // http://www.pinvoke.net/default.aspx/kernel32.createfile
     [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -144,7 +141,6 @@ public class Utility
 }
 "@ -ReferencedAssemblies 'System.Windows.Forms.dll','System.Runtime.InteropServices.dll','System.Net.dll','System.Data.dll','mscorlib.dll'
 
-
 $symlink_file = 'c:\\temp\\specinfra'
 
 $symlink_file_fileinfo_object = New-Object System.IO.FileInfo ($symlink_file)
@@ -158,4 +154,3 @@ EOF
     its(:stdout) { should match /symlink target: C:\\temp\\specinfra-2.43.5.gem/i }
   end
 end
-
