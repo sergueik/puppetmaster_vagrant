@@ -7,7 +7,7 @@ require 'pp'
 
 
 options = {
-  :maxcount   => 0,
+  :maxcount   => 100,
   :name       => 'result.json',
   :directory  => 'results',
   :serverspec => 'spec/local',

@@ -3,36 +3,63 @@
 
 ### Introduction. Execution
 
-One can bootstrap a standalone ruby environment to run [serverspec](http://serverspec.org/resource_types.html).
+One can bootstrap a standalone ruby environment to run [serverspec](http://serverspec.org/resource_types.html) and generate HTML, XML and json rspec reports.
 with the help of [uru](https://bitbucket.org/jonforums/uru/wiki/Usage) on an internet-blocked Windows or Linux instance (uru is not the only option for Linux).
-
-One could provision Uru environment from a zip/tar archive, one can also construct a Puppet module for the same. This is lightweight alternative to [DracoBlue/puppet-rvm](https://github.com/dracoblue/puppet-rvm) module.
 
 Assuming uru module is added to control repository role / profile, the serverspec run would be triggered locally on the instance by Puppet to verify the 'production' modules.
 
-These are no longer necessary to launch throgh Vagrantfile, though it is still possible - Puppet is likely to skip serverspec from running during incremental runs.
+It is no longer necessary to launch throgh Vagrantfile, though it is still possible - Puppet is likely to skip serverspec from running during incremental runs.
 
-To continue running serverspec through [vagrant-serverspec](https://github.com/jvoorhis/vagrant-serverspec) 
-plugin, one has to modify the `pattern` block in `Vagrantfile` to point the plugin to the `serverspec` directory within the module (assuming the serverspec are platform-specific):
+To continue running serverspec through [vagrant-serverspec](https://github.com/jvoorhis/vagrant-serverspec)
+plugin, one would have to modify the `Vagrantfile` to include the new location of the `rspec` files inside the module `files`
+e.g. assuming that serverspec are platform-specific, and the mapping between instance's Vagrant `config.vm.box` and the `arch` is defined elsewhere:
 
 ```
-  config.vm.provision :serverspec do |spec|
-    $arch = 'linux'
-    if File.exists?("spec/#{arch}")
-      spec.pattern = "spec/#{arch}/*_spec.rb"
-    elseif File.exists?("files/serverspec/#{arch}")
-      spec.pattern = "files/serverspec/#{arch}/*_spec.rb"
-    end
+arch = config.vm.box || 'linux'
+config.vm.provision :serverspec do |spec|  
+  if File.exists?("spec/#{arch}")
+    spec.pattern = "spec/#{arch}/*_spec.rb"
+  elseif File.exists?("files/serverspec/#{arch}")
+    spec.pattern = "files/serverspec/#{arch}/*_spec.rb"
   end
+end
+```
+The `uru` module can collect serverspec resources from other modules's via `puppet:///modules` URI and the Puppet [file](https://docs.puppet.com/puppet/latest/reference/type.html#file-attribute-sourceselect) resource: 
+```
+file {'spec/local':
+  ensure             => directory,
+  path               => "${tool_root}/spec/local",
+  recurse            => true,
+  source             => $modules.map |$name| {"puppet:///modules/${name}/serverspec/${::osfamily}"},
+  source_permissions => ignore,
+  sourceselect       => all,
+}
+```
+
+Alternatively when using [roles and profiles](http://www.craigdunn.org/2012/05/239/)), the `uru` module can collect serverspec files from the profile: `/site/profile/files` which is also accessible via `puppet:///modules` URI.
+```
+file {'spec/local':
+  ensure             => directory,
+  path               => "${tool_root}/spec/local",
+  recurse            => true,
+  source             => $server_roles.map |$server_role| {"puppet:///modules/profile//serverspec/roles/${server_role}" },
+  source_permissions => ignore,,
+  sourceselect       => all,
+}
 ```
 
 ### Internals
+
+One could provision Uru environment from a zip/tar archive, one can also construct a Puppet module for the same. This is a lightweight alternative to [DracoBlue/puppet-rvm](https://github.com/dracoblue/puppet-rvm) module, which is likely need to build Ruby from source anyway.
+
+
 The `$URU_HOME` home directory with Ruby runtime plus a handful of gems has the following structure:
 ```
 
 +---.gem
 +---reports
 +---ruby
+|   +---bin
 |   +---bin
 ...
 +---spec
@@ -58,43 +85,48 @@ uru_rx.exe gem install --no-rdoc --no-ri serverspec rspec rake json rspec_junit_
 ```
 and zip the directory.
 
-On Linux, the tarball creation starts with compiling Ruby from source , with a prefix `${URU_HOME}/ruby`:
+On Linux, the tarball creation starts with compiling Ruby from source, configured with a prefix `${URU_HOME}/ruby`:
 ```
-wget https://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.9.tar.gz
-tar xzvf ruby-2.1.9.tar.gz
+export URU_HOME='/uru'
+export RUBY_VERSION='2.1.9'
+wget https://cache.ruby-lang.org/pub/ruby/2.1/ruby-${RUBY_VERSION}.tar.gz
+tar xzvf ruby-${RUBY_VERSION}.tar.gz
 yum groupinstall -y 'Developer Tools'
 yum install -y zlib-devel openssl-devel libyaml-devel
-pushd ruby-2.1.9
-./configure --prefix=/uru/ruby --disable-install-rdoc --disable-install-doc
+
+pushd ruby-${RUBY_VERSION}
+./configure --prefix=${URU_HOME}/ruby --disable-install-rdoc --disable-install-doc
 make clean
 make
 sudo make install
 ```
-After Ruby is installed one switches to the isolated environment
+Next one installs binary distribution of `uru`:
 ```
+export URU_HOME='/uru'
+export URU_VERSION='0.8.1'
 pushd $URU_HOME
-wget https://bitbucket.org/jonforums/uru/downloads/uru-0.8.1-linux-x86.tar.gz
-tar xzvf uru-0.8.1-linux-x86.tar.gz
+wget https://bitbucket.org/jonforums/uru/downloads/uru-${URU_VERSION}-linux-x86.tar.gz
+tar xzvf uru-${URU_VERSION}-linux-x86.tar.gz
+```
+After Ruby and uru is installed one switches to the isolated environment
+and installs the required gem dependencies
+```
 ./uru_rt admin add ruby/bin
 ./uru_rt ls
 ./uru_rt 219p490
-```
-and installs the required gem dependencies
-```
 ./uru_rt gem list
 ./uru_rt gem install --no-ri --no-rdoc rspec serverspec rake rspec_junit_formatter
 cp -R ~/.gem .
 ```
-Finally the `$URU_HOME` is converted to an archive, that can be installed on a clean system.
+Finally the `$URU_HOME` is converted to an archive, that can be provisioned on a clean system. 
 
-With `$GEM_HOME` one can make sure gems are installed under `.gems` rather then the
-into a hidden `$HOME/.gem` directory. 
-This may not work correctly, if there was an error. 
-To verify, run the command
+NOTE: with `$GEM_HOME` one can make sure gems are installed under `.gems` rather then the
+into a hidden `$HOME/.gem` directory.
+This may not work correctly with some releases of `uru`. To verify, run the command on a system `uru` is provisioned from the tarball:
 ```
 ./uru_rt gem list --local --verbose
 ```
-If the list of gems is different than expected, e.g. only the following gems are listed,
+If the list of gems is shorter than expected, e.g. only the following gems are listed,
 ```
 bigdecimal (1.2.4)
 io-console (0.4.3)
@@ -105,22 +137,22 @@ rake (10.1.0)
 rdoc (4.1.0)
 test-unit (2.1.10.0)
 ```
-copy the `.gem` directory into `$HOME`.
+the `${URU_HOME}\.gem` directory may need to get copied to `${HOME}`
 
 If the error
 ```
 <internal:gem_prelude>:1:in `require': cannot load such file -- rubygems.rb (LoadError)
-
 ```
-is returned, you have to use the expand the `uru.tar.gz` archive into the same path `$URU_HOME` which was specified when Ruby was compiled. Note: [rvm](http://stackoverflow.com/questions/15282509/how-to-change-rvm-install-location) is known to give the same error if the `.rvm` diredctory location was changed .
+is observed, note that you have to unpackage the archive `uru.tar.gz` into the same `$URU_HOME` path which was configured when Ruby was compiled. 
+Note: [rvm](http://stackoverflow.com/questions/15282509/how-to-change-rvm-install-location) is known to give the same error if the `.rvm` diredctory location was changed .
 
-In the `spec` directory one places a trimmed down `windows_spec_helper.rb` and `spec_helper.rb`:
+In the `spec` directory there is a trimmed down `windows_spec_helper.rb` and `spec_helper.rb` required for `serverspec` gem:
 ```
 require 'serverspec'
 set :backend, :cmd
 ```
 
-and a stock Rakefile
+and a vanilla `Rakefile` generated by `serverspec init`
 ```
 require 'rake'
 require 'rspec/core/rake_task'
@@ -152,39 +184,36 @@ namespace :spec do
 end
 
 ```
-that is generated by `serverspec init` with formatting option added:
+with a formatting option added:
 ```
 t.rspec_opts = "--format documentation --format html --out reports/report_#{$host}.html --format json --out reports/report_#{$host}.json"
 ```
 This would enforce verbose formatting of rspec result [logging](http://stackoverflow.com/questions/8785358/how-to-have-junitformatter-output-for-rspec-run-using-rake).
 
-The `local` directory can contain arbitrary number of domain-specific spec files, and a bootstrapper script which basically calls
+The `spec/local` directory can contain arbitrary number of domain-specific spec files, as explained above. 
+The `uru` module contains a basic serverspec file `uru_spec.rb` that serves as a smoke test of the `uru` environment:
 
-on Windows
+Linux:
 ```
-pushd c:/uru
-uru_rt.exe admin add ruby\bin
-$env:URU_INVOKER = 'powershell'
-uru_rt.exe ls
-uru_rt.exe $tag
-uru_rt.exe ruby ${RubyPath}\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSION}\bin\rake spec
+require 'spec_helper'
+context 'uru smoke test' do
+  context 'basic os' do
+    describe port(22) do
+        it { should be_listening.with('tcp')  }
+    end
+  end
+  context 'detect uru environment' do
+    uru_home = '/uru'
+    gem_version='2.1.0'
+    user_home = '/root'
+    describe command('echo $PATH') do
+      its(:stdout) { should match Regexp.new("_U1_:#{user_home}/.gem/ruby/#{gem_version}/bin:#{uru_home}/ruby/bin:_U2_:") }
+    end
+  end
+end
 ```
 
-
-on Linux
-```
-#!/bin/sh
-export URU_INVOKER=bash
-pushd /uru
-./uru_rt admin add ruby/bin
-./uru_rt ls --verbose
-TAG=$(./uru_rt  ls 2>& 1|awk -e '{print $1}')
-./uru_rt $TAG
-./uru_rt gem list
-./uru_rt ruby ruby/lib/ruby/gems/2.1.0/gems/rake-10.1.0/bin/rake spec
-```
-The `uru` module contains a basic sample serverspec file that is run as a smoke test, but any real serverspec files can be dropped into the `local` folder and will run automatically.  During testing of the module, a number real serverspec files from existing LP modules have been put to the `uru` directory and run without errors.
-All spec files should be put in the same directory, e.g. `spec\localhost`
+Windows:
 ```
 require 'spec_helper'
 context 'basic tests' do
@@ -206,17 +235,52 @@ context 'detect uru environment through a custom PATH prefix' do
    popd
     EOF
   ) do
-    # will fail as long as the .gems are put under $HOME
     its(:stdout) { should match Regexp.new('_U1_;c:\\\\uru\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
   end
-end 
+end
+```
+but any domain-specific serverspec files can be placed into the `spec/local` folder.  
+
+There should be no nested subdirectories in `spec/local`.
+
+Finally in `${URU_HOME}` there is a platform-specific  bootstrap script:
+
+`runner.ps1` for Windows:
+```
+$URU_HOME = 'c:/uru'
+$GEM_VERSION = '2.1.0'
+$RAKE_VERSION = '10.1.0'
+pushd $URU_HOME
+uru_rt.exe admin add ruby\bin
+$env:URU_INVOKER = 'powershell'
+.\uru_rt.exe ls --verbose
+$TAG = (invoke-expression -command 'uru_rt.exe ls') -replace '^\s+\b(\w+)\b.*$', '$1'
+.\uru_rt.exe $TAG
+.\uru_rt.exe ruby ruby\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSION}\bin\rake spec
 ```
 
-The results are nicely formatted in a standalone HTML report:
+`runner.sh` for Linux:
+```
+#!/bin/sh
+export URU_HOME=/uru
+export GEM_VERSION='2.1.0'
+export RAKE_VERSION='10.1.0'
+
+export URU_INVOKER=bash
+pushd $URU_HOME
+./uru_rt admin add ruby/bin
+./uru_rt ls --verbose
+export TAG=$(./uru_rt  ls 2>& 1|awk -e '{print $1}')
+./uru_rt $TAG
+./uru_rt gem list
+./uru_rt ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
+```
+
+The results are nicely formatted in a standalone [HTML report](https://coderwall.com/p/gfmeuw/rspec-test-results-in-html):
 
 ![resultt](https://raw.githubusercontent.com/sergueik/puppetmaster_vagrant/master/uru/screenshots/result.png)
 
-and json:
+and a json:
 ```
 {
     "version": "3.5.0.beta4",
@@ -251,52 +315,48 @@ and json:
 }
 ```
 
-One can easily parse the json and extract the `full_description` of failed tests and the  `summary_line`:
+One can easily extract the stats by spec file, descriptions of the failed tests and the overall `summary_line` from the json to stdout to get it captured in the console log useful for CI:
 ```
-report_json = File.read('report_.json')
+report_json = File.read('results/report_.json')
 report_obj = JSON.parse(report_json)
+
+puts 'Failed tests':
 report_obj['examples'].each do |example|
   if example['status'] !~ /passed|pending/i
     pp [example['status'],example['full_description']]
   end
 end
+
+stats = {}
+result_obj[:examples].each do |example|
+  file_path = example[:file_path]
+  unless stats.has_key?(file_path)
+    stats[file_path] = { :passed => 0, :failed => 0, :pending => 0 }
+  end
+  stats[file_path][example[:status].to_sym] = stats[file_path][example[:status].to_sym] + 1
+end
+puts 'Stats:'
+stats.each do |file_path,val|
+  puts file_path + ' ' + (val[:passed] / (val[:passed] + val[:pending] + val[:failed])).floor.to_s + ' %'
+end
+
+puts 'Summary:'
+pp result_obj[:summary_line]
+
 ```
-to console so it is captured in provision log.
+For convenience the `processor.ps1` and `processor.rb` are provided. Finding and converting to a better structured HTML report layout with the help of additional gems is a work in progress.
 
-### Note
-To view the html-formatted report generated by [rspec-core](https://github.com/rspec/rspec-core) and [rspec_junit_formatter](https://github.com/sj26/rspec_junit_formatter) has `display-filters` 
-in Interner Explorer, make sure to confirm ActiveX popup. If this does not work, one may have to apply a patch epxlained in [how  IE generates the onchange event](http://krijnhoetmer.nl/stuff/javascript/checkbox-onchange/)i  and run the `apply_filters()`  on `onclick`  instead of `onchange`.
-
-See also [cucumberjs-junitxml](https://github.com/sonyschan/cucumberjs-junitxml)
-
-The module can access other modules's serverspec resources via `puppet:///modules` URI:
-
-```
-file {'spec/local': 
-  ensure             => directory,
-  path               => "${tool_root}/spec/local",
-  recurse            => true,
-  source             => $modules.map |$name| {"puppet:///modules/${name}/serverspec/${::osfamily}"},
-  source_permissions => ignore,,
-  sourceselect       => all,
-}
-```
-
-Alternatively (when using [roles and profiles](http://www.craigdunn.org/2012/05/239/)) module can collect serverspec files from the profile: `/site/profile/files` is also accessible via `puppet:///modules` URI.
-```
-file {'spec/local': 
-  ensure             => directory,
-  path               => "${tool_root}/spec/local",
-  recurse            => true,
-  source             => $server_roles.map |$server_role| {"puppet:///modules/profile//serverspec/roles/${server_role}" },
-  source_permissions => ignore,,
-  sourceselect       => all,
-}
-```
-
-Full module is also available in a sibling directory: 
+The Puppet module is available in a sibling directory:
  * [exec_uru.pp](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/manifests/exec_uru.pp)
  * [uru_runner_ps1.erb](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/templates/uru_runner_ps1.erb)
+
+
+### Note
+To enable checkboxes in the html-formatted report generated by [rspec-core](https://github.com/rspec/rspec-core) and [rspec_junit_formatter](https://github.com/sj26/rspec_junit_formatter) rendered in Interner Explorer, make sure to confirm ActiveX popup. If this does not work, one may have to apply a patch explained in [how  IE generates the onchange event](http://krijnhoetmer.nl/stuff/javascript/checkbox-onchange/)i  and run the `apply_filters()`  on `onclick`  instead of `onchange`.
+
+### See also
+ [cucumberjs-junitxml](https://github.com/sonyschan/cucumberjs-junitxml)
+ [danger-junit Junit XML to HTML convertor](https://github.com/orta/danger-junit)
 
 ### Author
 [Serguei Kouzmine](kouzmine_serguei@yahoo.com)
