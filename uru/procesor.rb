@@ -38,18 +38,18 @@ end
 
 opt.parse!
 ignore_statuses =
-if options[:warnings] 
+if options[:warnings]
   'passed'
 else
   '(?:passed|pending)'
 end
 
-file_path = "#{options[:directory]}/#{options[:name]}"
-puts 'Reading: ' + file_path
-result_obj = JSON.parse(File.read(file_path), symbolize_names: true)
+results_path = "#{options[:directory]}/#{options[:name]}"
+puts 'Reading: ' + results_path
+results_obj = JSON.parse(File.read(results_path), symbolize_names: true)
 count = 1
 
-result_obj[:examples].each do |example|
+results_obj[:examples].each do |example|
   if example[:status] !~ Regexp.new(ignore_statuses,Regexp::IGNORECASE)
     full_description = example[:full_description]
     if full_description =~ /\n/
@@ -62,19 +62,21 @@ result_obj[:examples].each do |example|
     break if options[:maxcount] > 0 and count > options[:maxcount]
   end
 end
-# compute stats - 
+# compute stats -
 # NOTE: there is no outer context information in the `result.json`
 stats = {}
-result_obj[:examples].each do |example|
-  file_path = example[:file_path]
-  unless stats.has_key?(file_path)
-    stats[file_path] = { :passed => 0, :failed => 0, :pending => 0 }
+results_obj[:examples].each do |example|
+  spec_path = example[:file_path]
+  unless stats.has_key?(spec_path)
+    stats[spec_path] = { :passed => 0, :failed => 0, :pending => 0 }
   end
-  stats[file_path][example[:status].to_sym] = stats[file_path][example[:status].to_sym] + 1
+  stats[spec_path][example[:status].to_sym] = stats[spec_path][example[:status].to_sym] + 1
 end
 puts 'Stats:'
-stats.each do |file_path,val|
-  puts file_path + ' ' + (val[:passed] / (val[:passed] + val[:pending] + val[:failed])).floor.to_s + ' %'
+stats.each do |spec_path,number_examples|
+  context = File.read(spec_path).scan(/context ['"].+['"] do\s*$/).first.gsub(/^\s*context\s+['"](.+)['"]\s+do\s*$/, '\1')
+  # not counting pending examples 
+  puts spec_path.gsub(/^.+\//,'') + "\t" + (100.00 * number_examples[:passed] / (number_examples[:passed] + number_examples[:failed])).round(2).to_s + "%\t" + context
 end
 puts 'Summary:'
-pp result_obj[:summary_line]
+puts results_obj[:summary_line]
