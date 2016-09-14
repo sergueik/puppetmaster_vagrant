@@ -1,5 +1,4 @@
-
-## Uruu
+## Uru
 
 ### Introduction. Execution
 
@@ -344,6 +343,20 @@ puts 'Summary:'
 pp result_obj[:summary_line]
 
 ```
+
+To execute these one has to involve `uru_rt`. 
+Linux:
+```
+./uru_rt admin add ruby/bin/ ; ./uru_rt ruby processor.rb --no-warnings --maxcount 100
+
+```
+
+Windows:
+```
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned  -Command "& {  iex -command 'uru_rt.exe admin add ruby/bin/' ; iex -command 'uru_rt.exe ruby processor.rb --no-warnings --maxcount 100'}"
+```
+Alternatively on Windows one can process the `result.json` in pure Powewrshell.
+
 For convenience the `processor.ps1` and `processor.rb` are provided. Finding and converting to a better structured HTML report layout with the help of additional gems is a work in progress.
 
 The Puppet module is available in a sibling directory:
