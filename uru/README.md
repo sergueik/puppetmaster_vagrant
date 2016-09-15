@@ -353,7 +353,7 @@ Linux:
 
 Windows:
 ```
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned  -Command "& {  iex -command 'uru_rt.exe admin add ruby/bin/' ; iex -command 'uru_rt.exe ruby processor.rb --no-warnings --maxcount 100'}"
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned  -Command "& {  \$env:URU_INVOKER = 'powershell'; iex -command 'uru_rt.exe admin add ruby/bin/' ; iex -command 'uru_rt.exe ruby processor.rb --no-warnings --maxcount 100'}"
 ```
 Alternatively on Windows one can process the `result.json` in pure Powewrshell.
 
