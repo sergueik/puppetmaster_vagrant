@@ -1,6 +1,6 @@
 require_relative '../windows_spec_helper'
 
-context 'Inspecting Environment' do
+context 'Environment' do
 
   describe command (<<-EOF
   $environment_path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment'
@@ -16,7 +16,7 @@ context 'Inspecting Environment' do
   ) do
     its(:stdout) { should match /c:\/opscode\/chef\/bin/i }
   end
-  # note different registry hive / path formatting syntax
+  # note differences in registry hive / path formatting syntax between Ruby and Powershell
 
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
     it do
