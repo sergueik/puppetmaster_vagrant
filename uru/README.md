@@ -1,4 +1,4 @@
-## Uru
+﻿## Uru
 
 ### Introduction. Execution
 
@@ -46,6 +46,9 @@ file {'spec/local':
   sourceselect       => all,
 }
 ```
+
+This mechanism relies on Puppet [file type](https://github.com/puppetlabs/puppet/blob/cdf9df8a2ab50bfef77f1f9c6b5ca2dfa40f65f7/lib/puppet/type/file.rb)
+and its 'sourceselect'  attribute. No equivalent mechanism is implemented with Chef yet.
 
 ### Internals
 
