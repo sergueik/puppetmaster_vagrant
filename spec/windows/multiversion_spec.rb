@@ -1,34 +1,45 @@
 require_relative '../windows_spec_helper'
 
 context 'Multiple Product Versions Acceptable' do
-  latest_version = '2'
-  latest_build = '00'
-  previous_version = '1'
-  previous_build = '00'
-  context 'Package' do
-    describe package(actual_package_name) do
-      it { should be_installed  }
-      # cannot expect - e.g. region differences
-      xit { should be_installed.with_version("#{latest_version}.#{latest_build}") }
-    end
-    product_version = 'product_version'
-    # NOTE: Redirection to 'NUL' failed: FileStream will not open Win32 devices such as disk partitions and tape drives. Avoid use of "\\.\" in the path.
-    describe command(<<-EOF
-    $product_version = '#{product_version}'
-    $data =  & "C:\\Program Files\\Puppet Labs\\Puppet\\bin\\facter.bat" --puppet "${product_version}" 2> 1
-    write-output $data
-    EOF
-    ) do
-      its(:stdout) { should match /(#{previous_version}.#{previous_build}|#{latest_version}.#{latest_build})/ }
-    end
+  package_name = 'Java 8 Update 101'
+
+  latest_version = '8.0'
+  latest_build = '1010.13'
+  previous_version = '8.0'
+  previous_build = '1010.9'
+  product_version_fact_name = 'java_version'
+  # Java SE Development Kit 8 Update 101
+  describe package(package_name) do
+    it { should be_installed  }
+    # the following expectation cannot be satisfied if different build / version of Java are allowed to coexist in the cluster
+    xit { should be_installed.with_version "#{latest_version}.#{latest_build}"  }
   end
-  
-  
-    describe command(<<-EOF
-function FindInstalledApplicationWithVersionsArray {
-  param($appName = '',$appVersionsArray = @())
+  describe command(<<-EOF
+  # NOTE: Redirection to 'NUL' failed:
+  # FileStream will not open Win32 devices such as disk partitions and tape drives. Avoid use of "\\.\" in the path.
+  $product_version = '#{product_version_fact_name}'
+  package_name = '#{package_name}'
+  $data =  & "C:\\Program Files\\Puppet Labs\\Puppet\\bin\\facter.bat" --puppet "${product_version}" 2> 1
+  write-output $data
+  $data =  & "C:\\Program Files\\Puppet Labs\\Puppet\\bin\\puppet.bat" resource package "${package_name}" 2> 1
+  write-output $data
+  EOF
+  ) do
+      its(:stdout) { should match /(#{previous_version}.#{previous_build}|#{latest_version}.#{latest_build})/ }
+  end
+
+
+  describe command(<<-EOF
+  # header: description of the command
+
+  function FindInstalledApplicationWithVersionsArray {
+  param(
+    $appName = '',
+    $appVersionsArray = @()
+    )
   $DebugPreference = 'Continue'
   Write-Debug ('appName: "{0}", appVersions: @({1})' -f $appName,($appVersionsArray -join ', '))
+
   $appNameRegex = New-Object Regex (($appName -replace '\\[','\\[' -replace '\\]','\\]'))
 
   if ((Get-WmiObject win32_operatingsystem).OSArchitecture -notmatch '64')
@@ -70,25 +81,23 @@ function FindInstalledApplicationWithVersionsArray {
 $exitCode = 1
 $success = $false
 $ProgressPreference = 'SilentlyContinue'
-$appVersionsArray = @( '2.19','2.20')
+$appVersionsArray = @( '8.0.1010.9','8.0.1010.13')
+$appName = '#{package_name}'
+
 try {
-  $success = ((FindInstalledApplicationWithVersionsArray -appName 'Defraggler' -appVersionsArray $appVersionsArray) -eq $true)
+  $success = ((FindInstalledApplicationWithVersionsArray -appName $appName -appVersionsArray $appVersionsArray) -eq $true)
   if ($success -is [boolean] -and $success) {
     $exitCode = 0 }
 } catch {
   Write-Output $_.Exception.Message
 }
 Write-Output "Exiting with code: ${exitCode}"
-# NOTE: if two consecutive invocations, the second result is not reliable
+# NOTE: if consecutive invocations are performed, the second result is wrong
 
     EOF
     ) do
-        its(:stdout) do
-          should match /Exiting with code: 0/
-        end
-      end
+    its(:stdout) do
+      should match /Exiting with code: 0/
     end
   end
-  
 end
-
