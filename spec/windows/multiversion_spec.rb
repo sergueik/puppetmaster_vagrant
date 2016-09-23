@@ -22,4 +22,73 @@ context 'Multiple Product Versions Acceptable' do
       its(:stdout) { should match /(#{previous_version}.#{previous_build}|#{latest_version}.#{latest_build})/ }
     end
   end
+  
+  
+    describe command(<<-EOF
+function FindInstalledApplicationWithVersionsArray {
+  param($appName = '',$appVersionsArray = @())
+  $DebugPreference = 'Continue'
+  Write-Debug ('appName: "{0}", appVersions: @({1})' -f $appName,($appVersionsArray -join ', '))
+  $appNameRegex = New-Object Regex (($appName -replace '\\[','\\[' -replace '\\]','\\]'))
+
+  if ((Get-WmiObject win32_operatingsystem).OSArchitecture -notmatch '64')
+  {
+    $keys = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
+    $possible_path = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+    if (Test-Path $possible_path)
+    {
+      $keys += (Get-ItemProperty $possible_path)
+    }
+  }
+  else
+  {
+    $keys = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
+    $possible_path = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+    if (Test-Path $possible_path)
+    {
+      $keys += (Get-ItemProperty $possible_path)
+    }
+    $possible_path = 'HKCU:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+    if (Test-Path $possible_path)
+    {
+      $keys += (Get-ItemProperty $possible_path)
+    }
+  }
+
+  if ($appVersionsArray.Length -eq 0) {
+    $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) })
+    Write-Debug ('applications found:' + $result)
+    Write-Output ([boolean]($result.Length -gt 0))
+  }
+  else {
+    $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) } | Where-Object { $appVersionsArray.Contains($_.DisplayVersion) })
+    Write-Debug ('applications found:' + $result)
+    Write-Output ([boolean]($result.Length -gt 0))
+  }
+}
+
+$exitCode = 1
+$success = $false
+$ProgressPreference = 'SilentlyContinue'
+$appVersionsArray = @( '2.19','2.20')
+try {
+  $success = ((FindInstalledApplicationWithVersionsArray -appName 'Defraggler' -appVersionsArray $appVersionsArray) -eq $true)
+  if ($success -is [boolean] -and $success) {
+    $exitCode = 0 }
+} catch {
+  Write-Output $_.Exception.Message
+}
+Write-Output "Exiting with code: ${exitCode}"
+# NOTE: if two consecutive invocations, the second result is not reliable
+
+    EOF
+    ) do
+        its(:stdout) do
+          should match /Exiting with code: 0/
+        end
+      end
+    end
+  end
+  
 end
+
