@@ -92,14 +92,14 @@ context 'Version check' do
       describe command(<<-EOF
         # installed product information through MsiEnumProducts, MsiGetProductInfo
 
-      add-type -typedefinition @'
+add-type -typedefinition @'
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
-public class Program
+public static class Program
 {
-    [DllImport("msi.dll", SetLastError = true)]
+    [DllImport("msi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
 
     [DllImport("msi.dll", CharSet = CharSet.Unicode)]
@@ -111,13 +111,21 @@ public class Program
         ERROR_MORE_DATA = 234,
         ERROR_NO_MORE_ITEMS = 259,
         ERROR_INVALID_PARAMETER = 87,
+        ERROR_UNKNOWN_PRODUCT = 1605,
+        ERROR_UNKNOWN_PROPERTY = 1608,
         ERROR_BAD_CONFIGURATION = 1610,
     }
 
-    [STAThread]
-    public void Perform()
+    public static void Clear(this StringBuilder value)
     {
-        Int32 len = 512;
+        value.Length = 0;
+        //     value.Capacity = 0;
+    }
+
+    [STAThread]
+    public static void Perform()
+    {
+        Int32 len = 128;
         StringBuilder sb = new StringBuilder(39);
         MSI_ERROR error1 = MSI_ERROR.ERROR_SUCCESS;
         for (int index = 0; error1 == MSI_ERROR.ERROR_SUCCESS; index++)
@@ -126,16 +134,18 @@ public class Program
             string productID = sb.ToString();
             if (error1 == MSI_ERROR.ERROR_SUCCESS)
             {
-                Console.WriteLine("ProductID = " + productID);
+                Console.WriteLine("ProductID: " + productID);
                 System.Text.StringBuilder productName = new System.Text.StringBuilder(len);
                 MSI_ERROR error2 = (MSI_ERROR)MsiGetProductInfo(productID, "ProductName", productName, ref len);
                 if (error2 == MSI_ERROR.ERROR_SUCCESS)
                 {
-                    Console.WriteLine("ProductName = " + productName);
+                    Console.WriteLine("ProductName: " + productName);
                 }
                 else
                 {
-                    Console.WriteLine("ProductName unknown");
+                    // TODO: ERROR_MORE_DATA
+                    // need buffer size is returned in len
+                    Console.WriteLine("ProductName: unknown");
                 }
                 productName.Clear();
 
@@ -143,29 +153,29 @@ public class Program
                 MSI_ERROR error3 = (MSI_ERROR)MsiGetProductInfo(productID, "VersionString", productVersion, ref len);
                 if (error3 == MSI_ERROR.ERROR_SUCCESS)
                 {
-                    Console.WriteLine("ProductVersion = " + productVersion);
+                    Console.WriteLine("ProductVersion: " + productVersion);
                 }
                 else
                 {
-                    Console.WriteLine("ProductVersion unknown");
+                    // TODO: ERROR_MORE_DATA
+                    // need buffer size is returned in len
+                    Console.WriteLine("ProductVersion: unknown");
                 }
                 productVersion.Clear();
+
             }
         }
+
     }
-    public Program() { }
 }
 '@ -ReferencedAssemblies 'System.Runtime.InteropServices.dll'
-      $helper =  new-object -typeName 'Program'
-      $helper.Perform()
-
-
+      [Program]::Perform()
       EOF
       ) do
         [
-          'ProductID = ',
-          "ProductName = #{appName}",
-          "ProductVersion = #{appVersion}",
+          'ProductID: ',
+          "ProductName: #{appName}",
+          "ProductVersion: #{appVersion}",
         ].each do |line|
           its(:stdout) do
             should match line
