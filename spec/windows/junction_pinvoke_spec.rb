@@ -136,8 +136,6 @@ public class Utility
         else
             return path.ToString();
     }
-
-
 }
 "@ -ReferencedAssemblies 'System.Windows.Forms.dll','System.Runtime.InteropServices.dll','System.Net.dll','System.Data.dll','mscorlib.dll'
 
