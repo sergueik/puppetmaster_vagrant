@@ -14,7 +14,7 @@ context 'Version check' do
           [string]$appVersion
         )
         $DebugPreference = 'Continue'
-        Write-Debug ('appName  = "{0}", appVersion={1}' -f $appName,$appVersion)
+        Write-Debug ('appName = "{0}", appVersion={1}' -f $appName,$appVersion)
         # fix to allow special character in the application names like 'Foo [Bar]'
         $appNameRegex = New-Object Regex (($appName -replace '\\[','\\[' -replace '\\]','\\]'))
 
@@ -72,5 +72,106 @@ context 'Version check' do
       end
     end
   end
-end
+  context 'PInvoke msi.dll MsiEnumProducts, MsiGetProductInfo' do
+    # origin :
+    # http://www.pinvoke.net/default.aspx/msi.msienumproducts
+    # http://www.pinvoke.net/default.aspx/msi.msigetproductinfo
+    # https://github.com/gregzakh/alt-ps/blob/master/Find-MsiPackage.ps1
 
+    # sample output:
+    # ProductID = {26A24AE4-039D-4CA4-87B4-2F32180101F0}
+    # ProductName = Java 8 Update 101
+    # ProductVersion = 8.0.1010.13
+    # NOTE: some entries do not provide information e.g.
+    # ProductID = {43780CEF-4E0F-9CB3-2226-580EC6BA1ABE}
+    # ProductName unknown
+    # ProductVersion unknown
+    {
+     'Java 8 Update 101' => '8.0.1010.13',
+    }.each do |appName, appVersion|
+      describe command(<<-EOF
+        # installed product information through MsiEnumProducts, MsiGetProductInfo
+
+      add-type -typedefinition @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+
+public class Program
+{
+    [DllImport("msi.dll", SetLastError = true)]
+    static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
+
+    [DllImport("msi.dll", CharSet = CharSet.Unicode)]
+    static extern Int32 MsiGetProductInfo(string product, string property, [Out] StringBuilder valueBuf, ref Int32 len);
+
+    public enum MSI_ERROR : int
+    {
+        ERROR_SUCCESS = 0,
+        ERROR_MORE_DATA = 234,
+        ERROR_NO_MORE_ITEMS = 259,
+        ERROR_INVALID_PARAMETER = 87,
+        ERROR_BAD_CONFIGURATION = 1610,
+    }
+
+    [STAThread]
+    public void Perform()
+    {
+        Int32 len = 512;
+        StringBuilder sb = new StringBuilder(39);
+        MSI_ERROR error1 = MSI_ERROR.ERROR_SUCCESS;
+        for (int index = 0; error1 == MSI_ERROR.ERROR_SUCCESS; index++)
+        {
+            error1 = (MSI_ERROR)MsiEnumProducts(index, sb);
+            string productID = sb.ToString();
+            if (error1 == MSI_ERROR.ERROR_SUCCESS)
+            {
+                Console.WriteLine("ProductID = " + productID);
+                System.Text.StringBuilder productName = new System.Text.StringBuilder(len);
+                MSI_ERROR error2 = (MSI_ERROR)MsiGetProductInfo(productID, "ProductName", productName, ref len);
+                if (error2 == MSI_ERROR.ERROR_SUCCESS)
+                {
+                    Console.WriteLine("ProductName = " + productName);
+                }
+                else
+                {
+                    Console.WriteLine("ProductName unknown");
+                }
+                productName.Clear();
+
+                System.Text.StringBuilder productVersion = new System.Text.StringBuilder(len);
+                MSI_ERROR error3 = (MSI_ERROR)MsiGetProductInfo(productID, "VersionString", productVersion, ref len);
+                if (error3 == MSI_ERROR.ERROR_SUCCESS)
+                {
+                    Console.WriteLine("ProductVersion = " + productVersion);
+                }
+                else
+                {
+                    Console.WriteLine("ProductVersion unknown");
+                }
+                productVersion.Clear();
+            }
+        }
+    }
+    public Program() { }
+}
+'@ -ReferencedAssemblies 'System.Runtime.InteropServices.dll'
+      $helper =  new-object -typeName 'Program'
+      $helper.Perform()
+
+
+      EOF
+      ) do
+        [
+          'ProductID = ',
+          "ProductName = #{appName}",
+          "ProductVersion = #{appVersion}",
+        ].each do |line|
+          its(:stdout) do
+            should match line
+          end
+        end
+      end
+    end
+  end
+end
