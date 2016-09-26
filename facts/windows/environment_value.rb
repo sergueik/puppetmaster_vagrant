@@ -1,8 +1,3 @@
-#!/usr/bin/env ruby
-
-require 'facter'
-
-# Name of this fact.
 fact_name = 'environment_value'
 
 if Facter.value(:kernel) == 'windows'
@@ -14,7 +9,7 @@ if Facter.value(:kernel) == 'windows'
       # note many variables are actually special folders
       # https://msdn.microsoft.com/en-us/library/system.environment.specialfolder(v=vs.110).asp
       $Result = [environment]::GetEnvironmentVariable('LOCALAPPDATA',[System.EnvironmentVariableTarget]::User)
-        write-output ('Content: "{0}"' -f  $Result ) 
+        write-output ('Content: "{0}"' -f  $Result )
       EOF
       )
       data_prefix = 'Content'

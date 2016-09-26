@@ -1,12 +1,4 @@
-#!/usr/bin/env ruby
-
 # checks for the ssl cert using Powershell 
-# this example shows a workaround to possibly a most intuitive from Powershell programmer's perspective code snippet
-# intended to print a true / false result dependent on the presence of a cert with spefic thumbprint under a specic path         
-# interesting, the snippets involving the '| where-object {}' do not seem to work correctly from Ruby -  the output of the following is blank:
-# script = "write-output 'test'; $cert_thumbprint = '#{cert_thumbprint}'; $certpath= 'LocalMachine\\TrustedPublisher'; pushd cert: ; cd '\\'; cd $certpath; dir ;  $items = (get-childitem -ErrorAction SilentlyContinue | where-object { $_.thumbprint -eq $cert_thumbprint }  ); write-output ('items = {0}' -f $items.count) " 
-
-require 'facter'
 
 fact_name = 'cert_check'
 cert_path = 'LocalMachine\TrustedPublisher'
@@ -34,6 +26,11 @@ foreach ($item in $items){
   } 
 } 
    EOF
+        # this example shows a workaround to possibly a most intuitive from Powershell programmer's perspective code snippet
+        # intended to print a true / false result dependent on the presence of a cert with spefic thumbprint under a specic path         
+        # NOTE: snippets involving the '| where-object {}' appear to not work correctly from Ruby - the output of the following is blank:
+        # script = "write-output 'test'; $cert_thumbprint = '#{cert_thumbprint}'; 
+        # $certpath= 'LocalMachine\\TrustedPublisher'; pushd cert: ; cd '\\'; cd $certpath; dir ;  $items = (get-childitem -ErrorAction SilentlyContinue | where-object { $_.thumbprint -eq $cert_thumbprint }  ); write-output ('items = {0}' -f $items.count) " 
         # Convert to a single-line snippet
         script.gsub!(/\n/, ';')
         if output = Facter::Util::Resolution.exec("#{exe} #{script}")

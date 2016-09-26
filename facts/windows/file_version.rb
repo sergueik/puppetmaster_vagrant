@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-require 'facter'
-
 fact_name = 'vboxcontrol_version'
 
 if Facter.value(:kernel) == 'windows'

@@ -1,12 +1,4 @@
-#!/usr/bin/env ruby
-
-# checks for the ssl cert using Powershell 
-# this example demonstrates that injecting an intuitive from Powershell programmer's perspective code snippet
-# intended to print a true / false result dependent on the presence of a cert with spefic thumbprint under a specic path         
-# does not work well in facter, for demostrative purposes the snippet is injected literally with interpolation turned off
-# the script does not generate the intended fact. When run standalone, the script works fine.
-
-require 'facter'
+# checks for the ssl cert using Powershell (broken) 
 
 fact_name = 'cert_check'
 cert_path = 'LocalMachine\TrustedPublisher'
@@ -34,6 +26,11 @@ foreach ($item in $items){
   } 
 } 
    EOF
+        # this example demonstrates that injecting an intuitive from Powershell programmer's perspective code snippet
+        # intended to print a true / false result dependent on the presence of a cert with spefic thumbprint under a specic path         
+        # does not work well in facter, for demostrative purposes the snippet is injected literally with interpolation turned off
+        # the script does not generate the intended fact. When run standalone, the script works fine.
+
         # Convert to a single-line snippet
         script.gsub!(/\n/, ';')
         if output = Facter::Util::Resolution.exec("#{exe} #{script}")

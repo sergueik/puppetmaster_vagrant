@@ -1,8 +1,5 @@
-#!/usr/bin/env ruby
+# origin: https://msdn.microsoft.com/en-us/library/system.environment.specialfolder(v=vs.110).asp
 
-require 'facter'
-
-# Name of this fact.
 fact_name = 'specialfolder_value'
 
 if Facter.value(:kernel) == 'windows'
@@ -11,18 +8,17 @@ if Facter.value(:kernel) == 'windows'
 
     setcode do
       File.write('c:/windows/temp/test.ps1', <<-EOF
-
       try {
-        # https://msdn.microsoft.com/en-us/library/system.environment.specialfolder(v=vs.110).asp
+
         $Result = [environment]::GetFolderPath([System.Environment.SpecialFolder]::ProgramFiles)
         # NOTE: naive conversion does not work -
       } catch [Exception]{
       }
-      $Result = [Environment]::GetFolderPath('LocalApplicationData') 
+      $Result = [Environment]::GetFolderPath('LocalApplicationData')
       # [Environment+SpecialFolder]::GetNames([Environment+SpecialFolder])
       # LocalApplicationData
       # UserProfile
-      write-output ('Content: "{0}"' -f  $Result ) 
+      write-output ('Content: "{0}"' -f  $Result )
       EOF
       )
       data_prefix = 'Content'

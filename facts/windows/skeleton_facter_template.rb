@@ -1,3 +1,4 @@
+# Puppet install directory  varies with the version of Puppet
 
 # Puppet 3.8, Windows 7, 32-bit
 $LOAD_PATH.insert(0, 'C:/Program Files/Puppet Labs/Puppet/facter/lib')
@@ -24,7 +25,7 @@ fact_name = 'fact_name'
 # 'Win32API' , 'digest/md5' , 'ffi', 'powershell'
 # NOTE - separate checks required with 64 bit binaries
 # file
-# To run:  
+# To run:
 # "c:\Program Files (x86)\Puppet Labs\Puppet Enterprise\sys\ruby\bin\ruby.exe" test.rb
 # see `spec/windows/ruby_powershell_spec.rb` for alternative discovery
 

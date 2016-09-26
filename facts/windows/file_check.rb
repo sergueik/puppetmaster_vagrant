@@ -1,10 +1,6 @@
-#!/usr/bin/env ruby
-
 # checks for the file using Powershell 
 # This skeleton script allows generalization to many other providers that Powershell represents as directory-like interface:
 # certificates, registry, firewall.
-
-require 'facter'
 
 fact_name = 'file_check'
 filename = 'c:\Windows\Tasks\SampleJob.job'

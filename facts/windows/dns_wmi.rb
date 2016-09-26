@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-require 'facter'
-
 # On Windows platform facter role is often reduced to dispatching the fact generation to WMI
 # based on: https://github.com/mmornati/mcollective-windows/blob/master/facts/dns.rb
 {

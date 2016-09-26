@@ -1,10 +1,7 @@
-#!/usr/bin/env ruby
-
-require 'facter'
-
 fact_name = 'application_version'
 
 if Facter.value(:kernel) == 'windows'
+  # very few Windows applications provide console help
   exe = 'C:/Program Files/Venafi/Platform/VAgent.exe'
   if File.exists?(exe)
     exe = "\"#{exe}\"" if Facter.value(:kernel) == 'windows'

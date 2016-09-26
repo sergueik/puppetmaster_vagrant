@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-require 'facter'
-
 fact_name = 'jre_installed'
 
 if Facter.value(:kernel) == 'windows'

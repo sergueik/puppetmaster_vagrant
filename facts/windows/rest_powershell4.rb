@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-require 'facter'
-
 # Create HTTP POST request from an instance which has Powershell 2.0
 # Powershell 2.0 does not have 'convertTo-json', 'Invoke-WebRequest'
 # NOTE: no HTTP status code in this snippet
@@ -14,9 +10,9 @@ fact_name = 'rest_powershell4_test'
 if Facter.value(:kernel) == 'windows'
 
   Facter.add(fact_name) do
-
-    username = 'sergueik'
-    password = 'xxxxx'
+    # fill in correct username and password
+    username = 'username'
+    password = 'password'
     auth_key = 'auth_key'
     auth_value = 'auth_value'
     url = 'https://api.github.com/user'
@@ -66,19 +62,17 @@ if Facter.value(:kernel) == 'windows'
         [byte[]]$postArray = [System.Text.Encoding]::GetEncoding('ASCII').GetBytes($postData)
         $webRequestStream.Write($postArray, 0, $postArray.Length)
         $webRequestStream.Close()
-        try { 
+        try {
           [System.Net.WebResponse] $response =  $req.GetResponse()
           # NOTE: no HTTP status code in this snippet
           [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($response.GetResponseStream())
           [string]$Result = $sr.ReadToEnd()
-          write-output ('Content: {0}' -f  $Result ) 
+          write-output ('Content: {0}' -f  $Result )
         } catch [Exception] {
 	        # System.Management.Automation.ErrorRecord -> System.Net.WebException
            $exception = $_[0].Exception
            write-output ("Exception : Status: '{0}'  StatusCode: '{1}' Message: '{2}'" -f  $exception.Status,  $exception.Response.StatusCode, $exception.Message )
         }
-
-
       EOF
       )
       data_prefix = 'Content'
