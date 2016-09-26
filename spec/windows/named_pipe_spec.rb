@@ -11,7 +11,7 @@ context 'Pipes' do
     //./pipe/wkssvc
   |
   describe command(<<-EOF
-  [String[]]$pipes = [System.IO.Directory]::GetFiles('\\\\.\pipe\\') 
+  [String[]]$pipes = [System.IO.Directory]::GetFiles('\\\\.\\pipe\\')
   format-list -inputobject ($pipes -replace '\\\\', '/' )'
   EOF
   ) do
