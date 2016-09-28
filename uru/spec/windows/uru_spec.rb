@@ -1,7 +1,9 @@
-require_relative '../windows_spec_helper'
+if Dir.exists?('../windows_spec_helper.rb') 
+  require_relative '../windows_spec_helper'
+end
 
 context 'uru' do
-  uru_home = 'd:/apps/puppet-testing_framework'
+  uru_home = 'c:/uru'
   user_home = 'c:/users/vagrant'
   gem_version = '2.1.0'
   context 'Path' do

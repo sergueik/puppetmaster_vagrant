@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 context 'uru' do
   uru_home = '/uru'
   gem_version = '2.1.0'
