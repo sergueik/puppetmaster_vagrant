@@ -3,7 +3,7 @@ context 'uru' do
   gem_version = '2.1.0'
   user_home = '/root'
   context 'Path' do
-    describe command('echo $PATH') do
+    describe command('echo $PATH'), :if => ENV.has_key?('URU_INVOKER') do
       its(:stdout) { should match Regexp.new("_U1_:#{user_home}/.gem/ruby/#{gem_version}/bin:#{uru_home}/ruby/bin:_U2_:") }
     end
   end

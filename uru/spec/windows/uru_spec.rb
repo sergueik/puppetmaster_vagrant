@@ -1,4 +1,4 @@
-if Dir.exists?('../windows_spec_helper.rb') 
+if File.exists?( 'spec/windows_spec_helper.rb')
   require_relative '../windows_spec_helper'
 end
 
@@ -12,8 +12,8 @@ context 'uru' do
       dir 'PATH' | format-list
       popd
       EOF
-    ) do
-      its(:stdout) { should match Regexp.new('_U1_;D:[/|\\\\]testing_framework\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
+    ), :if => ENV.has_key?('URU_INVOKER') do
+      its(:stdout) { should match Regexp.new('_U1_;' + uru_home.gsub('/','[/|\\\\\\\\]') + '\\\\ruby\\\\bin' + ';_U2_', Regexp::IGNORECASE) }
     end
   end
 
@@ -43,4 +43,3 @@ context 'uru' do
     end
   end
 end
-
