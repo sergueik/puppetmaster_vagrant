@@ -8,7 +8,6 @@ context 'Multiple Product Versions Acceptable' do
   previous_version = '8.0'
   previous_build = '1010.9'
   product_version_fact_name = 'java_version'
-  # Java SE Development Kit 8 Update 101
   describe package(package_name) do
     it { should be_installed  }
     # the following expectation cannot be satisfied if different build / version of Java are allowed to coexist in the cluster
@@ -30,7 +29,7 @@ context 'Multiple Product Versions Acceptable' do
 
 
   describe command(<<-EOF
-  # header: description of the command
+  # TODO: header description of the command .... 
 
   function FindInstalledApplicationWithVersionsArray {
   param(

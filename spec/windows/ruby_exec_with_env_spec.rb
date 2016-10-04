@@ -6,23 +6,10 @@ context 'Execute embedded Ruby from Puppet Agent' do
       'answer: 42',
       'status: changed'
     ]
-    
-    # TODO: distinguish Puppet Community Edition and Puppet Enterprise
-    puppet_home_folder = 'Puppet Enterprise'
-    puppet_home_folder = 'Puppet'
-    # Note: os[:arc] is not set in Windows platform     
-    if os[:arch] == 'i386'
-      # 32-bit environment,       
-      puppet_home = 'C:/Program Files/Puppet Labs/' + puppet_home_folder
-    else
-      # 64-bit 
-      puppet_home = 'C:/Program Files (x86)/Puppet Labs/' + puppet_home_folder
-    end
-    # Note: os[:arc] is not set in Windows platform     
-    puppet_home = 'C:/Program Files/Puppet Labs/' + puppet_home_folder
-    puppet_statedir = 'C:/ProgramData/PuppetLabs/'+ puppet_home_folder + '/var/state'
+    puppet_home = 'C:/Program Files (x86)/Puppet Labs/Puppet'
+    puppet_statedir = 'C:/ProgramData/PuppetLabs/Puppet Enterprise/var/state'
     last_run_report = "#{puppet_statedir}/last_run_report.yaml"
-    rubylib = "#{puppet_home}/facter/lib;#{puppet_home}/hiera/lib;#{puppet_home}/puppet/lib;"
+    rubylib = "#{puppet_home}/facter/lib;#{puppet_home}/hiera/lib;#{puppet_home}/Puppet Enterprise/lib;"
     rubyopt = 'rubygems' 
     script_file = 'c:/windows/temp/test.rb'
     ruby_script = <<-EOF
@@ -80,16 +67,7 @@ puts 'Puppet Agent last run status: ' +  status
   iex "ruby.exe '#{script_file}'"
   EOF
   ) do
-    # TODO: distinguish Puppet Community Edition and Puppet Enterprise
-    # Note: os[:arc] is not set in Windows platform     
-    if os[:arch] == 'i386'
-      # 32-bit environment,       
-      let(:path) { 'C:/Program Files/Puppet Labs/Puppet/sys/ruby/bin' }
-    else
-      # 64-bit 
-      let(:path) { 'C:/Program Files (x86)/Puppet Labs/Puppet/sys/ruby/bin' }
-    end
-      let(:path) { 'C:/Program Files/Puppet Labs/Puppet/sys/ruby/bin' }
+      let(:path) { 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/sys/ruby/bin' }
       # does not work:
       # let(:rubylib) { rubylib }
       # let(:rubylib) {'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/facter/lib;C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/hiera/lib;C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/puppet/lib;'}
