@@ -73,7 +73,7 @@ context 'Version check' do
     end
   end
   context 'PInvoke msi.dll MsiEnumProducts, MsiGetProductInfo' do
-    # origin :
+    # see also:
     # http://www.pinvoke.net/default.aspx/msi.msienumproducts
     # http://www.pinvoke.net/default.aspx/msi.msigetproductinfo
     # https://github.com/gregzakh/alt-ps/blob/master/Find-MsiPackage.ps1

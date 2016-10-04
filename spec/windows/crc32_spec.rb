@@ -10,6 +10,8 @@ context 'crc32 check' do
     # returns  a crc32 of a file 
 
     # origin: http://poshcode.org/4946
+    # https://geektimes.ru/post/130287/
+    # http://www.cyberforum.ru/blogs/579090/blog4052.html
     function ntdll_Crc32 {
       param([string]$FilePath)
 

@@ -1,20 +1,21 @@
 require_relative '../windows_spec_helper'
-# origin: https://github.com/gregzakh/alt-p
+# see also: https://github.com/gregzakh/alt-p
 s# http://referencesource.microsoft.com/#mscorlib/microsoft/win32/fusionwrap.cs,0c272b085a297194,references
 
 context 'Print GAC information about specific assembly' do
   assembly_name = 'WindowsFormsIntegration'
-  token = '31bf3856ad364e35'   
+  token = '31bf3856ad364e35'
   describe command(<<-EOF
- 
+
   function Find-Assembly {
     param(
       [Parameter(ValueFromPipeline=$true)]
-      [String]$AssemblyName
+      [String]$AssemblyName # find specified assembly
+      # when nothing specified - every assembly in the GAC will be printed
     )
-    
+
     $result = New-Object Collections.ArrayList
-    $ASM_CACHE = @{GAC = 2 ; 
+    $ASM_CACHE = @{GAC = 2 ;
                    ZAP = 1;  }
     [Object].Assembly.GetType(
       'Microsoft.Win32.Fusion'
@@ -23,17 +24,17 @@ context 'Print GAC information about specific assembly' do
     ).Invoke($null, @(
       [Collections.ArrayList]$result,
       $(if ([String]::IsNullOrEmpty($AssemblyName)) {
-        $null         #all assemblies will be printed
+        $null
       }
       else {
-        $AssemblyName #only specified assembly
+        $AssemblyName
       }),
       [UInt32]$ASM_CACHE.GAC
     ))
     # TODO: not formatted
     $result
   }
-  Find-Assembly -AssemblyName '#{assembly_name}' 
+  Find-Assembly -AssemblyName '#{assembly_name}'
   EOF
   )
   do
