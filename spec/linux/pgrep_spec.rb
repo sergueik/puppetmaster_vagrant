@@ -30,8 +30,8 @@ context 'Specinfra Service Resource Alternative' do
 
   context 'is running' do
     describe command("service #{service_name} status") do
-      # NOTE: negative lookahead failed
-      # its(:stdout) { should match(/\s+(?!not)\s+running/) }
+      # NOTE: negative lookbehind
+      its(:stdout) { should match(/(?<!not )running/) }
       its(:stdout) { should_not contain 'not running' }
     end
     describe command("pgrep -f '#{classpath}' -l") do
