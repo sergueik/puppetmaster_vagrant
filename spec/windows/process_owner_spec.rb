@@ -10,7 +10,7 @@ require_relative '../windows_spec_helper'
 # http://stackoverflow.com/questions/499053/how-can-i-convert-from-a-sid-to-an-account-name-in-c-sharp
 # http://www.java2s.com/Code/CSharp/Security/Convertbytearraytosidstring.htm
 # https://bytes.com/topic/c-sharp/answers/225065-how-call-win32-native-api-gettokeninformation-using-c
-  
+
 # see also: https://github.com/gregzakh/alt-ps/blob/master/Get-ProcessOwner.ps1
 # https://msdn.microsoft.com/en-us/library/windows/desktop/aa379634%28v=vs.85%29.aspx
 
@@ -25,19 +25,19 @@ context 'Owner' do
       $name =  '#{name}'
       $win32_process = Get-CimInstance Win32_Process -Filter "name = '${name}'" | select-object -first 1
       $owner = Invoke-CimMethod -InputObject $win32_process -MethodName GetOwner
-      write-output (@($name, $owner.'Domain', $owner.'User') |  format-list )    
+      write-output (@($name, $owner.'Domain', $owner.'User') |  format-list )
     EOF
     ) do
       [
-      'ruby.exe',
-      'NT AUTHORITY',
-      'SYSTEM'
-      ].each do |line| 
+        'ruby.exe',
+        'NT AUTHORITY',
+        'SYSTEM'
+      ].each do |line|
         its(:stdout) { should match /#{line}/io }
       end
     end
   end
-  context 'P Invoke' do
+  context 'P/Invoke (not working)' do
     name = 'ruby.exe'
     describe command (<<-EOF
       Add-Type -TypeDefinition @"
@@ -122,7 +122,7 @@ context 'Owner' do
                     byte[] sidBytes;
 
                     // Get the Process Token
-                    
+
                     if (!OpenProcessToken(processHandle, /* DesiredAccess */ TOKEN_READ|TOKEN_QUERY|TOKEN_ADJUST_PRIVILEGES, out tokenHandle))
                         throw new ApplicationException("Could not get process token.  Win32 Error Code: " + Marshal.GetLastWin32Error());
 
@@ -153,28 +153,89 @@ context 'Owner' do
                 public Test()
                 {
                 }
-
         }
 "@ -ReferencedAssemblies 'mscorlib.dll'
     $o =  new-object -type Test
     $name =  '#{name.gsub(/\..*$/,'')}'
     $process = Get-Process -Name $name
     write-output $process
-    $owner = $o.Owner($process.Handle) 
+    $owner = $o.Owner($process.Handle)
     write-output (@($name, $owner) | format-list )
     EOF
     ) do
       [
-      'ruby.exe',
-      'NT AUTHORITY',
-      'SYSTEM'
-      ].each do |line| 
+        'ruby',
+        'NT AUTHORITY',
+        'SYSTEM'
+      ].each do |line|
         its(:stdout) { should match /#{line}/io }
       end
       # Exception calling "Owner" with "1" argument(s): "Could not get process token. Win32 Error Code: 5"
       # https://msdn.microsoft.com/en-us/library/cc231199.aspx
       # 0x00000005
       # ERROR_ACCESS_DENIED
+      its(:stderr) { should be_empty }
+    end
+  end
+  context 'Another P/Invoke' do
+    # origin: https://github.com/gregzakh/alt-ps/blob/master/Get-ProcessOwner.ps1
+    name = 'ruby.exe'
+    describe command (<<-EOF
+#requires -version 5
+    function Get-ProcessOwner {
+      <#
+        .SYNOPSIS
+            Retrieves owner of the specified process.
+        .NOTES
+            .NET Framework 4.5.2 is required.
+      #>
+      param(
+        [Parameter(Mandatory=$true)]
+        [ValidateScript({($script:proc = Get-Process -name $_ -ErrorAction 0 | select-object -first 1) -ne 0})]
+        [String]$name
+      )
+      begin {
+        [Microsoft.Win32.SafeHandles.SafeAccessTokenHandle]$stah = [IntPtr]::Zero
+      }
+      process {
+        # write-output "process:"
+        # $script:proc|format-list
+        if (![Object].Assembly.GetType(
+          'Microsoft.Win32.Win32Native'
+        ).GetMethod(
+          'OpenProcessToken', [Reflection.BindingFlags]40
+        ).Invoke($null, ($par = [Object[]]@(
+          $proc.Handle, [Security.Principal.TokenAccessLevels]::Query, $stah
+        )))) {
+          $stah.Dispose()
+          throw New-Object ComponentModel.Win32Exception(
+            [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+          )
+        }
+      }
+      end {
+        New-Object PSObject -Property @{
+          Process = $proc.Name
+          PID = $proc.Id
+          User = (New-Object Security.Principal.WindowsIdentity(
+            $par[2].DangerousGetHandle()
+          )).Name
+        } | Select-Object Process, PID, User | Format-List
+        $par[2].Dispose()
+        $stah.Dispose()
+      }
+    }
+    EOF
+    ) do
+      [
+        'ruby.exe',
+        'NT AUTHORITY\\SYSTEM',
+      ].each do |line|
+        its(:stdout) { should match /#{line}/io }
+      end
+      # Unable to find type [Microsoft.Win32.SafeHandles.SafeAccessTokenHandle].
+      # You cannot call a method on a null-valued expression.
+      # $stah.Dispose()
       its(:stderr) { should be_empty }
     end
   end
