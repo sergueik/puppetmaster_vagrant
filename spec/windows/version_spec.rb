@@ -96,17 +96,13 @@ add-type -typedefinition @'
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-
 public static class Program
 {
     [DllImport("msi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
-
     [DllImport("msi.dll", CharSet = CharSet.Unicode)]
     static extern Int32 MsiGetProductInfo(string product, string property, [Out] StringBuilder valueBuf, ref Int32 len);
-
-    public enum MSI_ERROR : int
-    {
+    public enum MSI_ERROR : int {
         ERROR_SUCCESS = 0,
         ERROR_MORE_DATA = 234,
         ERROR_NO_MORE_ITEMS = 259,
@@ -116,56 +112,49 @@ public static class Program
         ERROR_BAD_CONFIGURATION = 1610,
     }
 
-    public static void Clear(this StringBuilder value)
-    {
+    public static void Clear(this StringBuilder value) {
         value.Length = 0;
-        //     value.Capacity = 0;
+        // value.Capacity = 0;
     }
 
     [STAThread]
-    public static void Perform()
-    {
-        Int32 len = 128;
-        StringBuilder sb = new StringBuilder(39);
-        MSI_ERROR error1 = MSI_ERROR.ERROR_SUCCESS;
-        for (int index = 0; error1 == MSI_ERROR.ERROR_SUCCESS; index++)
-        {
-            error1 = (MSI_ERROR)MsiEnumProducts(index, sb);
-            string productID = sb.ToString();
-            if (error1 == MSI_ERROR.ERROR_SUCCESS)
-            {
-                Console.WriteLine("ProductID: " + productID);
-                System.Text.StringBuilder productName = new System.Text.StringBuilder(len);
-                MSI_ERROR error2 = (MSI_ERROR)MsiGetProductInfo(productID, "ProductName", productName, ref len);
-                if (error2 == MSI_ERROR.ERROR_SUCCESS)
-                {
-                    Console.WriteLine("ProductName: " + productName);
-                }
-                else
-                {
-                    // TODO: ERROR_MORE_DATA
-                    // need buffer size is returned in len
-                    Console.WriteLine("ProductName: unknown");
-                }
-                productName.Clear();
+    public static void Perform() {
+        Int32 guidSize = 39;
+        StringBuilder guidBuffer = new StringBuilder(guidSize);
+        MSI_ERROR enumProductsError = MSI_ERROR.ERROR_SUCCESS;
+        for (int index = 0; enumProductsError == MSI_ERROR.ERROR_SUCCESS; index++) {
+            enumProductsError = (MSI_ERROR)MsiEnumProducts(index, guidBuffer);
+            String guid = guidBuffer.ToString();
+            if (enumProductsError == MSI_ERROR.ERROR_SUCCESS) {
+                Console.WriteLine("Product GUID: " + guid);
+                // allocate sufficient size to prevent calling MsiGetProductInfo twice
 
-                System.Text.StringBuilder productVersion = new System.Text.StringBuilder(len);
-                MSI_ERROR error3 = (MSI_ERROR)MsiGetProductInfo(productID, "VersionString", productVersion, ref len);
-                if (error3 == MSI_ERROR.ERROR_SUCCESS)
-                {
-                    Console.WriteLine("ProductVersion: " + productVersion);
+                // extract Product Name
+                Console.Write("Product Name: ");
+                Int32 productNameSize = 512;
+                System.Text.StringBuilder productNameBuffer = new System.Text.StringBuilder(productNameSize);
+                MSI_ERROR getProductInfoError = (MSI_ERROR)MsiGetProductInfo(guid, "ProductName", productNameBuffer, ref productNameSize);
+                if (getProductInfoError == MSI_ERROR.ERROR_SUCCESS) {
+                    Console.WriteLine(productNameBuffer);
+                } else {
+                    Console.WriteLine("unknown" /* + productNameSize.ToString() */);
                 }
-                else
-                {
-                    // TODO: ERROR_MORE_DATA
-                    // need buffer size is returned in len
-                    Console.WriteLine("ProductVersion: unknown");
-                }
-                productVersion.Clear();
+                productNameBuffer.Clear();
 
+
+                // extract Product Version String
+                Console.Write("Product Version: ");
+                Int32 versionInfoSize = 256;
+                System.Text.StringBuilder productVersionBuffer = new System.Text.StringBuilder(versionInfoSize);
+                MSI_ERROR error3 = (MSI_ERROR)MsiGetProductInfo(guid, "VersionString", productVersionBuffer, ref versionInfoSize);
+                if (error3 == MSI_ERROR.ERROR_SUCCESS) {
+                    Console.WriteLine(productVersionBuffer);
+                } else {
+                    Console.WriteLine("unknown"  /* + productVersionBuffer.ToString() */ );
+                }
+                productVersionBuffer.Clear();
             }
         }
-
     }
 }
 '@ -ReferencedAssemblies 'System.Runtime.InteropServices.dll'
@@ -173,9 +162,9 @@ public static class Program
       EOF
       ) do
         [
-          'ProductID: ',
-          "ProductName: #{appName}",
-          "ProductVersion: #{appVersion}",
+          'Product GUID: ',
+          "Product Name: #{appName}",
+          "Product Version: #{appVersion}",
         ].each do |line|
           its(:stdout) do
             should match line
