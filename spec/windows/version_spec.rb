@@ -96,11 +96,12 @@ add-type -typedefinition @'
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-public static class Program
-{
-    [DllImport("msi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+using System.Diagnostics;
+
+public static class Program {
+    [DllImport("msi.dll", SetLastError = true, CharSet = CharSet.Ansi)]
     static extern int MsiEnumProducts(int iProductIndex, StringBuilder lpProductBuf);
-    [DllImport("msi.dll", CharSet = CharSet.Unicode)]
+    [DllImport("msi.dll", CharSet = CharSet.Ansi)]
     static extern Int32 MsiGetProductInfo(string product, string property, [Out] StringBuilder valueBuf, ref Int32 len);
     public enum MSI_ERROR : int {
         ERROR_SUCCESS = 0,
@@ -112,6 +113,36 @@ public static class Program
         ERROR_BAD_CONFIGURATION = 1610,
     }
 
+    // https://groups.google.com/forum/#!topic/microsoft.public.platformsdk.msi/EtmjM9PdjEE
+    // Product info attributes: advertised information
+
+    public const string INSTALLPROPERTY_PACKAGENAME = "PackageName";
+    public const string INSTALLPROPERTY_TRANSFORMS = "Transforms";
+    public const string INSTALLPROPERTY_LANGUAGE = "Language";
+    public const string INSTALLPROPERTY_PRODUCTNAME = "ProductName";
+    public const string INSTALLPROPERTY_ASSIGNMENTTYPE = "AssignmentType";
+    public const string INSTALLPROPERTY_PACKAGECODE = "PackageCode";
+    public const string INSTALLPROPERTY_VERSION = "Version";
+    public const string INSTALLPROPERTY_PRODUCTICON = "ProductIcon";
+
+
+    // Product info attributes: installed information
+
+    public const string INSTALLPROPERTY_INSTALLEDPRODUCTNAME = "InstalledProductName";
+    public const string INSTALLPROPERTY_VERSIONSTRING = "VersionString";
+    public const string INSTALLPROPERTY_HELPLINK = "HelpLink";
+    public const string INSTALLPROPERTY_HELPTELEPHONE = "HelpTelephone";
+    public const string INSTALLPROPERTY_INSTALLLOCATION = "InstallLocation";
+    public const string INSTALLPROPERTY_INSTALLSOURCE = "InstallSource";
+    public const string INSTALLPROPERTY_INSTALLDATE = "InstallDate";
+    public const string INSTALLPROPERTY_PUBLISHER = "Publisher";
+    public const string INSTALLPROPERTY_LOCALPACKAGE = "LocalPackage";
+    public const string INSTALLPROPERTY_URLINFOABOUT = "URLInfoAbout";
+    public const string INSTALLPROPERTY_URLUPDATEINFO = "URLUpdateInfo";
+    public const string INSTALLPROPERTY_VERSIONMINOR = "VersionMinor";
+    public const string INSTALLPROPERTY_VERSIONMAJOR = "VersionMajor";
+
+    // extention method 
     public static void Clear(this StringBuilder value) {
         value.Length = 0;
         // value.Capacity = 0;
@@ -127,34 +158,75 @@ public static class Program
             String guid = guidBuffer.ToString();
             if (enumProductsError == MSI_ERROR.ERROR_SUCCESS) {
                 Console.WriteLine("Product GUID: " + guid);
-                // allocate sufficient size to prevent calling MsiGetProductInfo twice
-
-                // extract Product Name
-                Console.Write("Product Name: ");
-                Int32 productNameSize = 512;
-                System.Text.StringBuilder productNameBuffer = new System.Text.StringBuilder(productNameSize);
-                MSI_ERROR getProductInfoError = (MSI_ERROR)MsiGetProductInfo(guid, "ProductName", productNameBuffer, ref productNameSize);
-                if (getProductInfoError == MSI_ERROR.ERROR_SUCCESS) {
-                    Console.WriteLine(productNameBuffer);
-                } else {
-                    Console.WriteLine("unknown" /* + productNameSize.ToString() */);
-                }
-                productNameBuffer.Clear();
-
 
                 // extract Product Version String
                 Console.Write("Product Version: ");
-                Int32 versionInfoSize = 256;
+                // allocate sufficient size to prevent calling MsiGetProductInfo twice
+                Int32 versionInfoSize = 64;
                 System.Text.StringBuilder productVersionBuffer = new System.Text.StringBuilder(versionInfoSize);
-                MSI_ERROR error3 = (MSI_ERROR)MsiGetProductInfo(guid, "VersionString", productVersionBuffer, ref versionInfoSize);
-                if (error3 == MSI_ERROR.ERROR_SUCCESS) {
+		MSI_ERROR status = GetProperty (guid, "VersionString", productVersionBuffer);
+                if (status == MSI_ERROR.ERROR_SUCCESS) {
                     Console.WriteLine(productVersionBuffer);
                 } else {
-                    Console.WriteLine("unknown"  /* + productVersionBuffer.ToString() */ );
+                    Console.WriteLine("unknown");
                 }
-                productVersionBuffer.Clear();
+                // extract Product Name
+                Console.Write("Product Name: ");
+                // allocate the right size by calling the MsiGetProductInfo  two times
+                System.Text.StringBuilder productNameBuffer = new System.Text.StringBuilder();
+                status = GetProperty (guid, "ProductName", productNameBuffer);
+                if (status == MSI_ERROR.ERROR_SUCCESS) {
+                    Console.WriteLine(productNameBuffer);
+                } else {
+                    Console.WriteLine("unknown");
+                }
             }
         }
+    }
+    
+    // http://stackoverflow.duapp.com/questions/4013425/msi-interop-using-msienumrelatedproducts-and-msigetproductinfo
+    static MSI_ERROR GetProperty(string productCode, string propertyName, StringBuilder sbBuffer) {
+        int len = sbBuffer.Capacity;
+        sbBuffer.Length = 0;
+        MSI_ERROR status = (MSI_ERROR)MsiGetProductInfo(productCode,
+                                                      propertyName,
+                                                      sbBuffer, ref len);
+        if (status == MSI_ERROR.ERROR_MORE_DATA) {
+            len++;
+            sbBuffer.EnsureCapacity(len);
+            status = (MSI_ERROR)MsiGetProductInfo(productCode, propertyName, sbBuffer, ref len);
+        }
+
+        /*
+        if ((status == MSI_ERROR.ERROR_UNKNOWN_PRODUCT ||
+             status == MSI_ERROR.ERROR_UNKNOWN_PROPERTY)
+            && (String.Compare (propertyName, "ProductVersion", StringComparison.Ordinal) == 0 ||
+                String.Compare (propertyName, "ProductName", StringComparison.Ordinal) == 0)) {
+            // try to get vesrion manually
+            StringBuilder sbKeyName = new StringBuilder ();
+            sbKeyName.Append ("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\UserData\\S-1-5-18\\Products\\");
+            Guid guid = new Guid (productCode);
+            byte[] buidAsBytes = guid.ToByteArray ();
+            foreach (byte b in buidAsBytes) {
+                int by = ((b & 0xf) << 4) + ((b & 0xf0) >> 4);  // swap hex digits in the byte
+                sbKeyName.AppendFormat ("{0:X2}", by);
+            }
+            sbKeyName.Append ("\\InstallProperties");
+            RegistryKey key = Registry.LocalMachine.OpenSubKey (sbKeyName.ToString ());
+            if (key != null) {
+                string valueName = "DisplayName";
+                if (String.Compare (propertyName, "ProductVersion", StringComparison.Ordinal) == 0)
+                    valueName = "DisplayVersion";
+                string val = key.GetValue (valueName) as string;
+                if (!String.IsNullOrEmpty (val)) {
+                    sbBuffer.Length = 0;
+                    sbBuffer.Append (val);
+                    status = NativeMethods.NoError;
+                }
+            }
+        }
+*/
+        return status;
     }
 }
 '@ -ReferencedAssemblies 'System.Runtime.InteropServices.dll'
