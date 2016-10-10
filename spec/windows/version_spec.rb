@@ -78,16 +78,18 @@ context 'Version check' do
 	# http://www.pinvoke.net/default.aspx/msi.msigetproductinfo
 	# https://github.com/gregzakh/alt-ps/blob/master/Find-MsiPackage.ps1
 	# http://stackoverflow.duapp.com/questions/4013425/msi-interop-using-msienumrelatedproducts-and-msigetproductinfo
+  # https://groups.google.com/forum/#!topic/microsoft.public.platformsdk.msi/EtmjM9PdjEE
 
 	# sample output:
-	# ProductID = {26A24AE4-039D-4CA4-87B4-2F32180101F0}
-	# ProductName = Java 8 Update 101
-	# ProductVersion = 8.0.1010.13
-	# NOTE: some entries do not provide information e.g.
-	# ProductID = {43780CEF-4E0F-9CB3-2226-580EC6BA1ABE}
-	# ProductName unknown
-	# ProductVersion unknown
-	{
+	# Product GUID: {6FC3B79F-47C6-38AF-B9A9-67DE3C639598}
+	# Product Version: 11.0.50727
+	# Product Name: Microsoft Visual Studio Premium 2012 - ENU
+  # 
+  # Product Name: Java 7 Update 79 (64-bit)
+  # Product GUID: {E966DBE4-5075-465E-BA81-BC9A3A3204B3}
+  # Product Version: 1.6.32.00
+  
+  {
 	 'Java 8 Update 101' => '8.0.1010.13',
 	}.each do |appName, appVersion|
 	  describe command(<<-EOF
@@ -99,6 +101,8 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Microsoft.Win32;
+using System.Collections.Generic;
+
 
 public static class Program {
 	[DllImport("msi.dll", SetLastError = true, CharSet = CharSet.Ansi)]
@@ -115,7 +119,6 @@ public static class Program {
 		ERROR_BAD_CONFIGURATION = 1610,
 	}
 
-	// https://groups.google.com/forum/#!topic/microsoft.public.platformsdk.msi/EtmjM9PdjEE
 	// Product info attributes: advertised information
 
 	public const string INSTALLPROPERTY_PACKAGENAME = "PackageName";
@@ -147,45 +150,65 @@ public static class Program {
 	// extention method
 	public static void Clear(this StringBuilder value) {
 		value.Length = 0;
-		// value.Capacity = 0;
+		value.Capacity = 0;
 	}
 
 	[STAThread]
-	public static void Perform() {
+  public static List<String> Perform() {
 		Int32 guidSize = 39;
+		Int32 infoSize = 1024;
+		// NOTE: do not use List<StringBuilder> resultList  here.
+		List<String> resultList = new List<String>();
+		StringBuilder info = new StringBuilder(infoSize);
 		StringBuilder guidBuffer = new StringBuilder(guidSize);
 		MSI_ERROR enumProductsError = MSI_ERROR.ERROR_SUCCESS;
 		for (int index = 0; enumProductsError == MSI_ERROR.ERROR_SUCCESS; index++) {
 			enumProductsError = (MSI_ERROR)MsiEnumProducts(index, guidBuffer);
 			String guid = guidBuffer.ToString();
 			if (enumProductsError == MSI_ERROR.ERROR_SUCCESS) {
-				Console.WriteLine("Product GUID: " + guid);
+				// save Product GUID for the report
+				resultList.Add(String.Format("Product GUID: {0}", guid));
 
 				// extract Product Version String
-				Console.Write("Product Version: ");
+				info.Append("Product Version: ");
 				// allocate sufficient size to prevent calling MsiGetProductInfo twice
 				Int32 versionInfoSize = 64;
 				System.Text.StringBuilder productVersionBuffer = new System.Text.StringBuilder(versionInfoSize);
-		MSI_ERROR status = GetProperty (guid, "VersionString", productVersionBuffer);
+				MSI_ERROR status = GetProperty(guid, "VersionString", productVersionBuffer);
 				if (status == MSI_ERROR.ERROR_SUCCESS) {
-					Console.WriteLine(productVersionBuffer);
+					info.Append(productVersionBuffer);
 				} else {
-					Console.WriteLine("unknown");
+					info.Append("unknown");
 				}
+				resultList.Add(info.ToString());
+				info.Clear();
+
 				// extract Product Name
-				Console.Write("Product Name: ");
+				info.Append("Product Name: ");
 				// allocate the right size by calling the MsiGetProductInfo  two times
 				System.Text.StringBuilder productNameBuffer = new System.Text.StringBuilder();
-				status = GetProperty (guid, "ProductName", productNameBuffer);
+				status = GetProperty(guid, "ProductName", productNameBuffer);
 				if (status == MSI_ERROR.ERROR_SUCCESS) {
-					Console.WriteLine(productNameBuffer);
+					info.Append(productNameBuffer);
 				} else {
-					Console.WriteLine("unknown");
+					info.Append("unknown");
 				}
+				resultList.Add(info.ToString());
+				info.Clear();
 			}
+
 		}
+		/*
+		for (int lineCount = 0; lineCount < resultList.Count; lineCount++) {
+			Console.WriteLine(String.Format("{0} = {1}", lineCount, resultList[lineCount].ToString()));
+		}
+		foreach (String resultLine in resultList) {
+			Console.WriteLine(resultLine.ToString());
+		}
+		*/
+    return resultList;
 	}
-	
+
 	 static MSI_ERROR GetProperty(string productGuid, string propertyName, StringBuilder resultBuffer) {
 			int bufferSize = resultBuffer.Capacity;
 			resultBuffer.Length = 0;
@@ -230,7 +253,9 @@ public static class Program {
 		}
 }
 '@ -ReferencedAssemblies 'System.Runtime.InteropServices.dll'
-	  [Program]::Perform()
+      # NOTE: `Console.Error.WriteLine` or `Console.WriteLine`, when called directly from C# code do not play well with redirection
+      $result =  [Program]::Perform()
+      $result | where-object {-not ($_ -contains 'GUID') } | foreach-object { write-output $_ }
 	  EOF
 	  ) do
 		[
