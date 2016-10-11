@@ -368,6 +368,27 @@ The Puppet module is available in a sibling directory:
 
 To move serverspec from a [vagrant-serverspec](https://github.com/jvoorhis/vagrant-serverspec) default directory, use `require_relative "../files/serverspec/&lt;platform&gt;/&lt;base name of the spec&gt;"`.
 
+
+### Useful modifiers
+
+ * to detect Vagrant run :
+ ```
+  user_home = ENV.has_key?('VAGRANT_EXECUTABLE') ? 'c:/users/vagrant' : 'c:/users/cloud_user'
+ ```
+ * To detect URU runtime: 
+  ```
+  context 'Path', :if => ENV.has_key?('URU_INVOKER')  do
+    describe command(<<-EOF
+     pushd env:
+     dir 'PATH' | format-list
+    EOF
+    ) do
+
+      its(:stdout) { should match Regexp.new('_U1_;D:[/|\\\\]testing_framework\\\\ruby\\\\bin;_U2_;', Regexp::IGNORECASE) }
+    end
+  end
+ ```
+
 ### See also
 
  *  [cucumberjs-junitxml](https://github.com/sonyschan/cucumberjs-junitxml)
