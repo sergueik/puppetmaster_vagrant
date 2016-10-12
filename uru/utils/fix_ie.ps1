@@ -1,3 +1,5 @@
+# Suppress the Internet Explorer confirmation 
+# 'allow active content to run in files on my computer'
 function change_registry_setting {
 
   param(
@@ -32,7 +34,6 @@ $path = 'Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALM
 $name = 'iexplore.exe'
 $value = '0'
 $propertyType = 'Dword'
-# Suppress the internet Explorer dialog 'allow active content to run in files on my computer'
 # NOTE: the 'HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections', 'SavedLegacySettings'
 # registry value not currently applied
 
