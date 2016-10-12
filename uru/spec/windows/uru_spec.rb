@@ -3,9 +3,32 @@ if File.exists?( 'spec/windows_spec_helper.rb')
 end
 
 context 'uru' do
+
   uru_home = 'c:/uru'
-  user_home = 'c:/users/vagrant'
+  user_home = ENV.has_key?('VAGRANT_EXECUTABLE') ? 'c:/users/vagrant' : ( 'c:/users/' + ENV['USER'] )
   gem_version = '2.1.0'
+  before(:all) do
+      begin
+        Specinfra::Runner::run_command(<<-EOF
+          write-output 'TODO'
+        EOF
+        )
+      rescue
+        # undefined method `metadata' for nil:NilClass
+      end
+  end
+
+  before(:all) do
+    require 'win32/registry'
+    Win32::Registry::HKEY_CURRENT_USER.open('Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALMACHINE_LOCKDOWN') do |reg|
+      # Suppress the internet Explorer dialog 'allow active content to run in files on my computer'
+      begin
+        reg.write('iexplore.exe', Win32::Registry::REG_DWORD, '0')
+      rescue
+        # Access is denied.
+      end
+    end
+  end
   context 'Path' do
     describe command(<<-EOF
       pushd env:
@@ -13,7 +36,13 @@ context 'uru' do
       popd
       EOF
     ), :if => ENV.has_key?('URU_INVOKER') do
-      its(:stdout) { should match Regexp.new('_U1_;' + uru_home.gsub('/','[/|\\\\\\\\]') + '\\\\ruby\\\\bin' + ';_U2_', Regexp::IGNORECASE) }
+      its(:stdout) { should match Regexp.new(
+        '_U1_;' +
+        uru_home.gsub('/','[/|\\\\\\\\]') +
+        '\\\\ruby\\\\bin' +
+        ';_U2_',
+        Regexp::IGNORECASE)
+        }
     end
   end
 
