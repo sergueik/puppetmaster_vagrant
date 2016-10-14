@@ -4,8 +4,7 @@ require_relative '../windows_spec_helper'
 context 'Services' do
   describe command (<<-EOF
     # passing the switch to Powershell
-    function FindService
-    {
+    function FindService {
       param([string]$name,
         [switch]$run_as_user_account
       )
@@ -16,8 +15,6 @@ context 'Services' do
         $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
       }
         return $local:result
-
-
     }
 
     findService -Name '%' -run_as_user_account | ConvertTo-Json
@@ -30,8 +27,7 @@ context 'Services' do
   end
   # same call, without the switch
   describe command (<<-EOF
-    function FindService
-    {
+    function FindService {
       param([string]$name,
         [switch]$run_as_user_account
       )
@@ -49,19 +45,34 @@ context 'Services' do
   ) do
     its(:stdout) { should match /"DisplayName":  "Puppet Agent"/ }
     its(:stdout) { should match /"StartName":  "LocalSystem"/ }
-    # its(:stdout) { should be_empty }
     its(:exit_status) {should eq 0 }
   end
 
-  context 'WhatsUp Event Archiver Service' do
-    # real life example,  service uses SMB shares for EventArchiver pipe access 
-    # hence it is required to be run under the domain account with administrator privileges
-    service_name = 'WhatsUp Event Archiver Service'
-    account_name = '!eventservice1'
-    account_domain = 'ad-ent'
+  context 'Running CmdLet' do
+    service_name = 'name of the service' # case sensitive
+    describe command("get-service -name '#{service_name}'") do
+      its(:exit_status) { should eq 0 }
+      [
+        'Stopped',
+        service_name
+      ].each do |token|
+        its(:stdout) { should contain token }
+      end
+    end
+    describe service(service_name) do
+      # likel to fail for a stopped service
+      xit{ should be_stopped}
+    end
+  end
+  context 'Service sun with Domain Account Credentials' do
+    # real life example 
+    # service may want to access the EventArchiver named pipe through use SMB share
+    # hence is configured to be run under the domain account with administrator privileges
+    service_name = 'name of the service' # case sensitive
+    account_name = 'account service runs'
+    account_domain = 'domain service runs'
     describe command (<<-EOF
-      function FindService
-      {
+      function FindService {
         param([string]$name,
           [switch]$run_as_user_account
         )
@@ -73,7 +84,6 @@ context 'Services' do
         }
           return $local:result
       }
-
       findService -Name '#{service_name}' | ConvertTo-Json
 
     EOF
