@@ -2,10 +2,12 @@
 # vi: set ft=puppet :
 
 define custom_command::exec_uru(
-  $toolspath   = 'c:\tools',
-  $version     = '0.3.0'
-)   { 
+  $toolspath = 'c:\tools',
+  $version   = '0.4.0',
+  $debug     = $false
+ ) {
   validate_string($toolspath)
+  validate_bool($debug)
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
   $random = fqdn_rand(1000,$::uptime_seconds)
   $taskname = regsubst($name, "[$/\\|:, ]", '_', 'G')
@@ -29,27 +31,20 @@ define custom_command::exec_uru(
   })
   
   # TODO : generate Rakefile, spec and sample serverspec file
- 
-  file { "${name} launcher script":
-    ensure             => file,
-    path               => $script_path,
-    content            => template('custom_command/uru_runner_ps1.erb'),
-    source_permissions => ignore,
-  } -> 
-  
+   
   file { "${name} Rakefile":
     ensure             => file,
-    path               => "${toolspath}\\Rakefile",
+    path               => "${toolspath}/Rakefile",
     content            => template('custom_command/Rakefile_serverspec.erb'),
     source_permissions => ignore,
   } ->
 
-  file { "${toolspath}\\\spec":
+  file { "${toolspath}/spec":
     ensure             => directory,
     source_permissions => ignore,
   } ->
   
-  file { "${toolspath}\\\spec\\${name}":
+  file { "${toolspath}/spec/${name}":
     ensure             => directory,
     source_permissions => ignore,
   } ->
@@ -64,7 +59,7 @@ define custom_command::exec_uru(
   # [<NAME OF MOUNT POINT>]
   # path <PATH TO DIRECTORY>
   # allow *
-  file { "${toolspath}\\\spec\\multiple":
+  file { "${toolspath}/spec/multiple":
     ensure             => directory,
     path               => "${root}/spec/serverspec",
     recurse            => true,
@@ -75,25 +70,48 @@ define custom_command::exec_uru(
 
   file { "${name} windows_spec_helper.rb":
     ensure             => file,
-    path               => "${toolspath}\\spec\\windows_spec_helper.rb",
+    path               => "${toolspath}/spec/windows_spec_helper.rb",
     content            => template('custom_command/windows_spec_helper_rb.erb'),
     source_permissions => ignore,
-  } ->
+  }
 
-  exec { "Execute uru ${name}": 
-    command   => "powershell.exe -executionpolicy remotesigned -file ${script_path}",
-    require   => File[ "${name} launcher script"],
-    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-    provider  => 'powershell',
-    logoutput => true,
-  } ->
+  case $::osfamily {
+    'windows': {
+      file { "${name} launcher script":
+        ensure             => file,
+        path               => $script_path,
+        content            => template('custom_command/uru_runner_ps1.erb'),
+        source_permissions => ignore,
+      }
+      exec { "Execute uru ${name}": 
+        command   => "powershell.exe -executionpolicy remotesigned -file ${script_path}",
+        require   => File[ "${name} launcher script"],
+        path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+        provider  => 'powershell',
+        require   => File["${name} launcher script"],
+        logoutput => true,
+      } ->
 
-  exec { "Add serverspec log to console ${name}": 
-    command   => "type ${toolspath}\\reports\\report_.json",
-    path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-    provider  => 'powershell',
-    logoutput => true,
-  } ->
-
-  notify { "Done ${name}.":}
+      exec { "Log serverspec summary ${name}": 
+        command   => "type ${toolspath}\\reports\\report_.json",
+        path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+        provider  => 'powershell',
+        logoutput => true,
+      }
+    }
+    default: {
+      file { "${name} launcher script":
+        ensure  => file,
+        path    => $script_path,
+        content => regsubst(template('custom_command/uru_runner_sh.erb'), "\r\n", "\n", 'G')',
+        mode    => '0755',
+      } 
+    }
+  }
+  
+  
+  if $debug {
+  notify { "Done ${name}.":,
+    require=> Exec["Log serverspec summary ${name}"],
+  }
 }
