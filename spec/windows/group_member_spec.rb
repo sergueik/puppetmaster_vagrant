@@ -3,7 +3,10 @@ require_relative '../windows_spec_helper'
 
 context 'Administrators' do
 
-  # origin: http://poshcode.org/6581
+  # based on: http://poshcode.org/6581
+  # NOTE - in the cloud production environment 
+  # the wmi call may take a **very** long time effectively hanging the process, making it inpractical.
+
   context 'WMI' do
     local_group = 'Administrators'
     describe command(<<-EOF
@@ -18,27 +21,27 @@ context 'Administrators' do
           }
         }
       }
-      Get-LocalGroupMembers #  '#{local_group}'
+      Get-LocalGroupMembers '#{local_group}'
       EOF
     ) do
       {
         'Administrator' => true,
-        'Domain Admins' =>  false,
-        'Other Group'  => false,
+        'Domain Admins' => false,
       }.each do |key,val|
         if val
-          its(:stdout) { should match /#{key}/io }
-        end  
+          its(:stdout) { should contain key }
+        end
       end
-    end 
+    end
   end
 
-  # origin: http://poshcode.org/544
+  # based on: http://poshcode.org/544
   context 'ADSI' do
+    domain_groups = []
 
     describe command(<<-EOF
-    
-      $ChildGroups = 'Domain Admins','Other Group'
+
+      $DomainGroups = @()
       $LocalGroup = 'Administrators'
 
       $MemberNames = @()
@@ -50,24 +53,29 @@ context 'Administrators' do
           try {
             $MemberNames += $_.GetType().InvokeMember('Name','GetProperty',$null,$_,$null)
           } catch [exception]{
-            # slurp
+            write-output $_.Exception.Message
           }
         }
-        $ChildGroups | ForEach-Object {
-          $output = '' | Select-Object Server,Group,InLocalAdmin
-          $output.Server = $Server
-          $output.Group = $_
-          $output.InLocalAdmin = $MemberNames -contains $_
-          Write-Output $output
+        write-output $MemberNames
+        if ($DomainGroups.count) {
+          $DomainGroups | ForEach-Object {
+            $output = '' | Select-Object Server,Group,InLocalAdmin
+            $output.Server = $Server
+            $output.Group = $_
+            $output.InLocalAdmin = $MemberNames -contains $_
+            Write-Output $output
+          }
         }
-      }    
+      }
     EOF
     ) do
       {
-        'Domain Admins' =>  false,
-        'Other Group'  => false,
+        'Domain Admins' => true,
+        'Administrator' => false,
       }.each do |key,val|
-        its(:stdout) { should match /#{key}/io }
+        if val
+          its(:stdout) { should contain key }
+        end
       end
     end
   end
