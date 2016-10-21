@@ -29,8 +29,6 @@ define custom_command::exec_uru(
     ensure => directory,
     require => Exec["purge ${report_dir}"],
   })
-  
-  # TODO : generate Rakefile, spec and sample serverspec file
    
   file { "${name} Rakefile":
     ensure             => file,
@@ -88,6 +86,7 @@ define custom_command::exec_uru(
         require   => File[ "${name} launcher script"],
         path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
         provider  => 'powershell',
+        subscribe => File["${toolspath}/spec/multiple"],
         require   => File["${name} launcher script"],
         logoutput => true,
       } ->
@@ -96,6 +95,7 @@ define custom_command::exec_uru(
         command   => "type ${toolspath}\\reports\\report_.json",
         path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
         provider  => 'powershell',
+        subscribe => Exec["Execute uru ${name}"],
         logoutput => true,
       }
     }
@@ -109,9 +109,10 @@ define custom_command::exec_uru(
     }
   }
   
-  
   if $debug {
-  notify { "Done ${name}.":,
-    require=> Exec["Log serverspec summary ${name}"],
+    notify { "Done ${name}.":,
+      require=> Exec["Log serverspec summary ${name}"],
+    }
   }
+  
 }
