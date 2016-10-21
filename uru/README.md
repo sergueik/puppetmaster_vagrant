@@ -381,7 +381,7 @@ in the serverspec in the Ruby sandbox.
 ### Useful modifiers
 
 #### To detect Vagrant run :
-``
+```
   user_home = ENV.has_key?('VAGRANT_EXECUTABLE') ? 'c:/users/vagrant' : ( 'c:/users/' + ENV['USER'] )
 ```
 This will assign a hard coded user name versus target instance environment value to Ruby variable.
