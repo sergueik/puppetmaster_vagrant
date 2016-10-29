@@ -1,4 +1,5 @@
 require_relative '../windows_spec_helper'
+
 context 'Scheduled Tasks' do
 
   program_directory = 'Program Directory'
@@ -122,4 +123,35 @@ context 'Scheduled Tasks' do
       end
     end
   end
+
+  context 'Alternative Application Task Scheduler Exam' do
+    name = 'application'
+    describe command(<<-EOF
+      $command_output  = @(& 'schtasks.exe' '--%' '/query /tn "application" /xml ') -join ''
+      [System.XML.XMLDocument]$o = new-object -typeName 'System.XML.XMLDocument'
+      $o.LoadXML($command_output)
+      write-output ('{0} = {1}' -f 'Command', $o.'Task'.'Actions'.'Exec'.'Command')
+      write-output ('{0} = {1}' -f 'Arguments', $o.'Task'.'Actions'.'Exec'.'Arguments')
+      write-output ('{0} = {1}' -f 'WorkingDirectory', $o.'Task'.'Actions'.'Exec'.'WorkingDirectory' )
+      write-output ('{0} = {1}' -f 'UserId', $o.'Task'.'Principals'.'Principal'.'UserId' )
+      write-output ('{0} = {1}' -f 'LogonType', $o.'Task'.'Principals'.'Principal'.'LogonType' )
+      write-output ('{0} = {1}' -f 'Enabled', $o.'Task'.'Settings'.'Enabled')
+      write-output ('{0} = {1}' -f 'DaysInterval', $o.'Task'.'Triggers'.'CalendarTrigger'.'ScheduleByDay'.'DaysInterval')
+      EOF
+    ) do
+      its(:exit_status) { should eq 0 }
+      {
+        'Command' => 'C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\logrotate.exe',
+        'UserId' => 'System',
+        'LogonType' => 'InteractiveTokenOrPassword',
+        'Arguments' => '"C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\Content\\\\sample.conf"',
+        'WorkingDirectory' => 'c:\\\\windows\\\\temp',
+        'Enabled' => 'True',
+        'DaysInterval' => '1',
+      }.each do |key, value|
+        its(:stdout) {should match /#{Regexp.new(value)}/i }
+      end
+    end
+  end
+  
 end
