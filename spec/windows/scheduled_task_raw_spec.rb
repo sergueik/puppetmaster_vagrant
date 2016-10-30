@@ -25,7 +25,7 @@ context 'Scheduled Tasks' do
     end
     # The test below will only work if the Job was created via Powershell command
     #  register-scheduledjob -name ... -jobtrigger ... -scriptblock ... -scheduledjoboption
-    
+
     context 'Powershell 3.0 and above' do
       describe command(<<-EOF
         get-scheduledjob -name '#{name}'
@@ -33,7 +33,7 @@ context 'Scheduled Tasks' do
                ) do
         its(:exit_status) { should eq 0 }
         # [Microsoft.PowerShell.ScheduledJob.ScheduledJobDefinition] properties
-        {        
+        {
           'Command' => '...',
           'Credential' => '...',
           'Definition' => '...',
@@ -54,7 +54,7 @@ context 'Scheduled Tasks' do
                EOF
                ) do
         its(:exit_status) { should eq 0 }
-        
+
         # [Microsoft.PowerShell.ScheduledJob.ScheduledJobTrigger] properties
         {
           'At' => '...',
@@ -98,14 +98,14 @@ context 'Scheduled Tasks' do
           its(:stdout) { should match Regexp.new(line) }
         end
       end
-    
+
     end
 
   end
   context 'Application Task Scheduler' do
-  
+
     name = '<name of the job>'
-    
+
     describe command(<<-EOF
       schtasks.exe /Query /TN #{name} /xml
              EOF
@@ -153,5 +153,47 @@ context 'Scheduled Tasks' do
       end
     end
   end
-  
+
+  context 'Using PSFactoryBuffer' do
+    # http://stackoverflow.com/questions/18387920/get-scheduledtask-in-powershell-on-windows-server-2003/25370710#25370710
+    name_mask = '^GoogleUpdateTask'
+    describe command(<<-EOF
+      $schedService = New-Object -ComObject Schedule.Service
+      # $schedService | get-member | select-object -property  TypeName
+      # System.__ComObject#{2faba4c7-4da9-4013-9697-20cc3fd40f85}
+      # {2FABA4C7-4DA9-4013-9697-20CC3FD40F85} is CLSID of (ITaskService)
+      # that is a proxy to
+      # {9C86F320-DEE3-4DD1-B972-A303F26B061E}
+      # which is CLSID of PSFactoryBuffer 'C:\Windows\SysWOW64\TaskSchdPS.dll'
+      $schedService.Connect($env:computername)
+      $folder = $SchedService.GetFolder('')
+      $tasks = $folder.GetTasks('')
+      $name_mask = '#{name_mask}'
+      $xml_task_description = $tasks | where-object {$_.Name -match $name_mask } | select-object -first 1| foreach-object -membername XML
+      [System.XML.XMLDocument]$o = new-object -typeName 'System.XML.XMLDocument'
+      $o.LoadXML($xml_task_description)
+      write-output ('{0} = {1}' -f 'Command', $o.'Task'.'Actions'.'Exec'.'Command')
+      write-output ('{0} = {1}' -f 'Arguments', $o.'Task'.'Actions'.'Exec'.'Arguments')
+      write-output ('{0} = {1}' -f 'WorkingDirectory', $o.'Task'.'Actions'.'Exec'.'WorkingDirectory' )
+      write-output ('{0} = {1}' -f 'UserId', $o.'Task'.'Principals'.'Principal'.'UserId' )
+      write-output ('{0} = {1}' -f 'LogonType', $o.'Task'.'Principals'.'Principal'.'LogonType' )
+      write-output ('{0} = {1}' -f 'Enabled', $o.'Task'.'Settings'.'Enabled')
+      write-output ('{0} = {1}' -f 'DaysInterval', $o.'Task'.'Triggers'.'CalendarTrigger'.'ScheduleByDay'.'DaysInterval')
+      EOF
+    ) do
+      its(:exit_status) { should eq 0 }
+      {
+        'Command' => 'C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\logrotate.exe',
+        'UserId' => 'System',
+        'LogonType' => 'InteractiveTokenOrPassword',
+        'Arguments' => '"C:\\\\Program Files \\(x86\\)\\\\LogRotate\\\\Content\\\\sample.conf"',
+        'WorkingDirectory' => 'c:\\\\windows\\\\temp',
+        'Enabled' => 'True',
+        'DaysInterval' => '1',
+      }.each do |key, value|
+        its(:stdout) {should match /#{Regexp.new(value)}/i }
+      end
+    end
+  end
+
 end
