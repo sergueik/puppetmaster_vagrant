@@ -1,7 +1,8 @@
 require 'win32/registry'
+# Suppress the Internet Explorer confirmation 
+# 'allow active content to run in files on my computer'
 
-# Suppress the internet Explorer dialog 'allow active content to run in files on my computer'
-reg_key = 'Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALMACHINE_LOCKDOWN'
+reg_key = 'Software/Microsoft/Internet Explorer/Main/FeatureControl/FEATURE_LOCALMACHINE_LOCKDOWN'
 reg_value_name = 'iexplore.exe'
 
 Win32::Registry::HKEY_CURRENT_USER.open(reg_key) do |reg|

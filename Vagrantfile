@@ -14,7 +14,7 @@ box_name          = ENV.fetch('BOX_NAME', '')
 debug             = ENV.fetch('DEBUG', 'false')
 box_memory        = ENV.fetch('BOX_MEMORY', '')
 box_cpus          = ENV.fetch('BOX_CPUS', '')
-box_gui           = ENV.fetch('BOX_GUI', '')
+box_gui           = ENV.fetch('BOX_GUI', 'false')
 debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
 
 dir = File.expand_path(File.dirname(__FILE__))
