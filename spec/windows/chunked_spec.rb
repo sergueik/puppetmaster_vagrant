@@ -1,15 +1,15 @@
 require_relative '../windows_spec_helper'
 
 context 'Execute Chunk-Written Ruby script from Puppet Agent' do
-   
+
   context 'With Environment' do
     puppet_environment =  'production'
     provisoning_target = 'windows7'
-    lines = [ 
+    lines = [
       'answer: 42', # to ensure the script was generated successfully
       "Report for #{provisoning_target} in environment #{puppet_environment}" # to ensure header was printed
     ]
-    puppet_home_folder = 'Puppet' # varies between PE  and Puppet community 
+    puppet_home_folder = 'Puppet' # varies between PE  and Puppet community
     puppet_home = 'C:/Program Files/Puppet Labs/' + puppet_home_folder
     puppet_statedir = 'C:/ProgramData/PuppetLabs/puppet/var/state'
     last_run_report = "#{puppet_statedir}/last_run_report.yaml"
@@ -19,10 +19,10 @@ context 'Execute Chunk-Written Ruby script from Puppet Agent' do
       "#{puppet_home}/puppet/lib"
     ]
     rubylib = rubylibs.join(";")
-    loadpaths = rubylibs.map { |x| "$LOAD_PATH.insert(0, '#{x}')" }.join "\n" 
-    rubyopt = 'rubygems' 
+    loadpaths = rubylibs.map { |x| "$LOAD_PATH.insert(0, '#{x}')" }.join "\n"
+    rubyopt = 'rubygems'
     script_file = 'c:/windows/temp/chunked_test.rb'
-    
+
     # TODO: cannot put here-docs in array literal ?
     ruby_script_chunks = Array.new
 
@@ -70,7 +70,7 @@ EOF
     def resources_of_type(report, type)
       report_resources(report).select{|r_name, r| r.resource_type == type}
     end
-    
+
 EOF
 	)
   ruby_script_chunks.push(<<-'EOF'
@@ -83,7 +83,7 @@ EOF
       puts sprintf( "   Configuration Version: %s" , report.configuration_version)
       puts sprintf( "                    UUID: %s" , report.transaction_uuid )
       puts sprintf( "               Log Lines: %s %s" , report.logs.size, @options[:logs] ? "" : "(show with --log)" )
-    end  
+    end
 EOF
 	)
   ruby_script_chunks.push(<<-'EOF'
@@ -163,7 +163,7 @@ EOF
     end
 
     def print_logs(report)
-      puts sprintf( "%d Log lines:" , report.logs.size ) 
+      puts sprintf( "%d Log lines:" , report.logs.size )
       puts
 
       report.logs.each do |log|
@@ -221,7 +221,7 @@ EOF
 
       number = files.size if files.size < number
 
-      puts sprintf( "%d largest managed files" , number ) 
+      puts sprintf( "%d largest managed files" , number )
       puts "only those with full path as resource name that are readable"
       puts
 
@@ -296,16 +296,16 @@ EOF
     end
 EOF
 	)
-  
+
 	puts 'chunks: ' + ruby_script_chunks.size.to_s
-  # ruby_script_chunks.each { |line| puts line} 
+  # ruby_script_chunks.each { |line| puts line}
   ruby_script_chunks.each do |ruby_script|
   Specinfra::Runner::run_command(<<-END_COMMAND
   $script_file = '#{script_file}'
   @'
 #{ruby_script}
 '@ | out-file $script_file -encoding ascii -append
-  
+
   END_COMMAND
   )
   end
@@ -316,7 +316,7 @@ EOF
   iex "ruby.exe '#{script_file}' '--report' #{last_run_report}"
   END_COMMAND
   ).stdout
-  
+
   describe command(<<-EOF
   $env:RUBYLIB="#{rubylib}"
   $env:RUBYOPT="#{rubyopt}"
@@ -324,7 +324,7 @@ EOF
   EOF
   ) do
       let(:path) { 'C:/Program Files (x86)/Puppet Labs/Puppet Enterprise/sys/ruby/bin' }
-      lines.each do |line| 
+      lines.each do |line|
         its(:stdout) do
           should match  Regexp.new(line.gsub(/[()]/,"\\#{$&}").gsub('[','\[').gsub(']','\]'))
         end

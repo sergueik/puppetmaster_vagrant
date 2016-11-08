@@ -10,6 +10,6 @@ context 'Command Line Arguments of Windows Process' do
 
   describe process('powershell.exe') do
     it { should be_running }
-    its(:CommandLine) { should match /C:\\Windows\\System32\\WindowsPowerShell\\v1.0\powershell.exe/i` }
+    its(:CommandLine) { should match /C:\\Windows\\System32\\WindowsPowerShell\\v1.0\powershell.exe/i }
   end
 end
