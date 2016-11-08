@@ -1,7 +1,7 @@
 require_relative '../windows_spec_helper'
 
-
-context 'Reboot During Provisioning' do
+# This example inspects the Puppet Last Run report on the instance
+context 'Confirm Reboot During Pupppet Run' do
   statedir = 'C:/ProgramData/PuppetLabs/puppet/var/state'
   last_run_report = 'last_run_report.yaml'
   earlier_run_report = 'last_run_report.yaml.1'
@@ -34,3 +34,5 @@ context 'Reboot During Provisioning' do
     end
   end
 end
+
+# This example creates a command to access the Puppet Last Run report on the instance
