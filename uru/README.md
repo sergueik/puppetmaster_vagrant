@@ -402,6 +402,18 @@ and Windows environments (`C:\users\vagrant`)
   end
 ```
 
+### Note
+
+The RSpec `format` [options](https://relishapp.com/rspec/rspec-core/docs/command-line/format-option)  proivided in the `Rakefile`
+```
+t.rspec_opts = "--require spec_helper --format documentation --format html --out reports/report_#{$host}.html --format json --out reports/report_#{$host}.json"
+```
+are not compatible with [Vagrant serverspc plugin](https://github.com/jvoorhis/vagrant-serverspec):
+```
+The 
+serverspec provisioner:
+* The following settings shouldn't exist: rspec_opts
+```
 ### See also
 
  * [cucumberjs-junitxml](https://github.com/sonyschan/cucumberjs-junitxml)
