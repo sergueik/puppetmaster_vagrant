@@ -8,13 +8,13 @@ define custom_command::exec_uru(
  ) {
   validate_string($toolspath)
   validate_bool($debug)
-  validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$') 
+  validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$')
   $random = fqdn_rand(1000,$::uptime_seconds)
   $taskname = regsubst($name, "[$/\\|:, ]", '_', 'G')
   $report_dir = "c:\\temp\\${taskname}"
   $script_path = "${report_dir}\\uru_launcher.ps1"
   $report_log = "${log_dir}\\${script}.${random}.log"
-   
+
   exec { "purge ${report_dir}":
     cwd       => 'c:\windows\temp',
     command   => "\$target='${report_dir}' ; remove-item -recurse -force -literalpath \$target",
@@ -29,7 +29,7 @@ define custom_command::exec_uru(
     ensure => directory,
     require => Exec["purge ${report_dir}"],
   })
-   
+
   file { "${name} Rakefile":
     ensure             => file,
     path               => "${toolspath}/Rakefile",
@@ -41,7 +41,7 @@ define custom_command::exec_uru(
     ensure             => directory,
     source_permissions => ignore,
   } ->
-  
+
   file { "${toolspath}/spec/${name}":
     ensure             => directory,
     source_permissions => ignore,
@@ -53,7 +53,7 @@ define custom_command::exec_uru(
   # $serverspec_directories = unique(flatten([$covered_modules.map |$item| { "${item}/serverspec/${osfamily_platform_directory}" }, $covered_modules.map |$item| { "${item}/serverspec/${::osfamily}" }]))
   # May also need to provide a custom mount point through `fileserver.conf
   # https://docs.puppet.com/puppet/latest/reference/file_serving.html
-  # to enable globbing serverspec files by role/ profile 
+  # to enable globbing serverspec files by role/ profile
   # [<NAME OF MOUNT POINT>]
   # path <PATH TO DIRECTORY>
   # allow *
@@ -81,22 +81,24 @@ define custom_command::exec_uru(
         content            => template('custom_command/uru_runner_ps1.erb'),
         source_permissions => ignore,
       }
-      exec { "Execute uru ${name}": 
-        command   => "powershell.exe -executionpolicy remotesigned -file ${script_path}",
-        require   => File[ "${name} launcher script"],
-        path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-        provider  => 'powershell',
-        subscribe => File["${toolspath}/spec/multiple"],
-        require   => File["${name} launcher script"],
-        logoutput => true,
+      exec { "Execute uru ${name}":
+        command     => "powershell.exe -executionpolicy remotesigned -file ${script_path}",
+        require     => File[ "${name} launcher script"],
+        path        => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+        provider    => 'powershell',
+        refreshonly => true,
+        subscribe   => File["${toolspath}/spec/multiple"],
+        require     => File["${name} launcher script"],
+        logoutput   => true,
       } ->
 
-      exec { "Log serverspec summary ${name}": 
-        command   => "type ${toolspath}\\reports\\report_.json",
-        path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
-        provider  => 'powershell',
-        subscribe => Exec["Execute uru ${name}"],
-        logoutput => true,
+      exec { "Log serverspec summary ${name}":
+        command     => "type ${toolspath}\\reports\\report_.json",
+        path        => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
+        provider    => 'powershell',
+        refreshonly => true,
+        subscribe   => Exec["Execute uru ${name}"],
+        logoutput   => true,
       }
     }
     default: {
@@ -105,14 +107,13 @@ define custom_command::exec_uru(
         path    => $script_path,
         content => regsubst(template('custom_command/uru_runner_sh.erb'), "\r\n", "\n", 'G')',
         mode    => '0755',
-      } 
+      }
     }
   }
-  
+
   if $debug {
     notify { "Done ${name}.":,
       require=> Exec["Log serverspec summary ${name}"],
     }
   }
-  
 }

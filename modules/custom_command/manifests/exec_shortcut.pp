@@ -19,9 +19,9 @@ define custom_command::exec_shortcut  (
   validate_string($target_args )
   validate_re($version, '^\d+\.\d+\.\d+(-\d+)*$')
   $random = fqdn_rand(1000,$::uptime_seconds)
-  $task_title_tag = regsubst($title, "[$/\\|:, ]", '_', 'G')
-  $log_dir = "c:\\temp\\${task_title_tag}"
-  $log = "${log_dir}\\${task_title_tag}.${random}.log"
+  $title_tag = regsubst($title, "[$/\\|:, ]", '_', 'G')
+  $log_dir = "c:\\temp\\${title_tag}"
+  $log = "${log_dir}\\${title_tag}.${random}.log"
   if ( $link_pathname == ''){
     $link_pathname = '$HOME\Desktop'
   }
@@ -33,7 +33,7 @@ define custom_command::exec_shortcut  (
   } else {
     $template = 'create_simple_shortcut_ps1.erb'
   }
-  exec { "${task_title_tag}_create_shortcut":
+  exec { "${title_tag}_create_shortcut":
     command   => template("custom_command/${template}"),
     cwd       => 'c:\windows\temp',
     logoutput => true,
@@ -47,7 +47,7 @@ define custom_command::exec_shortcut  (
       cwd       => 'c:\windows\temp',
       logoutput => true,
       provider  => 'powershell',
-      require   => Exec [ "${task_title_tag}_create_shortcut"],
+      require   => Exec [ "${title_tag}_create_shortcut"],
       command   => template("custom_command/${template}"),
       cwd       => 'c:\windows\temp',
       logoutput => true,
