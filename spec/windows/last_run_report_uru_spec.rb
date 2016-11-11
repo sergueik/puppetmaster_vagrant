@@ -1,9 +1,20 @@
-require_relative '../windows_spec_helper'
-# require 'spec_helper'
-
 require 'yaml'
 require 'json'
 require 'csv'
+
+if => ENV.has_key?('URU_INVOKER')
+  if File.exists?( 'spec/windows_spec_helper.rb')
+    require_relative '../windows_spec_helper'
+  end
+else  
+  require_relative '../windows_spec_helper'
+end
+
+context 'basic' do
+  variable = 5
+  it { expect(variable).to be 5  }
+  it { expect(variable>3).to be true }    
+end
 
 # This example inspects the Puppet Last Run report on the instance
 # through uru (really possible in other ways, WIP)
@@ -20,9 +31,14 @@ context 'Puppet Last Run Report Test' do
   #   "total" => 10
   #   }, 
   #   ...
-  state_path = 'c:/ProgramData/PuppetLabs/puppet/cache/state'
+  # NOTE: PATH separators are slant-sensitive, the following will not work
+  state_path = 'C:/programdata/PuppetLabs/puppet/cache/state'
   reports_path = 'c:/ProgramData/PuppetLabs/puppet/cache/reports' 
-  # NOTE: there is one more directory level 
+  # NOTE: the following will do:
+  state_path = 'C:\programdata\PuppetLabs\puppet\cache\state'
+  reports_path = 'c:\ProgramData\PuppetLabs\puppet\cache\reports' 
+  
+  # NOTE: there is one more directory with historic reports
 
   state_yaml = 'state.yaml'
   last_run_summary_yaml = 'last_run_summary.yaml'
@@ -40,9 +56,9 @@ context 'Puppet Last Run Report Test' do
       |.each do |k|
         STDERR.puts  k + ': ' + resources[k].to_s
       end
-      # resources['failed']
-      # TODO: real test
       it { should contain 'Last run' } 
+      it { expect(resources['failed']).to be 0 }
+      it { expect(resources['failed']>0).to be false }    
     else
       STDERR.puts last_run_summary_yaml_path + ' does not exist'
     end
