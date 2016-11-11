@@ -1,0 +1,28 @@
+require 'rake'
+require 'rspec/core/rake_task'
+# origin: http://ehaselwanter.com/en/blog/2014/06/03/integration-testing-infrastructure-as-code-with-chef-puppet-and-kitchenci/
+
+class ServerspecTask < RSpec::Core::RakeTask
+  attr_accessor :target
+  def spec_command
+    if target.nil? 
+      STDERR.puts "specify either env TARGET_HOST or target_host="
+      exit 1
+    end
+    cmd = super
+    "env TARGET_HOST=#{target} STANDALONE_SPEC=true #{cmd}  --format documentation --no-profile"
+  end
+end
+suites = Dir.glob('*').select{|entry| File.directory?(entry) }
+
+namespace :serverspec do
+  suites.each do |suite|
+    desc "Suite #{suite}"
+    ServerspecTask.new(suite.to_sym) do |t|
+      t.target = ENV['TARGET_HOST'] || ENV['target_host']
+      t.ruby_opts = "-I #{suite}/serverspec"
+      # modify the path to spec files according to your Vagrantfile layout 
+      t.pattern = "#{suite}/serverspec/*_spec.rb"
+    end
+  end
+end
