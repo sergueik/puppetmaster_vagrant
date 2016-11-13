@@ -31,6 +31,10 @@ context 'UTF-8' do
       its(:stderr) {  should be_empty }
     end
     describe file(file_path) do
+      # RSpec 3.x core (future ) syntax
+      # https://www.relishapp.com/rspec/rspec-core/docs/subject/one-liner-syntax
+      it { is_expected.to be_file }
+      # equivalent RSpec 2 / obsolete (?) Serverspec matcher syntax
       it { should be_file }
     end
   end
