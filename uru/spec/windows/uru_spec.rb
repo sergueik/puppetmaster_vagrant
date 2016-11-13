@@ -71,4 +71,18 @@ context 'uru' do
       end
     end
   end
+  context 'Running Ruby commands' do
+    describe command(<<-EOF
+      where.exe ruby
+    EOF
+    ) do
+      its(:exit_status) { should eq 0 }
+      its(:stderr) { should be_empty }
+      its(:stdout) do
+        should match( Regexp.new(uru_home.gsub('/','[/|\\\\\\\\]') +
+          '\\\\ruby\\\\bin\\\\ruby.exe', Regexp::IGNORECASE))  
+      end
+    end
+  end
 end
+
