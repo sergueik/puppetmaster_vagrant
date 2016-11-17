@@ -13,7 +13,7 @@ To continue running serverspec through [vagrant-serverspec](https://github.com/j
 plugin, one would have to modify the `Vagrantfile` to include the new location of the `rspec` files inside the module `files`
 e.g. assuming that serverspec are platform-specific, and the mapping between instance's Vagrant `config.vm.box` and the `arch` is defined elsewhere:
 
-```
+```ruby
 arch = config.vm.box || 'linux'
 config.vm.provision :serverspec do |spec|
   if File.exists?("spec/#{arch}")
@@ -24,25 +24,25 @@ config.vm.provision :serverspec do |spec|
 end
 ```
 The `uru` module can collect serverspec resources from other modules's via `puppet:///modules` URI and the Puppet [file](https://docs.puppet.com/puppet/latest/reference/type.html#file-attribute-sourceselect) resource:
-```
+```puppet
 file {'spec/local':
-  ensure             => directory,
-  path               => "${tool_root}/spec/local",
-  recurse            => true,
-  source             => $modules.map |$name| {"puppet:///modules/${name}/serverspec/${::osfamily}"},
+  ensure              => directory,
+  path                => "${tool_root}/spec/local",
+  recurse             => true,
+  source              => $modules.map |$name| {"puppet:///modules/${name}/serverspec/${::osfamily}"},
   source_permissions => ignore,
-  sourceselect       => all,
+  sourceselect        => all,
 }
 ```
 
 Alternatively when using [roles and profiles](http://www.craigdunn.org/2012/05/239/)), the `uru` module can collect serverspec files from the profile: `/site/profile/files` which is also accessible via `puppet:///modules` URI.
-```
+```puppet
 file {'spec/local':
-  ensure             => directory,
-  path               => "${tool_root}/spec/local",
-  recurse            => true,
-  source             => $server_roles.map |$server_role| {"puppet:///modules/profile//serverspec/roles/${server_role}" },
-  source_permissions => ignore,,
+  ensure              => directory,
+  path                => "${tool_root}/spec/local",
+  recurse             => true,
+  source              => $server_roles.map |$server_role| {"puppet:///modules/profile//serverspec/roles/${server_role}" },
+  source_permissions => ignore,
   sourceselect       => all,
 }
 ```
@@ -51,13 +51,10 @@ This mechanism relies on Puppet [file type](https://github.com/puppetlabs/puppet
 and its 'sourceselect'  attribute. No equivalent mechanism is implemented with Chef yet.
 
 ### Internals
-
 One could provision Uru environment from a zip/tar archive, one can also construct a Puppet module for the same. This is a lightweight alternative to [DracoBlue/puppet-rvm](https://github.com/dracoblue/puppet-rvm) module, which is likely need to build Ruby from source anyway.
-
 
 The `$URU_HOME` home directory with Ruby runtime plus a handful of gems has the following structure:
 ```
-
 +---.gem
 +---reports
 +---ruby
@@ -76,19 +73,17 @@ rspec
 rspec_junit_formatter
 serverspec
 ```
-
-
 ### Setup
 For windows, `uru.zip` can be created by copying `uru` and [Ruby] runtime installed from an [MSI](http://rubyinstaller.org/downloads/) on a instance with internet access, for example, on a developer host, the `$URU_HOME` folder
 and install all dependency gems from a sandbox Ruby instance:
-```
+```powershell
 uru_rt.exe admin add ruby\bin
 uru_rx.exe gem install --no-rdoc --no-ri serverspec rspec rake json rspec_junit_formatter
 ```
 and zip the directory.
 
 On Linux, the tarball creation starts with compiling Ruby from source, configured with a prefix `${URU_HOME}/ruby`:
-```
+```bash
 export URU_HOME='/uru'
 export RUBY_VERSION='2.1.9'
 wget https://cache.ruby-lang.org/pub/ruby/2.1/ruby-${RUBY_VERSION}.tar.gz
@@ -103,7 +98,7 @@ make
 sudo make install
 ```
 Next one installs binary distribution of `uru`:
-```
+```bash
 export URU_HOME='/uru'
 export URU_VERSION='0.8.1'
 pushd $URU_HOME
@@ -112,7 +107,7 @@ tar xzvf uru-${URU_VERSION}-linux-x86.tar.gz
 ```
 After Ruby and uru is installed one switches to the isolated environment
 and installs the required gem dependencies
-```
+```bash
 ./uru_rt admin add ruby/bin
 ./uru_rt ls
 ./uru_rt 219p490
@@ -125,7 +120,7 @@ Finally the `$URU_HOME` is converted to an archive, that can be provisioned on a
 NOTE: with `$GEM_HOME` one can make sure gems are installed under `.gems` rather then the
 into a hidden `$HOME/.gem` directory.
 This may not work correctly with some releases of `uru`. To verify, run the command on a system `uru` is provisioned from the tarball:
-```
+```bash
 ./uru_rt gem list --local --verbose
 ```
 If the list of gems is shorter than expected, e.g. only the following gems are listed,
@@ -142,20 +137,20 @@ test-unit (2.1.10.0)
 the `${URU_HOME}\.gem` directory may need to get copied to `${HOME}`
 
 If the error
-```
+```ruby
 <internal:gem_prelude>:1:in `require': cannot load such file -- rubygems.rb (LoadError)
 ```
 is observed, note that you have to unpackage the archive `uru.tar.gz` into the same `$URU_HOME` path which was configured when Ruby was compiled.
 Note: [rvm](http://stackoverflow.com/questions/15282509/how-to-change-rvm-install-location) is known to give the same error if the `.rvm` diredctory location was changed .
 
 In the `spec` directory there is a trimmed down `windows_spec_helper.rb` and `spec_helper.rb` required for `serverspec` gem:
-```
+```ruby
 require 'serverspec'
 set :backend, :cmd
 ```
 
 and a vanilla `Rakefile` generated by `serverspec init`
-```
+```ruby
 require 'rake'
 require 'rspec/core/rake_task'
 
@@ -187,7 +182,7 @@ end
 
 ```
 with a formatting option added:
-```
+```ruby
 t.rspec_opts = "--format documentation --format html --out reports/report_#{$host}.html --format json --out reports/report_#{$host}.json"
 ```
 This would enforce verbose formatting of rspec result [logging](http://stackoverflow.com/questions/8785358/how-to-have-junitformatter-output-for-rspec-run-using-rake).
@@ -196,7 +191,7 @@ The `spec/local` directory can contain arbitrary number of domain-specific spec 
 The `uru` module contains a basic serverspec file `uru_spec.rb` that serves as a smoke test of the `uru` environment:
 
 Linux:
-```
+```ruby
 require 'spec_helper'
 context 'uru smoke test' do
   context 'basic os' do
@@ -216,7 +211,7 @@ end
 ```
 
 Windows:
-```
+```ruby
 require 'spec_helper'
 context 'basic tests' do
   describe port(3389) do
@@ -243,12 +238,12 @@ end
 ```
 but any domain-specific serverspec files can be placed into the `spec/local` folder.
 
-There should be no nested subdirectories in `spec/local`.
+There should be no nested subdirectories in `spec/local`. If there are subdirectories, their contents will be silently ignored. 
 
 Finally in `${URU_HOME}` there is a platform-specific  bootstrap script:
 
 `runner.ps1` for Windows:
-```
+```powershell
 $URU_HOME = 'c:/uru'
 $GEM_VERSION = '2.1.0'
 $RAKE_VERSION = '10.1.0'
@@ -262,7 +257,7 @@ $TAG = (invoke-expression -command 'uru_rt.exe ls') -replace '^\s+\b(\w+)\b.*$',
 ```
 
 `runner.sh` for Linux:
-```
+```bash
 #!/bin/sh
 export URU_HOME=/uru
 export GEM_VERSION='2.1.0'
@@ -272,7 +267,7 @@ export URU_INVOKER=bash
 pushd $URU_HOME
 ./uru_rt admin add ruby/bin
 ./uru_rt ls --verbose
-export TAG=$(./uru_rt  ls 2>& 1|awk -e '{print $1}')
+export TAG=$(./uru_rt ls 2>& 1|awk -e '{print $1}')
 ./uru_rt $TAG
 ./uru_rt gem list
 ./uru_rt ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
@@ -283,7 +278,7 @@ The results are nicely formatted in a standalone [HTML report](https://coderwall
 ![resultt](https://raw.githubusercontent.com/sergueik/puppetmaster_vagrant/master/uru/screenshots/result.png)
 
 and a json:
-```
+```javascript
 {
     "version": "3.5.0.beta4",
     "examples": [{
@@ -318,7 +313,7 @@ and a json:
 ```
 
 One can easily extract the stats by spec file, descriptions of the failed tests and the overall `summary_line` from the json to stdout to get it captured in the console log useful for CI:
-```
+```ruby
 report_json = File.read('results/report_.json')
 report_obj = JSON.parse(report_json)
 
@@ -344,21 +339,120 @@ end
 
 puts 'Summary:'
 pp result_obj[:summary_line]
-
 ```
 
 To execute these one has to involve `uru_rt`.
 Linux:
-```
+```bash
 ./uru_rt admin add ruby/bin/ ; ./uru_rt ruby processor.rb --no-warnings --maxcount 100
-
 ```
 
 Windows:
+```cmd
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned  ^
+-Command "& {  \$env:URU_INVOKER = 'powershell'; iex -command 'uru_rt.exe admin add ruby/bin/' ; iex -command 'uru_rt.exe ruby processor.rb --no-warnings --maxcount 100'}"
 ```
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned  -Command "& {  \$env:URU_INVOKER = 'powershell'; iex -command 'uru_rt.exe admin add ruby/bin/' ; iex -command 'uru_rt.exe ruby processor.rb --no-warnings --maxcount 100'}"
+Alternatively on Windows one can process the `result.json` in pure Powewrshell:
+```powershell
+<#
+    .SYNOPSIS
+    This subroutine processes the serverspec report and prints full description of failed examples.
+    Optionally shows pending examples, too.
+
+   .DESCRIPTION
+    This subroutine processes the serverspec report and prints description of examples that had not passed. Optionally shows pending examples, too.
+
+    .EXAMPLE
+    processor.ps1 -report 'result.json' -directory 'reports'  -serverspec 'spec/local' -warnings -maxcount 10
+
+    .PARAMETER warnings
+    switch: specify to print examples with the status 'pending'. By default only the examples with the status 'failed' are printed.
+#>
+param(
+  [Parameter(Mandatory = $false)]
+  [string]$name = 'result.json',
+  [Parameter(Mandatory = $false)]
+  [string]$directory = 'results',
+  [Parameter(Mandatory = $false)]
+  [string]$serverspec = 'spec\local',
+  [int]$maxcount = 100,
+  [switch]$warnings
+)
+
+$statuses = @('passed')
+
+if ( -not ([bool]$PSBoundParameters['warnings'].IsPresent )) {
+  $statuses += 'pending'
+}
+
+$statuses_regexp = '(?:' + ( $statuses -join '|' ) +')'
+
+$results_path = ("${directory}/${name}" -replace '/' , '\');
+if (-not (Test-Path $results_path)) {
+  write-output ('Results is unavailable: "{0}"' -f $results_path )
+  exit 0
+}
+if ($host.Version.Major -gt 2) {
+  $results_obj = Get-Content -Path $results_path | ConvertFrom-Json ;
+  $count = 0
+  foreach ($example in $results_obj.'examples') {
+    if ( -not ( $example.'status' -match $statuses_regexp )) {
+      # get few non-blank lines of the description
+      # e.g. when the failed test is an inline command w/o a wrapping context
+      $full_description = $example.'full_description'
+      if ($full_description -match '\n|\\n' ){
+        $short_Description = ( $full_description -split '\n|\\n' | where-object { $_ -notlike '\s*' } |select-object -first 2 ) -join ' '
+      } else {
+        $short_Description = $full_description
+      }
+      Write-Output ("Test : {0}`r`nStatus: {1}" -f $short_Description,($example.'status'))
+      $count++;
+      if (($maxcount -ne 0) -and ($maxcount -lt $count)) {
+        break
+      }
+    }
+  }
+  # compute stats -
+  # NOTE: there is no outer context information in the `result.json`
+  $stats = @{}
+  $props =  @{
+    Passed = 0
+    Failed = 0
+    Pending = 0
+  }
+  foreach ($example in $results_obj.'examples') {
+    $spec_path = $example.'file_path'
+    if (-not $stats.ContainsKey($spec_path)) {
+      $stats.Add($spec_path, (New-Object -TypeName PSObject -Property $props ))
+    }
+    # Unable to index into an object of type System.Management.Automation.PSObject
+    $stats[$spec_path].$($example.'status') ++
+
+  }
+
+  write-output 'Stats:'
+  $stats.Keys | ForEach-Object {
+    $spec_path = $_
+    # extract outermost context from spec:
+    $context_line = select-string -pattern @"
+context ['"].+['"] do
+"@ -path $spec_path | select-object -first 1
+    $context = $context_line -replace @"
+^.+context\s+['"]([^"']+)['"]\s+do\s*$
+"@, '$1'
+    # NOTE: single quotes needed in the replacement
+    $number_examples = $stats[$spec_path]
+    # not counting pending examples 
+    # $total_number_examples = $number_examples.Passed + $number_examples.Pending + $number_examples.Failed
+    $total_number_examples = $number_examples.Passed + $number_examples.Failed
+    Write-Output ("{0}`t{1}%`t{2}" -f ( $spec_path -replace '^.+[\\/]','' ),([math]::round(100.00 * $number_examples.Passed / $total_number_examples,2)), $context)
+  }
+  write-output 'Summary:'
+  Write-Output ($results_obj.'summary_line')
+} else {
+  Write-Output (((Get-Content -Path $results_path) -replace '.+\"summary_line\"' , 'serverspec result: ' ) -replace '}', '' )
+}
 ```
-Alternatively on Windows one can process the `result.json` in pure Powewrshell.
 
 For convenience the `processor.ps1` and `processor.rb` are provided. Finding and converting to a better structured HTML report layout with the help of additional gems is a work in progress.
 
@@ -366,50 +460,47 @@ The Puppet module is available in a sibling directory:
  * [exec_uru.pp](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/manifests/exec_uru.pp)
  * [uru_runner_ps1.erb](https://github.com/sergueik/puppetmaster_vagrant/blob/master/modules/custom_command/templates/uru_runner_ps1.erb)
 
-
 ### Migration
-
 To migrate serverspec from a the [vagrant-serverspec](https://github.com/jvoorhis/vagrant-serverspec) default directory, one may use
 `require_relative`. Also pay attention to use a conditional
-```
+```ruby
 if File.exists?( 'spec/windows_spec_helper.rb')
   require_relative '../windows_spec_helper'
 end
 ```
-in the serverspec in the Ruby sandbox.
+in the serverspec in the Ruby sandbox if the same rspec test is about to be run from Vagrant and from the instance 
 
 ### Useful modifiers
 
 #### To detect Vagrant run :
-```
-  user_home = ENV.has_key?('VAGRANT_EXECUTABLE') ? 'c:/users/vagrant' : ( 'c:/users/' + ENV['USER'] )
+```ruby
+user_home = ENV.has_key?('VAGRANT_EXECUTABLE') ? 'c:/users/vagrant' : ( 'c:/users/' + ENV['USER'] )
 ```
 This will assign a hard coded user name versus target instance environment value to Ruby variable.
 Note:  `ENV['HOME']` was not used - it is defined in both cygwin (`C:\cygwin\home\vagrant`)
 and Windows environments (`C:\users\vagrant`)
 
 #### To detect URU runtime:
-```
-  context 'URU_INVOKER environment variable', :if => ENV.has_key?('URU_INVOKER')  do
-    describe command(<<-EOF
-     pushd env:
-     dir 'URU_INVOKER' | format-list
-     popd
-      EOF
-    ) do
-      its(:stdout) { should match /powershell|bash/i }
-    end
+```ruby
+context 'URU_INVOKER environment variable', :if => ENV.has_key?('URU_INVOKER')  do
+  describe command(<<-EOF
+   pushd env:
+   dir 'URU_INVOKER' | format-list
+   popd
+    EOF
+  ) do
+    its(:stdout) { should match /powershell|bash/i }
   end
+end
 ```
 
 ### Note
-
-The RSpec `format` [options](https://relishapp.com/rspec/rspec-core/docs/command-line/format-option)  proivided in the `Rakefile`
-```
+The RSpec `format` [options](https://relishapp.com/rspec/rspec-core/docs/command-line/format-option) provided in the `Rakefile`
+```ruby
 t.rspec_opts = "--require spec_helper --format documentation --format html --out reports/report_#{$host}.html --format json --out reports/report_#{$host}.json"
 ```
-are not compatible with [Vagrant serverspc plugin](https://github.com/jvoorhis/vagrant-serverspec):
-```
+are not compatible with [Vagrant serverspc plugin](https://github.com/jvoorhis/vagrant-serverspec), leading to the following error:
+```ruby
 The 
 serverspec provisioner:
 * The following settings shouldn't exist: rspec_opts
