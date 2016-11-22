@@ -4,7 +4,7 @@ require 'serverspec/type/base'
 # origin : https://github.com/OctopusDeploy/octopus-serverspec-extensions/blob/master/lib/octopus_serverspec_extensions/type/java_property_file.rb
 
 module Serverspec::Type
-  class JavaPropertyFile < Base
+  class PropertyFile < Base
 
     def initialize(name)
       @name = name
@@ -15,16 +15,15 @@ module Serverspec::Type
       properties = {}
       IO.foreach(@name) do |line|
         if (!line.start_with?('#'))
-          properties[$1.strip] = $2 if line =~ /([^=]*)=(.*)/
+          properties[$1.strip] = $2 if line =~ /^([^=]*)=(?: *)(.*)/
         end
       end
-
       properties[propertyName] == propertyValue
     end
   end
 
-  def java_property_file(name)
-    JavaPropertyFile.new(name)
+  def property_file(name)
+    PropertyFile.new(name)
   end
 end
 
