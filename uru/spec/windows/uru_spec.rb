@@ -3,7 +3,6 @@ if File.exists?( 'spec/windows_spec_helper.rb')
 end
 
 context 'uru' do
-
   uru_home = 'c:/uru'
   user_home = ENV.has_key?('VAGRANT_EXECUTABLE') ? 'c:/users/vagrant' : ( 'c:/users/' + ENV['USER'] )
   gem_version = '2.1.0'
@@ -84,5 +83,12 @@ context 'uru' do
       end
     end
   end
-end
+  require 'type/property_file'
 
+  context 'Custom Type' do
+    property_file_path = "#{user_home}/sample.properties"
+    describe property_file(property_file_path) do
+      it { should have_property('package.class.property', 'value' ) }
+    end
+  end
+end

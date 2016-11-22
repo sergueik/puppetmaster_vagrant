@@ -494,6 +494,47 @@ context 'URU_INVOKER environment variable', :if => ENV.has_key?('URU_INVOKER')  
 end
 ```
 
+As usual, one can provide custom types in the spec/type directory - that directory is excluded from the spec run. 
+For example one can define the following class `property_file.rb` to inspect property files:
+```ruby
+require 'serverspec'
+require 'serverspec/type/base'
+module Serverspec::Type
+  class PropertyFile < Base
+
+    def initialize(name)
+      @name = name
+      @runner = Specinfra::Runner
+    end
+
+    def has_property?(propertyName, propertyValue)
+      properties = {}
+      IO.foreach(@name) do |line|
+        if (!line.start_with?('#'))
+          properties[$1.strip] = $2 if line =~ /^([^=]*)=(?: *)(.*)/
+        end
+      end
+      properties[propertyName] == propertyValue
+    end
+  end
+
+  def property_file(name)
+    PropertyFile.new(name)
+  end
+end
+
+include Serverspec::Type
+```
+and create the test
+```ruby
+require 'type/property_file'
+context 'Custom Type' do
+  property_file_path = "#{user_home}/sample.properties"
+  describe property_file(property_file_path) do
+    it { should have_property('package.class.property', 'value' ) }
+  end
+end
+```
 ### Note
 The RSpec `format` [options](https://relishapp.com/rspec/rspec-core/docs/command-line/format-option) provided in the `Rakefile`
 ```ruby
