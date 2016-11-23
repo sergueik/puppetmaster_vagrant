@@ -7,7 +7,18 @@ module Serverspec::Type
       @name = name
       @runner = Specinfra::Runner
     end
-    def has_property?(conf_name, conf_value)
+    
+    def has_configuration_line?(configuration_line)
+      lines = []
+      text = File.read(@name)
+      # example of inxpecting the <Directory "/var/www"> section
+      lines = text.split(/(?:<Directory "[^"]+">|<\/Directory>)/).at(1).split(/\r?\n/)
+      lines.each { |line| line.strip! }
+      lines.include?(configuration_line)
+      # pp lines
+    end
+
+    def has_property?(prop_name, prop_value)
       properties = {}
       text = File.read(@name)
       data = text.split(/(<Location \/ >|<\/Location>)/).at(2).split(/\r?\n/)
@@ -16,7 +27,7 @@ module Serverspec::Type
           properties[$1.strip] = $2 if line =~ /^(?: *)([^ ]*)(?: +)(?:"*)([^"].*[^"])(?:"*)(?: *)$/
         end
       end
-      properties[conf_name] == conf_value
+      properties[prop_name] == prop_value
       # pp properties
     end
   end
