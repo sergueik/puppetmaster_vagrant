@@ -11,14 +11,14 @@ module Serverspec::Type
       @runner = Specinfra::Runner
     end
 
-    def has_property?(propertyName, propertyValue)
+    def has_property?(name, value)
       properties = {}
       IO.foreach(@name) do |line|
         if (!line.start_with?('#'))
           properties[$1.strip] = $2 if line =~ /^([^=]*)=(?: *)(.*)/
         end
       end
-      properties[propertyName] == propertyValue
+      properties[name] == value
     end
   end
 
