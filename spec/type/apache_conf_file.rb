@@ -7,14 +7,16 @@ module Serverspec::Type
       @name = name
       @runner = Specinfra::Runner
     end
-    
-    def has_configuration_line?(configuration_line)
+
+    def has_configuration?(line)
       lines = []
-      text = File.read(@name)
-      # example of inxpecting the <Directory "/var/www"> section
+      # TODO:
+      # Failure/Error: text = File.read(@name)
+      # NoMethodError: undefined method `read' for Serverspec::Type::File:Class
+      text = IO.read(@name)
       lines = text.split(/(?:<Directory "[^"]+">|<\/Directory>)/).at(1).split(/\r?\n/)
       lines.each { |line| line.strip! }
-      lines.include?(configuration_line)
+      lines.include?(line)
       # pp lines
     end
 
