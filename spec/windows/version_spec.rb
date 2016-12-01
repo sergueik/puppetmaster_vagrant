@@ -14,7 +14,7 @@ context 'Version check' do
 		  [string]$appVersion
 		)
 		$DebugPreference = 'Continue'
-		Write-Debug ('appName = "{0}", appVersion={1}' -f $appName,$appVersion)
+		write-debug ('appName = "{0}", appVersion={1}' -f $appName,$appVersion)
 		# fix to allow special character in the application names like 'Foo [Bar]'
 		$appNameRegex = New-Object Regex (($appName -replace '\\[','\\[' -replace '\\]','\\]'))
 
@@ -44,13 +44,13 @@ context 'Version check' do
 
 		if ($appVersion -eq $null) {
 		  $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) })
-		  Write-Debug ('applications found:' + $result)
-		  Write-Output ([boolean]($result.Length -gt 0))
+		  write-debug ('applications found:' + $result)
+		  write-output ([boolean]($result.Length -gt 0))
 		}
 		else {
 		  $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) } | Where-Object { $_.DisplayVersion -eq $appVersion })
-		  Write-Debug ('applications found:' + $result)
-		  Write-Output ([boolean]($result.Length -gt 0))
+		  write-debug ('applications found:' + $result)
+		  write-output ([boolean]($result.Length -gt 0))
 		}
 	  }
 
@@ -61,9 +61,9 @@ context 'Version check' do
 		if ($success -is [boolean] -and $success) {
 		  $exitCode = 0 }
 	  } catch {
-		Write-Output $_.Exception.Message
+		write-output $_.Exception.Message
 	  }
-	  Write-Output "Exiting with code: ${exitCode}"
+	  write-output "Exiting with code: ${exitCode}"
 	EOF
 	) do
 		its(:stdout) do

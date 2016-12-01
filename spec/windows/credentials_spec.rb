@@ -13,7 +13,7 @@ context 'Domain user credentials' do
         $principal_context = New-Object System.DirectoryServices.AccountManagement.PrincipalContext ($domain_context,$domain)
         $domain_contacted = $true
       } catch [exception]{
-        Write-Output (($_.Exception.Message) -split "`n")[0]
+        write-output (($_.Exception.Message) -split "`n")[0]
         $domain_contacted = $false
       }
       if ( $domain_contacted) {

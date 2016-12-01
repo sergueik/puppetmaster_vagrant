@@ -17,7 +17,7 @@ context 'Administrators' do
         $pattern = ('*Name="{0}"' -f $LocalGroup)
         foreach ($user in (Get-WmiObject -Class 'win32_groupuser' | Where-Object { $_.GroupComponent -like $pattern })) {
           if ($user.PartComponent -match 'Name="([^"]+)"') {
-            Write-Output $matches[1]
+            write-output $matches[1]
           }
         }
       }
@@ -63,7 +63,7 @@ context 'Administrators' do
             $output.Server = $Server
             $output.Group = $_
             $output.InLocalAdmin = $MemberNames -contains $_
-            Write-Output $output
+            write-output $output
           }
         }
       }

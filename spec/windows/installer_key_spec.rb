@@ -20,7 +20,7 @@ foreach ($assembly in $assembly_list.Keys)
 {
   $assembly_path = $assembly_list[$assembly]
   pushd ${assembly_path}
-  Write-Debug ('Loading {0} from {1}' -f $assembly,$assembly_path )
+  write-debug ('Loading {0} from {1}' -f $assembly,$assembly_path )
   if (-not (Test-Path -Path $assembly)) {
     throw ('Assembly "{0}" not found in "{1}"' -f $assembly, $assembly_path )
   }

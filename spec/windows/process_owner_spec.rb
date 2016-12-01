@@ -220,7 +220,7 @@ context 'Owner' do
           User = (New-Object Security.Principal.WindowsIdentity(
             $par[2].DangerousGetHandle()
           )).Name
-        } | Select-Object Process, PID, User | Format-List
+        } | Select-Object Process, PID, User | format-list
         $par[2].Dispose()
         $stah.Dispose()
       }

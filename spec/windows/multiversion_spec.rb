@@ -37,7 +37,7 @@ context 'Multiple Product Versions Acceptable' do
     $appVersionsArray = @()
     )
   $DebugPreference = 'Continue'
-  Write-Debug ('appName: "{0}", appVersions: @({1})' -f $appName,($appVersionsArray -join ', '))
+  write-debug ('appName: "{0}", appVersions: @({1})' -f $appName,($appVersionsArray -join ', '))
 
   $appNameRegex = New-Object Regex (($appName -replace '\\[','\\[' -replace '\\]','\\]'))
 
@@ -67,13 +67,13 @@ context 'Multiple Product Versions Acceptable' do
 
   if ($appVersionsArray.Length -eq 0) {
     $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) })
-    Write-Debug ('applications found:' + $result)
-    Write-Output ([boolean]($result.Length -gt 0))
+    write-debug ('applications found:' + $result)
+    write-output ([boolean]($result.Length -gt 0))
   }
   else {
     $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) } | Where-Object { $appVersionsArray.Contains($_.DisplayVersion) })
-    Write-Debug ('applications found:' + $result)
-    Write-Output ([boolean]($result.Length -gt 0))
+    write-debug ('applications found:' + $result)
+    write-output ([boolean]($result.Length -gt 0))
   }
 }
 
@@ -88,9 +88,9 @@ try {
   if ($success -is [boolean] -and $success) {
     $exitCode = 0 }
 } catch {
-  Write-Output $_.Exception.Message
+  write-output $_.Exception.Message
 }
-Write-Output "Exiting with code: ${exitCode}"
+write-output "Exiting with code: ${exitCode}"
 # NOTE: if consecutive invocations are performed, the second result is wrong
 
     EOF
