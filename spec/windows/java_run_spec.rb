@@ -60,5 +60,4 @@ context 'Run Java class' do
   # it is ranked experimental, and seldom used:
   # https://docs.oracle.com/javase/8/docs/technotes/tools/windows/jrunscript.html
   # http://www.herongyang.com/JavaScript/jrunscript-Run-JavaScript-Code-with-jrunscript.html
-
 end
