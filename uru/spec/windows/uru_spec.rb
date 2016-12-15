@@ -83,8 +83,8 @@ context 'uru' do
       end
     end
   end
+  # can provide custom types under spec/type - the directory is excluded from spec run
   require 'type/property_file'
-
   context 'Custom Type' do
     property_file_path = "#{user_home}/sample.properties"
     describe property_file(property_file_path) do
