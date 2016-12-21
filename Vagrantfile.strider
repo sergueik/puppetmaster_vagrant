@@ -6,19 +6,24 @@ box_hostname = ENV.fetch('BOX_HOSTNAME', 'vagrant-strider')
 
 basedir = basedir.gsub('\\', '/')
 
-# standalone ubuntu box with strider
-# origin : https://github.com/virtualles/vagrant-strider/blob/master/provision/script.sh
+# Standalone Ubuntu box with Strider and Docker
+
+# based on: https://github.com/virtualles/vagrant-strider/blob/master/provision/script.sh
 
 VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = 'ubuntu/trusty64'
-  config_vm_box_name ='trusty-server-cloudimg-amd64-vagrant-disk1.box'
-  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}" 
+  config_vm_box_name = 'trusty-server-amd64-vagrant-selenium.box'
+  # config_vm_box_name = 'ubuntu-16.04-2.3.1.virtualbox.box'
+  # https://github.com/jose-lpa/packer-ubuntu_lts/releases/download/v3.0/ubuntu-16.04.box
+  # Ubuntu 16.04 with Docker enabled (based on amd64 server iso file)
+  # not working timeout during server version negotiating
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
   config.vm.network :forwarded_port, host: 3000, guest: 3000
   config.vm.box = box_hostname
   config.ssh.forward_agent = true
-  
+  config.vm.boot_timeout = 600
   config.vm.network :private_network, ip: '192.168.33.10'
 
   config.vm.provision 'shell', inline: <<-END_OF_SHELL_PROVISION
@@ -29,32 +34,48 @@ echo 'Start provision script'
 set -x # Print commands as executed
 
 # Update packages
-sudo apt-get -qqy update 
+sudo apt-get -qqy update
 
 # Install required packages
-sudo apt-get -qqy install nodejs sudo mongodb curl git g++ vim
+sudo apt-get -qqy install sudo mongodb curl git g++ vim
+
+# http://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/#
+sudo apt-get install python-software-properties
+curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+sudo apt-get install -qqy nodejs
 
 sudo chown -R vagrant:vagrant /usr/local/bin
 sudo chown -R vagrant:vagrant /usr/local/lib
 sudo ln -s /usr/bin/nodejs  /usr/bin/node
 
-# Install NPM
-wget https://npmjs.org/install.sh 
-sudo chmod +x install.sh
-sudo ./install.sh
+# https://docs.docker.com/engine/installation/linux/ubuntulinux/
+# not working right with trusty....
+# will not be needed with the base box alreay has docker installed
+# sudo apt-get update
+# sudo apt-get install apt-transport-https ca-certificates
+# sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+# echo 'deb https://apt.dockerproject.org/repo ubuntu-xenial main' | sudo tee /etc/apt/sources.list.d/docker.list
+# sudo apt-get -qqy update
+# sudo apt-get  purge lxc-docker
+# apt-cache policy docker-engine
+# sudo apt-get install -qqy linux-image-extra-$(uname -r) linux-image-extra-virtual
+# # sudo apt-get upgrade
+# sudo apt-get  purge lxc-docker
+# sudo apt-get install docker-engine
 
 # Install Strider
-git clone https://github.com/Strider-CD/strider.git
+  git clone https://github.com/Strider-CD/strider.git
 
 # pull tag before 'Use template strings'
 cd ~vagrant/
 cd strider
-sudo chown -R vagrant:vagrant . 
-git checkout 'v1.7.5' 
+sudo chown -R vagrant:vagrant .
+git checkout 'v1.9.0'
+# Last < Node 4 Support = 1.8.0
+# 1.6.3 working fine
+sudo npm install
 
-npm install
-
-npm install nodemon \
+sudo npm install nodemon \
 nomnom \
 step \
 underscore \
@@ -67,6 +88,7 @@ passport \
 pw \
 apres \
 async \
+bson \
 nodemailer \
 moment \
 jade \
@@ -88,13 +110,13 @@ strider-ecosystem-client \
 strider-cli
 
 cd node_modules/strider-cli
-npm install strider-ecosystem-client
+sudo npm install strider-ecosystem-client
 # Start/Restart services/
 sudo service mongodb restart
 
 # Start Strider
 # nodemon bin/strider
-~vagrant/strider/bin/strider & 
+~vagrant/strider/bin/strider &
   END_OF_SHELL_PROVISION
 
   config.vm.provider :virtualbox do |vb|
@@ -105,4 +127,3 @@ sudo service mongodb restart
     vb.customize ['modifyvm', :id, '--natdnshostresolver1', 'on']
   end
 end
-
