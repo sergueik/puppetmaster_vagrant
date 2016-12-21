@@ -6,24 +6,24 @@ require 'serverspec/type/base'
 module Serverspec::Type
   class PropertyFile < Base
 
-    def initialize(name)
-      @name = name
+    def initialize(filename)
+      @filename = filename
       @runner = Specinfra::Runner
     end
 
-    def has_property?(name, value)
+    def has_property?(property_name, property_value)
       properties = {}
-      IO.foreach(@name) do |line|
+      IO.foreach(@filename) do |line|
         if (!line.start_with?('#'))
           properties[$1.strip] = $2 if line =~ /^([^=]*)=(?: *)(.*)/
         end
       end
-      properties[name] == value
+      properties[property_name] == property_value
     end
   end
 
-  def property_file(name)
-    PropertyFile.new(name)
+  def property_file(filename)
+    PropertyFile.new(filename)
   end
 end
 
