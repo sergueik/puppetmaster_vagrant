@@ -30,13 +30,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 echo 'Start provision script'
 
-# set -e # Exit script on first error
-set -x # Print commands as executed
+# set -e
+set -x
 
 # Update packages
 sudo apt-get -qqy update
 
-# Install required packages
+# Install Strider prerequisites
 sudo apt-get -qqy install sudo mongodb curl git g++ vim
 
 # http://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/#
@@ -48,31 +48,31 @@ sudo chown -R vagrant:vagrant /usr/local/bin
 sudo chown -R vagrant:vagrant /usr/local/lib
 sudo ln -s /usr/bin/nodejs  /usr/bin/node
 
+# Install Docker
+
 # https://docs.docker.com/engine/installation/linux/ubuntulinux/
-# not working right with trusty....
-# will not be needed with the base box alreay has docker installed
-# sudo apt-get update
-# sudo apt-get install apt-transport-https ca-certificates
-# sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-# echo 'deb https://apt.dockerproject.org/repo ubuntu-xenial main' | sudo tee /etc/apt/sources.list.d/docker.list
-# sudo apt-get -qqy update
-# sudo apt-get  purge lxc-docker
-# apt-cache policy docker-engine
-# sudo apt-get install -qqy linux-image-extra-$(uname -r) linux-image-extra-virtual
-# # sudo apt-get upgrade
-# sudo apt-get  purge lxc-docker
-# sudo apt-get install docker-engine
+sudo apt-get install -qqy apt-transport-https ca-certificates
+sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+echo 'deb https://apt.dockerproject.org/repo ubuntu-trusty main' | sudo tee /etc/apt/sources.list.d/docker.list
+sudo apt-get -qqy update
+apt-cache policy docker-engine
+sudo apt-get install -qqy linux-image-extra-$(uname -r) linux-image-extra-virtual
+sudo apt-get  purge lxc-docker
+sudo apt-get -qqy install docker-engine
+
+# Pull docker image
+sudoo docker ps
+sudo docker pull centos
+sudo docker images centos
 
 # Install Strider
-  git clone https://github.com/Strider-CD/strider.git
+git clone https://github.com/Strider-CD/strider.git
 
 # pull tag before 'Use template strings'
 cd ~vagrant/
 cd strider
 sudo chown -R vagrant:vagrant .
 git checkout 'v1.9.0'
-# Last < Node 4 Support = 1.8.0
-# 1.6.3 working fine
 sudo npm install
 
 sudo npm install nodemon \
@@ -111,12 +111,13 @@ strider-cli
 
 cd node_modules/strider-cli
 sudo npm install strider-ecosystem-client
-# Start/Restart services/
 sudo service mongodb restart
 
 # Start Strider
 # nodemon bin/strider
-~vagrant/strider/bin/strider &
+cd
+cd strider
+./bin/strider &
   END_OF_SHELL_PROVISION
 
   config.vm.provider :virtualbox do |vb|
