@@ -27,7 +27,7 @@ context 'MySQL' do
       [
         'root@localhost',
       ].each do |user_name|
-        its(:stdout) { should contain user_name.gsub('@localhost','') }
+        its(:stdout) { should contain user_name.gsub(/@.+$/,'') }
       end
     end
   end
