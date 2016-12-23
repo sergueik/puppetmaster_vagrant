@@ -1,4 +1,19 @@
 context 'MySQL' do
+  
+  context 'DB'  do
+    describe command(<<-EOF
+      mysql -e 'SELECT DISTINCT DB FROM mysql.db;'
+    EOF
+    ) do
+    [
+      'test',
+     # 'db name',
+    ].each do |db|
+        its(:stdout) { should contain(db) }
+      end  
+    end
+  end
+  
   context 'Databases' do
     {
     'test' => %w|
@@ -31,6 +46,7 @@ context 'MySQL' do
       end
     end
   end
+
   context 'Grants' do
     {
       'privileged_user@%' => '*.*',
