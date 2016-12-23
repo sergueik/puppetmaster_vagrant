@@ -31,4 +31,29 @@ context 'MySQL' do
       end
     end
   end
+  context 'Grants' do
+    {
+      'privileged_user@%' => '*.*',
+      'root@localhost'    => '*.*'
+    }.each do |account,db|
+
+      user, host, *rest  = account.split(/@/)
+      describe command(<<-EOF
+        mysql -e 'SHOW GRANTS FOR "#{user}"@"#{host}"'
+      EOF
+      ) do
+        its(:exit_status) {should eq 0 }
+        its(:stdout) { should match /GRANT ALL PRIVILEGES ON *.* TO '#{user}'@'#{host}'/i }
+        its(:stderr) { should_not match /There is no such grant defined for user '#{user}' on host '#{host}'/i }
+      end
+    end
+    user = 'none'
+    host = 'localhost'
+    describe command(<<-EOF
+      mysql -e 'SHOW GRANTS FOR "#{user}"@"#{host}"'
+    EOF
+    ) do
+        its(:stderr) { should match /There is no such grant defined for user '#{user}' on host '#{host}'/i }
+    end
+  end
 end
