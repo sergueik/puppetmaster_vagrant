@@ -3,6 +3,7 @@
 $URU_PATH = 'C:\uru'
 $RESULTS_PATH = "${URU_PATH}\results"
 $RUBY_PATH = "${URU_PATH}\ruby"
+$env:URU_INVOKER = 'powershell
 
 $GEM_VERSION = '2.1.0'
 $RAKE_VERSION = '10.1.0'
@@ -16,13 +17,15 @@ $USERPROFILE = ([Environment]::GetFolderPath('Personal')) -replace '\\Documents'
 
 # https://richardspowershellblog.wordpress.com/2008/03/20/special-folders/
 # https://msdn.microsoft.com/en-us/library/windows/desktop/bb774096%28v=vs.85%29.aspx
-$ssfPROFILE  = 0x28
-$USERPROFILE = Get-ChildItem ( (New-Object -ComObject Shell.Application).Namespace($ssfPROFILE).Self.Path)
+$ssfPROFILE = 0x28
+$USERPROFILE = Get-ChildItem ((New-Object -ComObject Shell.Application).Namespace($ssfPROFILE).Self.Path)
 write-debug "USERPROFILE=${USERPROFILE}"
 
-mkdir "${USERPROFILE}\.uru" -erroraction silentlycontinue
-@"
+if (-not test-path "${USERPROFILE}\.uru") {
+  mkdir "${USERPROFILE}\.uru" -erroraction silentlycontinue
+}
 
+@"
 {
   "Version": "1.0.0",
   "Rubies": {
@@ -45,9 +48,7 @@ invoke-expression -command 'uru_rt.exe admin add ruby\bin'
 $TAG = (invoke-expression -command 'uru_rt.exe ls') -replace '^\s+\b(\w+)\b.*$', '$1'
 write-debug ("tag = '{0}'" -f $TAG )
 
-# bootstrap Rspec
-$env:URU_INVOKER = 'powershell'
-
+# Run the serverspec
 uru_rt.exe $TAG
 uru_rt.exe ruby "${RUBY_PATH}\lib\ruby\gems\${GEM_VERSION}\gems\rake-${RAKE_VERSION}\bin\rake" spec
 

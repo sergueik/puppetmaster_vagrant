@@ -2,18 +2,20 @@
 
 export URU_HOME='/uru'
 export URU_INVOKER=bash
-export GEM_VERSION=2.1.0
-export RAKE_VERSION=10.1.0
-export RUBY_VERSION=2.1.0
-
 export LD_LIBRARY_PATH=${URU_HOME}/ruby/lib
-export URU_RUNNER="${URU_HOME}/uru_rt"
+
+GEM_VERSION=2.1.0
+RAKE_VERSION=10.1.0
+RUBY_VERSION=2.1.0
+RUBY_RUNTIME_ID='219p490'
+URU_RUNNER="${URU_HOME}/uru_rt"
+
 pushd ${URU_HOME}
 # TODO: $URU_RUNNER admin refresh
-# if the  ~/.uru/rubies.json is different, in particular the GemHome
+# when the ~/.uru/rubies.json, in particular the GemHome, is different
 
 export HOME='/root'
-mkdir $HOME/.uru
+if [[ ! -d "$HOME/.uru" ]]; then mkdir "$HOME/.uru"; fi
 rm "$HOME/.uru/rubies.json"
 cat <<EOF>"$HOME/.uru/rubies.json"
 {
@@ -30,8 +32,7 @@ cat <<EOF>"$HOME/.uru/rubies.json"
  }
 }
 EOF
-
-echo Y |$URU_RUNNER  admin rm  219p490 > /dev/null 
+echo Y |$URU_RUNNER  admin rm $RUBY_RUNTIME_ID > /dev/null
 $URU_RUNNER admin add ruby/bin
 
 $URU_RUNNER ls --verbose
@@ -46,13 +47,12 @@ cp -R .gem $HOME
 # Verify the gems
 $URU_RUNNER gem list --local
 
-# Check it the required gems are present
+# Check that the required gems are present
 $URU_RUNNER gem list| grep -qi serverspec
-if [ $? != 0 ] ; then
-  echo 'WARNING: serverspec gem is not found in this environment:'
+if [ $? != 0 ]; then
+  echo 'ERROR: serverspec gem is not found'
   exit 1
 fi
 
-# Run the spec
-$URU_RUNNER ruby ruby/lib/ruby/gems/${GEM_VERSION}/gems/rake-${RAKE_VERSION}/bin/rake spec
-
+# Run the serverspec
+$URU_RUNNER ruby ruby/lib/ruby/gems/$GEM_VERSION/gems/rake-$RAKE_VERSION/bin/rake spec
