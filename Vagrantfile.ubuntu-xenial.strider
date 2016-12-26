@@ -2,22 +2,23 @@ tag = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
 box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
-box_hostname = ENV.fetch('BOX_HOSTNAME', 'vagrant-strider')
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'vagrant-ubuntu-xenial64-strider')
 
 basedir = basedir.gsub('\\', '/')
 
 # Standalone Ubuntu box with Strider and Docker
 
 # based on: https://github.com/virtualles/vagrant-strider/blob/master/provision/script.sh
-
+# NOTE: https://releases.hashicorp.com/vagrant/
 VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = 'ubuntu/trusty64'
-  config_vm_box_name = 'trusty-server-amd64-vagrant-selenium.box'
-  # config_vm_box_name = 'ubuntu-16.04-2.3.1.virtualbox.box'
-  # https://github.com/jose-lpa/packer-ubuntu_lts/releases/download/v3.0/ubuntu-16.04.box
-  # Ubuntu 16.04 with Docker enabled (based on amd64 server iso file)
-  # not working timeout during server version negotiating
+  config.vm.box = 'ubuntu/xenial64'
+  # NOTE: Vagrant provision failed on a few Ubuntu 16.04 base boxes, in particular the Ubuntu 16.04 with Docker installed
+  # with
+  # timeout during server version negotiating
+
+  # https://atlas.hashicorp.com/puppetlabs/boxes/ubuntu-16.04-64-puppet
+  config_vm_box_name = 'ubuntu-16.04-64-puppet.box'
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
   config.vm.network :forwarded_port, host: 3000, guest: 3000
@@ -36,7 +37,7 @@ set -x
 # Update packages
 sudo apt-get -qqy update
 
-# Install Strider prerequisites
+# Install required packages
 sudo apt-get -qqy install sudo mongodb curl git g++ vim
 
 # http://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/#
@@ -44,23 +45,26 @@ sudo apt-get install python-software-properties
 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 sudo apt-get install -qqy nodejs
 
+# is it necessary ?
 sudo chown -R vagrant:vagrant /usr/local/bin
 sudo chown -R vagrant:vagrant /usr/local/lib
-sudo ln -s /usr/bin/nodejs  /usr/bin/node
+sudo ln -s /usr/bin/nodejs /usr/bin/node
 
 # Install Docker
 
 # https://docs.docker.com/engine/installation/linux/ubuntulinux/
-sudo apt-get install -qqy apt-transport-https ca-certificates
+sudo apt-get update
+sudo apt-get install apt-transport-https ca-certificates
 sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-echo 'deb https://apt.dockerproject.org/repo ubuntu-trusty main' | sudo tee /etc/apt/sources.list.d/docker.list
+echo 'deb https://apt.dockerproject.org/repo ubuntu-xenial ubuntu-trusty main' | sudo tee /etc/apt/sources.list.d/docker.list
 sudo apt-get -qqy update
 apt-cache policy docker-engine
 sudo apt-get install -qqy linux-image-extra-$(uname -r) linux-image-extra-virtual
+# # sudo apt-get upgrade
 sudo apt-get  purge lxc-docker
 sudo apt-get -qqy install docker-engine
 
-# Pull docker image
+# pull docker image
 sudoo docker ps
 sudo docker pull centos
 sudo docker images centos
@@ -73,6 +77,8 @@ cd ~vagrant/
 cd strider
 sudo chown -R vagrant:vagrant .
 git checkout 'v1.9.0'
+# Last < Node 4 Support = 1.8.0
+# 1.6.3 working fine
 sudo npm install
 
 sudo npm install nodemon \
@@ -111,13 +117,12 @@ strider-cli
 
 cd node_modules/strider-cli
 sudo npm install strider-ecosystem-client
+# Start/Restart services/
 sudo service mongodb restart
 
 # Start Strider
 # nodemon bin/strider
-cd
-cd strider
-./bin/strider &
+~vagrant/strider/bin/strider &
   END_OF_SHELL_PROVISION
 
   config.vm.provider :virtualbox do |vb|
