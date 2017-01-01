@@ -1,0 +1,9 @@
+---
+username: 'automation'
+password: 'password'
+server: 'https://localhost:8080'
+
+# jira-specific settings
+role: 'consul'
+node: 'test-consul-0'
+
