@@ -27,6 +27,128 @@ context 'Symbolic Links' do
     end
   end
 
+    context 'Parsing cmd output' do
+
+    symlink_path = 'c:\Temp\directory_link'
+    target_path = 'c:\temp\directory_target'
+    describe command( <<-EOF
+
+  # Confirm that a given path is a Windows NT symlink
+  function Test-SymLink([string]$test_path) {
+    $file_object = Get-Item $test_path -Force -ErrorAction Continue
+    return [bool]($file_object.Attributes -band [IO.FileAttributes]::Archive ) `
+                 -and  `
+           [bool]($file_object.Attributes -band [IO.FileAttributes]::ReparsePoint )
+  }
+
+  # Confirm that a given path is a Windows NT directory junction
+  function Test-DirectoryJunction([string]$test_path) {
+    $file_object = Get-Item $test_path -Force -ErrorAction Continue
+    return [bool]($file_object.Attributes -band [IO.FileAttributes]::Directory ) `
+                 -and  `
+           [bool]($file_object.Attributes -band [IO.FileAttributes]::ReparsePoint)
+  }
+
+  # TODO: API to read directory junction target
+  function Get-DirectoryJunctionTarget([string]$test_path) {
+
+    $command = ('cmd /c dir /L /-C "{0}"' -f
+                [System.IO.Directory]::GetParent($test_path ))
+    $capturing_match_expression = ( '(?:<JUNCTION>|<SYMLINKD>)\\s+{0}\\s+\\[(?<TARGET>.+)\\]' -f
+                                    [System.IO.Path]::GetFileName($test_path ))
+    $result = $null
+    (invoke-expression -command $command ) |
+              where-object { $_ -match $capturing_match_expression } |
+                select-object -first 1 |
+                  forEach-object {
+                    $result =  $matches['TARGET']
+                  }
+    return $result
+
+  }
+
+  # TODO:  API to read symlink target
+  function Get-SymlinkTarget([string]$test_path) {
+
+    $command = ('cmd /c dir /L /-C "{0}"' -f [System.IO.Directory]::GetParent($test_path ))
+    $capturing_match_expression = ( '<SYMLINK>\\s+{0}\\s+\\[(?<TARGET>.+)\\]' -f
+                                    [System.IO.Path]::GetFileName($test_path ))
+    $result = $null
+    (invoke-expression -command $command ) |
+      where { $_ -match $capturing_match_expression } |
+        select-object -first 1 |
+          forEach-object {
+            $result =  $matches['TARGET']
+          }
+    return $result
+
+  }
+  $symlink_path = '#{symlink_path}'
+  $is_junction = Test-DirectoryJunction -test_path $symlink_path
+  write-output ('is junction: {0}' -f $is_junction )
+
+  $junction_target = Get-DirectoryJunctionTarget  -test_path $symlink_path
+  write-output ('junction target: {0}' -f $junction_target )
+
+  $is_symlink = Test-Symlink -test_path 'c:\\temp\\directory_link'
+  write-output ('is symlink: {0}' -f $is_symlink )
+
+  $symlink_target = Get-SymlinkTarget  -test_path 'c:\\temp\\directory_link'
+  write-output ('symlink target: {0}' -f $symlink_target )
+
+  EOF
+  ) do
+      its(:exit_status) {should eq 0 }
+      its(:stdout) { should match /is symlink: True/  }
+      its(:stdout) { should match /symlink target: directory_target/i   }
+      its(:stdout) { should match /is junction: True/  }
+      its(:stdout) { should match /junction target: c:\\temp\\directory_target/i   }
+    end
+  end
+
+  # Powershell 5.0 supports creating and detecting of symbolic link directly
+  context 'Powershell 5.0' do
+    symlink_path = 'c:\Temp\directory_link'
+    target_path = 'c:\temp\directory_target'
+    before(:each) do
+
+      Specinfra::Runner::run_command( <<-END_COMMAND
+        $target_path = '#{target_path}'
+        $symlink_path = '#{symlink_path}'
+        $target_parent_path = $target_path -replace '\\\\[^\\\\]+$',''
+        $target_directory_name = $target_path -replace '^.+\\\\',''
+        pushd $target_parent_path
+        New-Item -ItemType Directory -Name $target_directory_name -ErrorAction SilentlyContinue
+        popd
+        if (Test-Path -Path $symlink_path) {
+          # NOTE: Powershell will warn you
+          # remove-item : C:\temp\#{symlink_path} is an NTFS junction point.
+          # Use the Force parameter to delete or modify this object.
+          Remove-Item -Path $symlink_path -Force
+        }
+        $symlink_parent_path = $symlink_path -replace '\\\\[^\\\\]+$',''
+        $symlink_directory_name = $symlink_path -replace '^.+\\\\',''
+        pushd $target_parent_path
+        # NOTE: Powershell will warn you
+        # New-Item : Administrator privilege required for this operation.
+        New-Item -ItemType SymbolicLink -Name "${symlink_directory_name}" -Target $target_path
+        popd
+      END_COMMAND
+      )
+    end
+
+    describe command( <<-EOF
+    $symlink_path = '#{symlink_path}'
+    get-item -path $symlink_path | select-object -property 'LinkType' | format-list
+    get-item -path $symlink_path | select-object -expandproperty 'Target'
+  EOF
+  ) do
+      its(:exit_status) {should eq 0 }
+      its(:stdout) { should match /LinkType\s+:\s+SymbolicLink/  }
+      its(:stdout) { should contain Regexp.new(target_path) }
+    end
+  end
+
   context 'Directory Junctions and Reparse Points' do
     # use pinvoke to read directory junction /  symlink target
     # http://chrisbensen.blogspot.com/2010/06/getfinalpathnamebyhandle.html
@@ -85,7 +207,7 @@ context 'Symbolic Links' do
       }
 "@ -ReferencedAssemblies 'System.Windows.Forms.dll','System.Runtime.InteropServices.dll','System.Net.dll','System.Data.dll','mscorlib.dll'
 
-      $symlink_directory = 'c:\\temp\\test'
+      $symlink_directory = 'c:\\temp\\directory_link'
       $symlink_directory_directoryinfo_object = New-Object System.IO.DirectoryInfo ($symlink_directory)
       $junction_target = [utility]::GetSymbolicLinkTarget($symlink_directory_directoryinfo_object)
       write-output ('junction target: {0}' -f $junction_target )
@@ -93,7 +215,7 @@ context 'Symbolic Links' do
       EOF
       ) do
           its(:exit_status) {should eq 0 }
-          its(:stdout) { should match /junction target: c:\\windows\\softwareDistribution/i }
+          its(:stdout) { should match /junction target: c:\\temp\\directory_target/i }
         end
 
 
@@ -168,4 +290,24 @@ context 'Symbolic Links' do
       its(:stdout) { should match /symlink target: C:\\temp\\specinfra-2.43.5.gem/i }
     end
   end
+
+  # origin: https://raw.githubusercontent.com/guitarrapc/PowerShellUtil/master/SymbolicLink/Get-SynbolicLink.ps1
+  context 'Junctions and Symlinks - Powershell calling C# SymbolicLink' do
+    link_name = 'splunkuniversalforwarder'
+    describe command(<<-EOF
+  [System.IO.File]::GetAttributes([System.IO.FileInfo]($file_reparsepoint_link))
+  # Archive, ReparsePoint, NotContentIndexed
+   [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($regular_directory))
+  # Directory, NotContentIndexed
+   [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($directory_reparsepoint_link))
+  # Directory, ReparsePoint, NotContentIndexed
+  # https://msdn.microsoft.com/en-us/library/system.io.fileattributes%28v=vs.110%29.aspx
+  $expected = @([System.IO.FileAttributes]::Archive, [System.IO.FileAttributes]::ReparsePoint,, [System.IO.FileAttributes]::NotContentIndexed ) -join ', '
+  #Archive, ReparsePoint, NotContentIndexed
+    EOF
+    ) do
+      its(:exit_status) {should eq 0 }
+    end
+  end
+
 end
