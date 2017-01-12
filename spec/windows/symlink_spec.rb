@@ -6,7 +6,10 @@ context 'Symbolic Links' do
     Specinfra::Runner::run_command( <<-EOF
     pushd 'c:/temp'
     mkdir 'directory_target' -erroraction 'silentlycontinue'
+    touch 'file_target'
     cmd %%- /c mklink /D 'directory_link' 'directory_target'
+    cmd %%- /c mklink /D 'file_link' 'file_target'
+    cmd %%- /c mklink /J 'directory_junction' 'directory_target'
   EOF
   ) end
 
@@ -207,9 +210,9 @@ context 'Symbolic Links' do
       }
 "@ -ReferencedAssemblies 'System.Windows.Forms.dll','System.Runtime.InteropServices.dll','System.Net.dll','System.Data.dll','mscorlib.dll'
 
-      $symlink_directory = 'c:\\temp\\directory_link'
-      $symlink_directory_directoryinfo_object = New-Object System.IO.DirectoryInfo ($symlink_directory)
-      $junction_target = [utility]::GetSymbolicLinkTarget($symlink_directory_directoryinfo_object)
+      $junction_directory = 'c:\\temp\\directory_junction'
+      $junction_directory_directoryinfo_object = New-Object System.IO.DirectoryInfo ($junction_directory)
+      $junction_target = [utility]::GetSymbolicLinkTarget($junction_directory_directoryinfo_object)
       write-output ('junction target: {0}' -f $junction_target )
 
       EOF
@@ -279,7 +282,7 @@ context 'Symbolic Links' do
   }
 "@ -ReferencedAssemblies 'System.Windows.Forms.dll','System.Runtime.InteropServices.dll','System.Net.dll','System.Data.dll','mscorlib.dll'
 
-  $symlink_file = 'c:\\temp\\specinfra'
+  $symlink_file = 'c:\\temp\\file_link'
 
   $symlink_file_fileinfo_object = New-Object System.IO.FileInfo ($symlink_file)
   $symlink_target = [utility]::GetSymbolicLinkTarget($symlink_file_fileinfo_object)
@@ -287,23 +290,24 @@ context 'Symbolic Links' do
   EOF
   ) do
       its(:exit_status) {should eq 0 }
-      its(:stdout) { should match /symlink target: C:\\temp\\specinfra-2.43.5.gem/i }
+      its(:stdout) { should match /symlink target: C:\\temp\\file_target/i }
     end
   end
 
   # origin: https://raw.githubusercontent.com/guitarrapc/PowerShellUtil/master/SymbolicLink/Get-SynbolicLink.ps1
-  context 'Junctions and Symlinks - Powershell calling C# SymbolicLink' do
-    link_name = 'splunkuniversalforwarder'
-    describe command(<<-EOF
-  [System.IO.File]::GetAttributes([System.IO.FileInfo]($file_reparsepoint_link))
-  # Archive, ReparsePoint, NotContentIndexed
-   [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($regular_directory))
-  # Directory, NotContentIndexed
-   [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($directory_reparsepoint_link))
-  # Directory, ReparsePoint, NotContentIndexed
   # https://msdn.microsoft.com/en-us/library/system.io.fileattributes%28v=vs.110%29.aspx
-  $expected = @([System.IO.FileAttributes]::Archive, [System.IO.FileAttributes]::ReparsePoint,, [System.IO.FileAttributes]::NotContentIndexed ) -join ', '
-  #Archive, ReparsePoint, NotContentIndexed
+
+  context 'Powershell calling C# SymbolicLink' do
+    link_name = 'C:\temp\directory_link'
+    describe command(<<-EOF
+      [System.IO.File]::GetAttributes([System.IO.FileInfo]($file_reparsepoint_link))
+      # Archive, ReparsePoint, NotContentIndexed
+       [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($regular_directory))
+      # Directory, NotContentIndexed
+       [System.IO.File]::GetAttributes([System.IO.DirectoryInfo]($directory_reparsepoint_link))
+      # Directory, ReparsePoint, NotContentIndexed
+      $expected = @([System.IO.FileAttributes]::Archive, [System.IO.FileAttributes]::ReparsePoint,, [System.IO.FileAttributes]::NotContentIndexed ) -join ', '
+      #Archive, ReparsePoint, NotContentIndexed
     EOF
     ) do
       its(:exit_status) {should eq 0 }
