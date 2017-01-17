@@ -1,7 +1,18 @@
-require_relative '../windows_spec_helper'
-
+if File.exists?( 'spec/windows_spec_helper.rb')
+  require_relative '../windows_spec_helper'
+end
 
 context 'Services' do
+  describe service('WinRM') do
+    it { should be_running } 
+    it { should have_start_mode 'Automatic' } 
+    it { should be_enabled   }
+    # in the registry stored in ObjectName
+    # in Powershell becomes 'StartName'
+    it { should have_property({ 'StartName' => 'NT AUTHORITY\NetworkService' })  }
+    # can not convert types 
+    # it { should have_property({ 'DesktopInteract' => false })  }
+  end
   describe command (<<-EOF
     # passing the switch to Powershell
     function FindService {
@@ -9,7 +20,7 @@ context 'Services' do
         [switch]$run_as_user_account
       )
       $local:result = @()
-      $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
+      $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '%${name}%' or DisplayName LIKE '%${name}%'" | Select Name,StartName,DisplayName,StartMode,State
 
       if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
         $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
@@ -32,7 +43,7 @@ context 'Services' do
         [switch]$run_as_user_account
       )
       $local:result = @()
-      $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
+      $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '%${name}%' or DisplayName LIKE '%${name}%'" | Select Name,StartName,DisplayName,StartMode,State
 
       if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
         $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
@@ -68,16 +79,16 @@ context 'Services' do
     # real life example 
     # service may want to access the EventArchiver named pipe through use SMB share
     # hence is configured to be run under the domain account with administrator privileges
-    service_name = 'name of the service' # case sensitive
-    account_name = 'account service runs'
-    account_domain = 'domain service runs'
+    service_name = 'Windows Remote Management' # case sensitive
+    account_name = 'Network Service'
+    account_domain = 'NT AUTHORITY'
     describe command (<<-EOF
       function FindService {
         param([string]$name,
           [switch]$run_as_user_account
         )
         $local:result = @()
-        $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '${name}' or DisplayName LIKE '${name}'" | Select Name,StartName,DisplayName,StartMode,State
+        $local:result = Get-CimInstance -ComputerName '.' -Query "SELECT * FROM Win32_Service WHERE Name LIKE '%${name}%' or DisplayName LIKE '%${name}%'" | Select Name,StartName,DisplayName,StartMode,State
 
         if ([bool]$PSBoundParameters['run_as_user_account'].IsPresent) {
           $local:result =  $local:result | Where-Object { -not (($_.StartName -match 'NT AUTHORITY') -or ( $_.StartName -match 'NT SERVICE') -or  ($_.StartName -match 'NetworkService' ) -or ($_.StartName -match 'LocalSystem' ))}
