@@ -1,9 +1,7 @@
 require 'spec_helper'
 
-context 'Tomcat Listening Port' do
+context 'Tomcat Port with Retry' do
   # creates a bash loop around the command -  often needed for tomcat derivatives "which warm" up slowly 
-  # note - the pure ruby implemetation 
-  # https://github.com/bootstraponline/waiting_rspec_matchers/blob/master/lib/waiting_rspec_matchers.rb#L82
   [
     9443,
     9080,
@@ -33,4 +31,32 @@ context 'Tomcat Listening Port' do
       its(:exit_status) { should eq 0 }
     end
   end
+end
+  
+def port_with_retry(tcp_port, max_retry, default_delay )
+  # pure ruby implemetation 
+  # origin https://github.com/bootstraponline/waiting_rspec_matchers/blob/master/lib/waiting_rspec_matchers.rb#L82
+  start_time = Time.now
+  begin
+    describe port (tcp_port) do
+      it { should be_listening }
+    end
+  rescue ::RSpec::Expectations::ExpectationNotMetError => e
+    STDERR.puts e.message
+    return false if (Time.now - start_time) >= max_retry * default_delay
+    sleep default_delay
+    retry
+  end
+  true
+end
+
+context 'Tomcat Port with Retry' do
+  max_retry = 30
+  default_delay = 10
+  [
+    9443,
+    9080,
+    9999,
+  ].each do |port|
+  port_with_retry(port, max_retry, default_delay )
 end
