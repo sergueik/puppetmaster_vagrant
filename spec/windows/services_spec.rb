@@ -7,9 +7,9 @@ context 'Services' do
     it { should be_running } 
     it { should have_start_mode 'Automatic' } 
     it { should be_enabled   }
-    # in the registry stored in ObjectName
-    # in Powershell becomes 'StartName'
+    # NOTE the WMI 'StartName' of the 'win32_service' is stored as ObjectName in the registry
     it { should have_property({ 'StartName' => 'NT AUTHORITY\NetworkService' })  }
+    # for LocalSystem, use LocaSystem 
     # can not convert types 
     # it { should have_property({ 'DesktopInteract' => false })  }
   end
