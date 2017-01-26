@@ -48,7 +48,7 @@ function Get-DirectoryJunctionTarget([string]$test_path) {
 
   $command = ('cmd /c dir /L /-C "{0}"' -f 
               [System.IO.Directory]::GetParent($test_path ))
-  $capturing_match_expression = ( '(?:<JUNCTION>|<SYMLINKD>)\\s+{0}\\s+\\[(?<TARGET>.+)\\]' -f 
+  $capturing_match_expression = ( '<(?:JUNCTION|SYMLINKD|SYMLINK)>\\s+{0}\\s+\\[(?<TARGET>.+)\\]' -f
                                   [System.IO.Path]::GetFileName($test_path ))
   $result = $null
   (invoke-expression -command $command ) | 
