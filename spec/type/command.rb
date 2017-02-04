@@ -1,5 +1,5 @@
 require 'json'
-
+require 'pp'
 # origin: https://github.com/mizzy/serverspec/blob/master/lib/serverspec/type/command.rb
 # monkey-patching the Command class in the uru environment
 module Serverspec::Type
@@ -10,7 +10,9 @@ module Serverspec::Type
 
 		def stdout_as_json
       begin
-        JSON.parse(command_result.stdout)
+        @res = JSON.parse(command_result.stdout)
+        # pp @res
+        @res
       rescue => e
         nil
       end
