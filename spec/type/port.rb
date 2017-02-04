@@ -1,8 +1,10 @@
 require 'resolv'
 
+# monkey-patching the Port class in the uru environment
+
 module Serverspec::Type
-  class Port < Base
-    def protocols
+	class Port < Base
+	  def protocols
       %w(udp tcp tcp6 udp6)
     end
 
@@ -37,11 +39,10 @@ module Serverspec::Type
     start_time = Time.now
     while (Time.now - start_time) < max_retry * default_delay
       begin
-        status = @runner.check_port_is_listening(@name, options)
+        return true if @runner.check_port_is_listening(@name, options)
       rescue  => e
         STDERR.puts e.message
       end
-      return true if status
       sleep default_delay
     end  
     false
