@@ -34,6 +34,24 @@ foreach-object {
     its(:stdout) { should match /System.Windows.Forms/ }
   end
 
+  # The following elementary command occasionally is throwing exceptions under specinfra
+  describe command (<<-EOF
+    $assembly_name = 'System.Windows.Forms'
+    $assembly = [System.Reflection.Assembly]::LoadWithPartialName($assembly_name)
+    write-output ($assembly.Location  -replace '\\\\', '/')
+    Write-output ('FullName:{0} ' -f $assembly.GetName().FullName  )
+  EOF
+  
+  ) do
+    # expectations derived by running powershell snippet directly in Powershell x86
+    its(:exit_status) {should eq 0 }
+    # invalid backref number/name ?
+    # long paths broken by newlines in output
+    # its(:stdout) {should match Regexp.new('    C:/Windows/Microsoft.Net/assembly/GAC_MSIL/System.Windows.Forms/v4.0_4.0.0.0__b77a5c561934e089/System.Windows.Forms.dll') }
+    its(:stdout) {should match Regexp.new('v4.0_4.0.0.0__b77a5c561934e089') }
+    its(:stdout) {should contain 'FullName:System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089') }
+  end
+  
   describe command (<<-EOF
 $verify_assemblies = @(
   @{
@@ -109,3 +127,4 @@ public class ClassTest : Form
 end 
 
 
+     
