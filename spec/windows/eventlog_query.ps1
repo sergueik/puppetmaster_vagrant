@@ -66,14 +66,13 @@ context 'Event Log' do
   context 'Advanced' do
     [
       {
-        :event_log_id => 1074,
-        :log_name => 'System',
-        :source => 'RestartManager',
-        :message => 'Shutdown Type:',
+        :event_id => 4624,
+        :event_log_name => 'Security',
+        :message => '127.0.0.1',
       }
     ].each do |row|
-      event_log_id = row[:event_log_id]
-      log_name = row[:log_name]
+      event_id = row[:event_id]
+      event_log_name = row[:event_log_name]
       source = row[:source]
       message = row[:message]
       describe command(<<-EOF
@@ -87,8 +86,8 @@ context 'Event Log' do
           " and (TimeCreated[timediff(@SystemTime) <= $Diff])"
         }
 
-        $eventId = '4624'
-        $eventLogName = 'security'
+        $eventId = '#{event_id}'
+        $eventLogName = '#{event_log_name}'
 
         $o = Get-WinEvent -ErrorAction silentlycontinue -LogName $eventLogName -FilterXPath (@"
         *[
@@ -120,8 +119,7 @@ context 'Event Log' do
         }
       EOF
       ) do
-          its(:stdout) { should match(/(?:#{message[0]}|#{message[1]})/) }
-        end
+          its(:stdout) { should match(/(?:#{message})/) }
       end
     end
   end
