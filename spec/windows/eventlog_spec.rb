@@ -120,7 +120,7 @@ context 'Event Log' do
         }
       EOF
       ) do
-          its(:stdout) { should match(/(?:#{message[0]}|#{message[1]})/) }
+          its(:stdout) { should match(/(?:#{message})/) }
         end
       end
     end

@@ -1,4 +1,5 @@
 # origin: https://github.com/chrisgit/serverspec-custom_type
+# see also refactoring in https://github.com/chrisgit/serverspec-custom_type/blob/master/lib/serverspec/types/schedule_task.rb
 # Register the schedule_task as a resource
 module Serverspec::Helper::Type
   def schedule_task(name)
@@ -12,7 +13,6 @@ module Serverspec::Type
     def exist?()
       command_result.exit_status == 0
      end
-
     # its(:taskname) { should contain 'name_of_task' } 
     def taskname()
       task_data(command_result.stdout)[:TaskName]
@@ -39,7 +39,7 @@ module Serverspec::Type
 
     private
     def command_result()
-      @command_result ||= @runner.run_command("schtasks /query /fo LIST /V /tn \"#{@name}\" ")
+      @command_result ||= @runner.run_command("schtasks.exe /query /fo LIST /V /tn \"#{@name}\" ")
     end
 
     def task_data_to_array(task_detail)
@@ -62,6 +62,14 @@ module Serverspec::Type
         task_array_to_hash(task_array)
       end
     end
+  #  def extract_data
+  #    return unless exist?
+  #    task_data = remove_empty_lines
+  #    task_data.each do |item|
+  #      key, value = task_key_value(item)
+  #      instance_variable_set("@#{key}", value)
+  #    end
+  #  end
+
   end
 end
-schedule_task.rb
