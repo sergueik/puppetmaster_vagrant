@@ -1,5 +1,22 @@
 # Custom type to perform inspection of Puppet lastrun reports
-$LOAD_PATH.insert(0, '/opt/puppetlabs/puppet/lib/ruby/vendor_ruby/')
+
+if ENV.has_key?('APPDATA') || ENV['OS'] =~ /Windows_NT/
+  # varies with the release
+  puppet_home = 'C:/Program Files/Puppet Labs/Puppet'
+  # TODO: add ffi, win32/process, win32/dir and win32/service to URU.
+  $LOAD_PATH.insert(0, "#{puppet_home}/facter/lib")
+  $LOAD_PATH.insert(0, "#{puppet_home}/hiera/lib")
+  $LOAD_PATH.insert(0, "#{puppet_home}/puppet/lib")
+  $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/vendor_ruby")
+  $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems")
+  $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/ffi-1.9.14-x86-mingw32/lib")
+  $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/win32-process-0.7.4/lib")
+  $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/win32-dir-0.4.9/lib")
+  $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/win32-service-0.8.8/lib")
+else
+  $LOAD_PATH.insert(0, '/opt/puppetlabs/puppet/lib/ruby/vendor_ruby/')
+end
+
 require 'json'
 require 'yaml'
 require 'puppet'
@@ -41,8 +58,8 @@ require 'optparse'
           rescue
             # https://docs.puppet.com/puppet/3.5/yard/Puppet/Transaction/Report.html
             # undefined method `keys' for #<Puppet::Transaction::Report>
-          end        
-        end        
+          end
+        end
         if @lastrunfile_data.nil?
           @events = []
         else
