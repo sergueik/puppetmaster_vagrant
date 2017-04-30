@@ -3,6 +3,8 @@ $link_pathname = "<%=@link_pathname -%>"
 $destination_link_path = ('{0}\{1}.lnk' -f $link_pathname, $link_basename  )
 $target_path = '<%=@target_path -%>'
 # origin: https://github.com/gangstanthony/PowerShell/blob/master/Create-Shortcut.ps1
+# see also: https://github.com/puppetlabs/tse-module-shortcut/blob/master/templates/ensure.ps1.erb
+# https://github.com/puppetlabs/tse-module-shortcut/blob/master/templates/exists.ps1.erb
 function Release-Ref ($ref) {
   ([System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$ref) -gt 0)
   [System.GC]::Collect()
@@ -10,7 +12,7 @@ function Release-Ref ($ref) {
 }
 $o = new-object -ComObject 'WScript.Shell'
 $s = $o.CreateShortcut($destination_link_path)
-$s.TargetPath = $target_path 
+$s.TargetPath = $target_path
 <% if @target_args -%>
 $s.Arguments = '<%=@target_args -%>'
 <% end -%>
