@@ -3,6 +3,8 @@
 # NOTE: no HTTP status code in this snippet
 # origin:  http://technet.rapaport.com/Info/Prices/SampleCode/Full_Example.aspx
 # https://blogs.technet.microsoft.com/bshukla/2010/04/12/ignoring-ssl-trust-in-powershell-system-net-webclient/
+# see also
+# https://github.com/voxpupuli/puppet-download_file/blob/master/templates/download.ps1.erb
 
 fact_name = 'rest_powershell2_test'
 
@@ -14,6 +16,11 @@ if Facter.value(:kernel) == 'windows'
     password = 'password'
     auth_key = 'auth_key'
     auth_value = 'auth_value'
+    proxy_address = ''
+    proxy_user = ''
+    proxy_password = ''
+    is_password_secure = false
+    cookie_string = ''
     url = 'https://api.github.com/user'
 
     setcode do
@@ -23,6 +30,11 @@ if Facter.value(:kernel) == 'windows'
           [string]$password = '#{password}',
           [string]$auth_key = '#{auth_key}',
           [string]$auth_value = '#{auth_value}',
+          [string]$proxyAddress = '#{proxy_address}',
+          [string]$proxyUser = '#{proxy_user}',
+          [string]$proxyPassword = '#{proxy_password}',
+          [bool]$is_password_secure = is_password_secure,
+          [string]$cookie_string = #{cookie_string},
           [string]$url = '#{url}'
         )
 
@@ -33,8 +45,35 @@ if Facter.value(:kernel) == 'windows'
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
         $webRequest = [System.Net.WebRequest]::Create($url)
+
+        if ($proxyAddress -ne '') {
+          if (!($proxyAddress.StartsWith('http://') -or $proxyAddress.StartsWith('https://'))) {
+            $proxyAddress = 'http://' + $proxyAddress
+          }
+
+          $proxy = New-Object System.Net.WebProxy
+          $proxy.Address = $proxyAddress
+          if (($proxyPassword -ne '') -and ($proxyUser -ne '')) {
+
+            if ($is_password_secure) {
+              $password = ConvertTo-SecureString -string $proxyPassword
+            } else {
+              $password = ConvertTo-SecureString "$proxyPassword" -AsPlainText -Force
+            }
+
+            $proxy.Credentials = New-Object System.Management.Automation.PSCredential($proxyUser,$password)
+            $webRequest.UseDefaultCredentials = $true
+          }
+          $webRequest.proxy = $proxy
+        }
+
         $webRequest.Method = 'POST'
         $webRequest.ContentType = 'application/json'
+
+        if ($cookie_string -ne ''){
+          $webRequest.Headers.Add([System.Net.HttpRequestHeader]::Cookie, $cookie_string)
+        }
+
         [System.Collections.Specialized.NameValueCollection] $obj = New-Object System.Collections.Specialized.NameValueCollection
         $headers.Keys | foreach-object {
           $key = $_
