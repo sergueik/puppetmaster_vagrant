@@ -2,20 +2,20 @@ require_relative '../windows_spec_helper'
 
 context 'Environment' do
 
-  describe command (<<-EOF
-  $environment_path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment'
-  write-output (Get-ItemProperty -Path $environment_path ).Path
+  location = 'c:/opscode/chef/bin'
 
+  describe command (<<-EOF
+    write-output ((Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment' ).Path -replace '\\\\', '/' )
   EOF
   ) do
-      its(:stdout) { should match /c:\\opscode\\chef\\bin/io }
+      its(:stdout) { should match Regexp.new(location, Regexp::IGNORECASE) }
     end
   describe command (<<-EOF
-  write-output (([Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) -replace '\\\\', '/'))
-  EOF
-  ) do
-    its(:stdout) { should match /c:\/opscode\/chef\/bin/i }
+
+  describe command ('([Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)) -replace "\\\\", "/" ') do
+    its(:stdout) { should match Regexp.new(location, Regexp::IGNORECASE) }
   end
+
   # note differences in registry hive / path formatting syntax between Ruby and Powershell
 
   describe windows_registry_key("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment") do
