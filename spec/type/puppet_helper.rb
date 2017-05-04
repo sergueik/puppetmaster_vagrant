@@ -13,6 +13,14 @@ if ENV.has_key?('APPDATA') || ENV['OS'] =~ /Windows_NT/
   $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/win32-process-0.7.4/lib")
   $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/win32-dir-0.4.9/lib")
   $LOAD_PATH.insert(0, "#{puppet_home}/sys/ruby/lib/ruby/gems/2.1.0/gems/win32-service-0.8.8/lib")
+  #  'win32-api'
+  #  'win32-security' 
+  #  'win32-dir'
+  #  'windows-api'
+  #  'windows-pr' 
+  #  'win32-process'  
+  #  'win32-service'  
+  #  'win32-taskscheduler' 
 else
   $LOAD_PATH.insert(0, '/opt/puppetlabs/puppet/lib/ruby/vendor_ruby/')
 end
