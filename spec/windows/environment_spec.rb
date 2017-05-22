@@ -1,19 +1,26 @@
 require_relative '../windows_spec_helper'
 
+# expectations that the package install location is added to system PATH in Windows
 context 'Environment' do
 
-  location = 'c:/opscode/chef/bin'
+  install_location = 'c:/opscode/chef/bin'
 
   describe command (<<-EOF
     write-output ((Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment' ).Path -replace '\\\\', '/' )
   EOF
   ) do
-      its(:stdout) { should match Regexp.new(location, Regexp::IGNORECASE) }
+      its(:stdout) { should match Regexp.new(install_location, Regexp::IGNORECASE) }
     end
   describe command (<<-EOF
 
   describe command ('([Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)) -replace "\\\\", "/" ') do
-    its(:stdout) { should match Regexp.new(location, Regexp::IGNORECASE) }
+    its(:stdout) { should match Regexp.new(install_location, Regexp::IGNORECASE) }
+  end
+
+  # NOTE: backslashes translated
+  install_location_converted = install_location.gsub('\\','/')
+  describe command ('([Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)) -replace "\\\\", "/" ') do
+     its(:stdout) { should match Regexp.new(install_location_converted, Regexp::IGNORECASE) }
   end
 
   # note differences in registry hive / path formatting syntax between Ruby and Powershell
