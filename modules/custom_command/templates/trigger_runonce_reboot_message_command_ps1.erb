@@ -1,0 +1,13 @@
+$reg_key = '<%= @reg_key -%>'
+$staging_path = '<%= @staging_path -%>'
+$product_name = '<%= @product_name -%>'
+$reg_value = 'version'
+$flagfile = '${staging_path}\a.log'
+$reg_data = get-itemproperty -path "${reg_key}" -erroraction silentlycontinue | select-object -expandproperty $reg_value
+
+if ($reg_data -eq $null) {
+  write-output "Registry check has found no ${product_name}"
+  write-output "Trigger reboot and install of ${product_name}"
+  write-output "Creating ${flagfile}"
+  write-output 'Starting install' | out-file $flagfile -encoding ascii
+}

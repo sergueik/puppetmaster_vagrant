@@ -1,0 +1,17 @@
+# Wrapper for bitrock installer http://bitrock.com/ used e.g. by HP Fortify SCA on Windows platform
+$logfile = 'a.log'
+cd '<%= @package_setup_staging_path -%>'
+write-output 'starting install' | out-file $logfile -append -encoding ascii
+$package_setup_exe_filename = '<%= @package_setup_exe_filename -%>'
+dir $package_setup_exe_filename | out-file $logfile -append -encoding ascii
+$process = Start-Process $package_setup_exe_filename -argumentlist @('--mode', 'unattended', '--debugtrace', "${pwd}\debug.log", '--fortify_license_path', '<%= @staging_path -%>\fortify.license',  '--optionfile', '<%= @package_setup_options_filename -%>' , '--debuglevel', '4') -Wait -PassThru
+Write-output $process.ExitCode
+Write-output $process.ExitCode | out-file $logfile -append -encoding ascii
+$process | format-list
+$process | format-list | out-file $logfile -append -encoding ascii
+if ( $process.ExitCode -eq 0 ) {
+write-output 'Install successful' | out-file $logfile -append -encoding ascii
+} else {
+write-output  'Install failed' | out-file $logfile -append -encoding ascii
+}
+exit $process.ExitCode

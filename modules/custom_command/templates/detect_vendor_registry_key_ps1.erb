@@ -1,0 +1,6 @@
+$reg_key = '<%= @reg_key -%>'
+$reg_data = get-itemproperty -path "${reg_key}" -erroraction silentlycontinue | select-object -expandproperty $reg_value
+[bool]$status = ($reg_data -ne $null)
+$exitcode = [int]( -not ( $status )) 
+write-output "Will exit with ${exitcode}"
+exit $exitcode

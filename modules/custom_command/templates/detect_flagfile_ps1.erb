@@ -1,0 +1,8 @@
+$staging_path = '<%=@staging_path-%>'
+$flagfile = '${staging_path}\a.log'
+[bool] $status = ( test-path -path $flagfile)
+if ($status) {
+  write-output "Flag file exist: ${flagfile}"
+}
+$exitcode = [int]( -not ( $status ))
+exit $exitcode
