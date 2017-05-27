@@ -15,7 +15,7 @@ context 'HTTP get request' do
     end
   end
   context 'Jenkins' do
-    describe http_get(8443,'127.0.0.1','/', 'https' ) do
+    describe http_get(8443,'127.0.0.1','/', 'https', true ) do
       [
         'x-hudson',
         'x-jenkins-session',

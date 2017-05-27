@@ -8,9 +8,9 @@ module Serverspec
 
     class Http_Get < Base
 
-      def initialize(port, host_header, path, protocol = 'http', timeout_sec=10)
+      def initialize(port, host_header, path, protocol = 'http', bypass_ssl_verify = false, timeout_sec = 10)
         @ip = ENV['TARGET_HOST'] || 'localhost'
-        # TODO: incorrecty set under uru
+        # TODO: ip is incorrecty set under uru
         # STDERR.puts "ip = #{@ip}"
         @ip = 'localhost'
         @port = port
@@ -40,12 +40,11 @@ module Serverspec
       def getpage
         ip = @ip
         port = @port
-        if protocol == 'https'
-          conn = Faraday.new "https://#{ip}:#{port}/", :ssl => {:verify => false}
-        else
-          conn = Faraday.new "http://#{ip}:#{port}/"
-        end
+        options = []
+        options << { ssl: { verify: false } } if @bypass_ssl_verify
+        conn = Faraday.new("#{protocol}://#{ip}:#{port}/", *options)
         conn.headers[:user_agent] = "Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3"
+        # conn.headers[:user_agent] = "Serverspec::Type::Http_Get/#{version} (https://github.com/jantman/serverspec-extended-types)"
         conn.headers[:Host] = @host
         response = conn.get(@path)
         @response_code_int = response.status
@@ -89,8 +88,8 @@ module Serverspec
       private :getpage
     end
 
-    def http_get(port, host_header, path, protocol = 'http', timeout_sec=10)
-      Http_Get.new(port, host_header, path, protocol, timeout_sec=timeout_sec)
+    def http_get(port, host_header, path,  protocol = 'http', bypass_ssl_verify = false, timeout_sec = 10)
+      Http_Get.new(port, host_header, path, protocol, bypass_ssl_verify, timeout_sec)
     end
   end
 end
