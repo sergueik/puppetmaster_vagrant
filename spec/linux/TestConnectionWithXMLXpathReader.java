@@ -25,31 +25,27 @@ import java.sql.SQLException;
 // http://www.java2s.com/Code/Java/Development-Class/CommandLineParser.htm
 // http://www.java2s.com/Code/Java/Database-SQL-JDBC/Connecttoadatabaseandreadfromtable.htm
 // need to run with 
-// `java -cp sqljdbc4-2.0.jar;. XMLXpathReader`
+// `java -cp sqljdbc4-2.0.jar;. TestConnectionWithXMLXpathReader`
 // the jdbc driver is likely to be provisioned to the instance
 
-public class XMLXpathReader {
-	/*
-	Properties connectionProps = new Properties();
-	          connectionProps.put("user", this.jdbcUser);
-	          connectionProps.put("password", this.jdbcPass);
-	*/
+public class TestConnectionWithXMLXpathReader {
 	public static void main(String[] args)
 			throws SAXException, IOException, ParserConfigurationException,
 			XPathExpressionException, ClassNotFoundException, SQLException {
 		String databaseServer = "localhost";
 		String databasePort = "1433";
 		String databaseName = "database";
-		String tableName = "table";
+		String tableName = "dbo.items"; // "table";
 		DocumentBuilder db = (DocumentBuilderFactory.newInstance())
 				.newDocumentBuilder();
-		String configFilePath = "C:\\temp\\application_config.xml";
+		String configFilePath = "context.xml";
 		Document document = db.parse(new FileInputStream(new File(configFilePath)));
 		XPath xpath = (XPathFactory.newInstance()).newXPath();
-		String xpathLocator = "/schema/element";
+    String entity = "Tridion_Broker";
+		String xpathLocator = String.format("/Context/Resource[ @name = 'jdbc/%s']", entity);
 		Element userElement = (Element) xpath.evaluate(xpathLocator, document,
 				XPathConstants.NODE);
-		String userId = userElement.getAttribute("userId");
+		String userId = userElement.getAttribute("username");
 		String password = userElement.getAttribute("password");
 		// NOTE the following code is MS SQL jdbc version - dependent:
 		// for sqljdbc4
@@ -57,9 +53,10 @@ public class XMLXpathReader {
 		// for sqljdbc4.2
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 
-		Connection m_Connection = DriverManager.getConnection(
-				String.format("jdbc:microsoft:sqlserver://%s:%s;DatabaseName=%s",
-						databaseServer, databasePort, databaseName),
+    String url = 	userElement.getAttribute("url");
+    System.err.println(String.format("connecting to %s as %s/%s", url, userId, password));
+		Connection m_Connection = DriverManager.getConnection( (url != null ) ?  url: 
+      String.format("jdbc:microsoft:sqlserver://%s:%s;DatabaseName=%s",	databaseServer, databasePort, databaseName),
 				userId, password);
 
 		Statement m_Statement = m_Connection.createStatement();
