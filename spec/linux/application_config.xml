@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<schema>
-  <element name="name_ele1" id="name_id_1" >test name1</element>
-  <element name="name_ele2" id="name_id_2" >test name2</element>
-  <element name="name_ele2" id="name_id_3" >test name3</element>
-</schema>
