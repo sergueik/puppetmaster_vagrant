@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<key-list>
+<% if @licenses and !@licenses.empty? -%>
+  <%- @licenses.each do |product,license_details| -%>
+  <key
+    <% if license_details and !license_details.empty? -%>
+      <%- license_details.each do |key,value| -%>
+        <% if key and key !~ /data/ -%>
+          <%= key -%> = "<%= value -%>"
+        <%- end -%>
+      <%- end -%>
+    <%- end -%>
+  >
+  <%= license_details['data'] -%>
+  </key>
+  <%- end -%>
+<% end -%>
