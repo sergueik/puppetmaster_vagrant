@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+## hieradata fragment:
+classpath::licenses:
+  'Product Name':
+    id: 'id'
+    creation-date: '2017-06-02'
+    product: 'Product Name'
+    customer: 'Customer Name'
+    license-model: 'server'
+    license-type: 'server_cpu_count'
+    expiration-date: '2018-06-02'
+    usage-limit: '256'
+    options: 'options'
+    data: 'base64 license data'
+
+-->
 <key-list>
 <% if @licenses and !@licenses.empty? -%>
   <%- @licenses.each do |product,license_details| -%>
