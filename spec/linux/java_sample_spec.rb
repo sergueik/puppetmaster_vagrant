@@ -2,21 +2,38 @@ require 'spec_helper'
 
 context 'JDBC tests' do
   context 'Using tomcat context.xml' do
-    catalina_home = '/apps/tomcat/7.0.77'
-    jdbc_prefix = 'microsoft:sqlserver'
-    jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
-    database_host = ''
-    database_port = ''
-    database_name = ''
-    table_name = ''
-    entity = ''
-    class_name = 'TestConnectionWithXMLXpathReader'
     # based on: 
     # https://stackoverflow.com/questions/25259836/how-to-get-attribute-value-using-xpath-in-java
     # http://www.java2s.com/Code/Java/Development-Class/CommandLineParser.htm
     # http://www.java2s.com/Code/Java/Database-SQL-JDBC/Connecttoadatabaseandreadfromtable.htm
+  
+    #		<Resource name="jdbc/database_name"
+    #		    auth="Container"
+    #		    factory="org.apache.tomcat.dbcp.dbcp.BasicDataSourceFactory"
+    #		    driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    #		    type="javax.sql.DataSource"
+    #		    maxActive="50"
+    #		    maxIdle="10"
+    #		    maxWait="15000"
+    #		    username="..."
+    #		    password="..."
+    #		    url="jdbc:sqlserver://167.143.32.142:1433;databaseName=database_name;"
+    #		    removeAbandoned="true"
+    #		    removeAbandonedTimeout="30"
+    #		    logAbandoned="true" />
+    #
+    catalina_home = '/apps/tomcat/7.0.77'
+    jdbc_prefix = 'microsoft:sqlserver'
+    jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
+    # not needed: the context.xml has the url
+    # database_host = ''
+    # database_port = ''
+    # database_name = ''
+    table_name = ''
+    entity = ''
+    class_name = 'TestConnectionWithXMLXpathReader'
 
-    config_file_path = "#{catalina_home}/webapps/context.xml"
+    config_file_path = "#{catalina_home}/conf/context.xml"
     sourcfile = "#{class_name}.java"
 
     source = <<-EOF
@@ -56,7 +73,9 @@ context 'JDBC tests' do
           Document document = db.parse(new FileInputStream(new File(configFilePath)));
           XPath xpath = (XPathFactory.newInstance()).newXPath();
           String entity = "#{entity}";
-          String xpathLocator = String.format("/Context/Resource[ @name = 'jdbc/%s']", entity);
+          // NOTE: quotes
+          String xpathLocator = String.format("/Context/Resource[ @name = \"jdbc/%s\"]", entity);
+          System.err.println(String.format("Looking for \"%s\"" , xpathLocator)) ;
           Element userElement = (Element) xpath.evaluate(xpathLocator, document,
               XPathConstants.NODE);
           String userId = userElement.getAttribute("username");
