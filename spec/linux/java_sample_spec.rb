@@ -17,7 +17,7 @@ context 'JDBC tests' do
     #		    maxWait="15000"
     #		    username="..."
     #		    password="..."
-    #		    url="jdbc:sqlserver://167.143.32.142:1433;databaseName=database_name;"
+    #		    url="jdbc:sqlserver://database_host;databaseName=database_name;"
     #		    removeAbandoned="true"
     #		    removeAbandonedTimeout="30"
     #		    logAbandoned="true" />
@@ -25,12 +25,8 @@ context 'JDBC tests' do
     catalina_home = '/apps/tomcat/7.0.77'
     jdbc_prefix = 'microsoft:sqlserver'
     jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
-    # not needed: the context.xml has the url
-    # database_host = ''
-    # database_port = ''
-    # database_name = ''
-    table_name = ''
-    entity = ''
+    table_name = 'dbo.items'
+    entity = 'Tridion_Broker'    
     class_name = 'TestConnectionWithXMLXpathReader'
 
     config_file_path = "#{catalina_home}/conf/context.xml"
@@ -63,9 +59,6 @@ context 'JDBC tests' do
         public static void main(String[] args)
             throws SAXException, IOException, ParserConfigurationException,
             XPathExpressionException, ClassNotFoundException, SQLException {
-          String databaseServer = "#{database_host}";
-          String databasePort = "#{database_port}";
-          String databaseName = "#{database_name}";
           String tableName = "#{table_name}";
           DocumentBuilder db = (DocumentBuilderFactory.newInstance())
               .newDocumentBuilder();
@@ -88,9 +81,7 @@ context 'JDBC tests' do
 
           String url = 	userElement.getAttribute("url");
           System.err.println(String.format("connecting to %s as %s/%s", url, userId, password));
-          Connection m_Connection = DriverManager.getConnection( (url != null ) ?  url: 
-            String.format("jdbc:#{jdbc_prefix}://%s:%s;DatabaseName=%s",	databaseServer, databasePort, databaseName),
-              userId, password);
+          Connection m_Connection = DriverManager.getConnection(url,userId, password);
 
           Statement m_Statement = m_Connection.createStatement();
           String query = String.format("SELECT * FROM %s", tableName);
@@ -113,7 +104,7 @@ context 'JDBC tests' do
     EOF
     ) do
       its(:exit_status) { should eq 0 }
-      its(:stdout) { should match Regexp.new('ITEM_REFERENCE_ID, \d+,', Regexp::IGNORECASE) }
+      its(:stdout) { should match Regexp.new('\d+, \d+, \d+$', Regexp::IGNORECASE) }
     end
   end
   context 'Passing connection parameters directly' do
