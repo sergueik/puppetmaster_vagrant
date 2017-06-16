@@ -9,7 +9,7 @@
 define custom_command::runonce_insaller_command (
   $debug          = false,
   $verbose        = false,
-  $version        = '0.3.0'
+  $version        = '0.4.0'
 ) {
 
   # TODO:  create install staging directory, copy the vendor executable there, write answer file, license file etc.
@@ -32,17 +32,20 @@ define custom_command::runonce_insaller_command (
 
   registry_key { 'HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce':
     ensure => present,
-  } ->
+  }
 
-  # TODO :update the logic to only write the registry value this when actually about to install  
+  # TODO :update the logic to only write the registry value when actually about to install  
   # IT may be easiest is to remove when not necessary. 
   # it appears harmless to just leave hanging around
  
   registry_value { 'HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce\Install_Product':
-    ensure => present,
-    type   => string,
-    data   => "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe $package_setup_staging_path\\installer_wrapper.ps1",
-  } ->
+    ensure      => present,
+    type        => string,
+    # NOTE: is not idempotent: no parameter named 'refreshonly' on Registry_value
+    # refreshonly => true,
+    data        => "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe $package_setup_staging_path\\installer_wrapper.ps1",
+    # before      => Exec['Trigger reboot'],
+  }
 
   exec { 'Trigger reboot':
     command   => regsubst(template("${module_name}/trigger_runonce_reboot_message_command_ps1.erb"), "\r?\n", ";"),
