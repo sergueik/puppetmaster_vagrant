@@ -2,7 +2,10 @@ $staging_path = '<%=@staging_path-%>'
 $flagfile = '${staging_path}\a.log'
 [bool] $status = ( test-path -path $flagfile)
 if ($status) {
-  write-output "Flag file exist: ${flagfile}"
+  write-output "Flag file exists: ${flagfile}"
+} else {
+  write-output "Flag file does not exist: ${flagfile}"
 }
 $exitcode = [int]( -not ( $status ))
+write-output "Will exit with ${exitcode}" 
 exit $exitcode
