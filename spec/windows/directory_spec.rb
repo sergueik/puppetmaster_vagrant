@@ -18,9 +18,12 @@ end
   ' ' => '\\s*',
   '+' => '\\\\+',
   '-' => '\\\\-',
+  '*' => '\\\\*',  
   '?' => '\\\\?',  
   '{' => '\\\\{',
   '}' => '\\\\}',
+  '[' => '\\\\[',
+  ']' => '\\\\]',
   '$' => '\\\\$',
   }.each do |s,r|
     line.gsub!(s,r)
@@ -29,4 +32,5 @@ end
     should contain_File('/usr/lib/systemd/system/httpd.service')
     .with_content(Regexp.new(line, Regexp::IGNORECASE))
   end
+
 end
