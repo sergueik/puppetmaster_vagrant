@@ -2,21 +2,34 @@ require 'spec_helper'
 
 context 'JDBC tests' do
   context 'Using tomcat context.xml' do
-    catalina_home = '/apps/tomcat/7.0.77'
-    jdbc_prefix = 'microsoft:sqlserver'
-    jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
-    database_host = ''
-    database_port = ''
-    database_name = ''
-    table_name = ''
-    entity = ''
-    class_name = 'TestConnectionWithXMLXpathReader'
     # based on: 
     # https://stackoverflow.com/questions/25259836/how-to-get-attribute-value-using-xpath-in-java
     # http://www.java2s.com/Code/Java/Development-Class/CommandLineParser.htm
     # http://www.java2s.com/Code/Java/Database-SQL-JDBC/Connecttoadatabaseandreadfromtable.htm
+  
+    #		<Resource name="jdbc/database_name"
+    #		    auth="Container"
+    #		    factory="org.apache.tomcat.dbcp.dbcp.BasicDataSourceFactory"
+    #		    driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    #		    type="javax.sql.DataSource"
+    #		    maxActive="50"
+    #		    maxIdle="10"
+    #		    maxWait="15000"
+    #		    username="..."
+    #		    password="..."
+    #		    url="jdbc:sqlserver://database_host;databaseName=database_name;"
+    #		    removeAbandoned="true"
+    #		    removeAbandonedTimeout="30"
+    #		    logAbandoned="true" />
+    #
+    catalina_home = '/apps/tomcat/7.0.77'
+    jdbc_prefix = 'microsoft:sqlserver'
+    jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
+    table_name = 'dbo.items'
+    entity = 'Tridion_Broker'    
+    class_name = 'TestConnectionWithXMLXpathReader'
 
-    config_file_path = "#{catalina_home}/webapps/context.xml"
+    config_file_path = "#{catalina_home}/conf/context.xml"
     sourcfile = "#{class_name}.java"
 
     source = <<-EOF
@@ -46,9 +59,6 @@ context 'JDBC tests' do
         public static void main(String[] args)
             throws SAXException, IOException, ParserConfigurationException,
             XPathExpressionException, ClassNotFoundException, SQLException {
-          String databaseServer = "#{database_host}";
-          String databasePort = "#{database_port}";
-          String databaseName = "#{database_name}";
           String tableName = "#{table_name}";
           DocumentBuilder db = (DocumentBuilderFactory.newInstance())
               .newDocumentBuilder();
@@ -56,7 +66,9 @@ context 'JDBC tests' do
           Document document = db.parse(new FileInputStream(new File(configFilePath)));
           XPath xpath = (XPathFactory.newInstance()).newXPath();
           String entity = "#{entity}";
-          String xpathLocator = String.format("/Context/Resource[ @name = 'jdbc/%s']", entity);
+          // NOTE: quotes
+          String xpathLocator = String.format("/Context/Resource[ @name = \"jdbc/%s\"]", entity);
+          System.err.println(String.format("Looking for \"%s\"" , xpathLocator)) ;
           Element userElement = (Element) xpath.evaluate(xpathLocator, document,
               XPathConstants.NODE);
           String userId = userElement.getAttribute("username");
@@ -69,9 +81,7 @@ context 'JDBC tests' do
 
           String url = 	userElement.getAttribute("url");
           System.err.println(String.format("connecting to %s as %s/%s", url, userId, password));
-          Connection m_Connection = DriverManager.getConnection( (url != null ) ?  url: 
-            String.format("jdbc:#{jdbc_prefix}://%s:%s;DatabaseName=%s",	databaseServer, databasePort, databaseName),
-              userId, password);
+          Connection m_Connection = DriverManager.getConnection(url,userId, password);
 
           Statement m_Statement = m_Connection.createStatement();
           String query = String.format("SELECT * FROM %s", tableName);
@@ -94,7 +104,7 @@ context 'JDBC tests' do
     EOF
     ) do
       its(:exit_status) { should eq 0 }
-      its(:stdout) { should match Regexp.new('ITEM_REFERENCE_ID, \d+,', Regexp::IGNORECASE) }
+      its(:stdout) { should match Regexp.new('\d+, \d+, \d+$', Regexp::IGNORECASE) }
     end
   end
   context 'Passing connection parameters directly' do
