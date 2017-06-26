@@ -7,7 +7,8 @@ context 'JDBC tests' do
     catalina_home = '/apps/tomcat/7.0.77'
     jdbc_prefix = 'microsoft:sqlserver'
     jdbc_path = "#{catalina_home}/webapps/cd_upload/WEB-INF/lib"
-    jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
+    jars = ['sqljdbc41.jar','sqljdbc42.jar', 'sqljdbc_6.0']
+    jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(':')
     context 'Using tomcat context.xml' do
       # based on: 
       # https://stackoverflow.com/questions/25259836/how-to-get-attribute-value-using-xpath-in-java
@@ -77,11 +78,8 @@ context 'JDBC tests' do
                 XPathConstants.NODE);
             String userId = userElement.getAttribute("username");
             String password = userElement.getAttribute("password");
-            // NOTE the following code is MS SQL jdbc version - dependent:
-            // for sqljdbc4
-            // Class.forName("com.microsoft.jdbc.sqlserver.SQLServerDriver");
-            // for sqljdbc4.2
-            Class.forName("#{jdbc_driver_class_name}");
+            String driverClassName = userElement.getAttribute("driverClassName");
+            Class.forName(driverClassName);
 
             String url = 	userElement.getAttribute("url");
             System.err.println(String.format("connecting to %s as %s/%s", url, userId, password));
@@ -163,7 +161,7 @@ context 'JDBC tests' do
         pushd /tmp
         echo '#{source}' > '#{sourcfile}'
         javac '#{sourcfile}'
-        java -cp #{jdbc_path}/sqljdbc41.jar:#{jdbc_path}/sqljdbc_6.0:#{jdbc_path}/sqljdbc42.jar:. '#{class_name}'
+        java -cp #{jars_cp}:. '#{class_name}'
      popd
       EOF
       ) do
