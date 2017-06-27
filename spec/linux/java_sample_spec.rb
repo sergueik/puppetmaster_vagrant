@@ -2,6 +2,59 @@ require 'spec_helper'
 
 context 'JDBC tests' do
   context 'MySQL' do
+    context 'Passing connection parameters directly' do
+      # origin: http://docs.oracle.com/javase/tutorial/jdbc/basics/processingsqlstatements.html
+
+      catalina_home =  '/apps/tomcat/7.0.77'
+      table = ''
+      jdbc_prefix = 'mysql'
+      jdbc_host = 'localhost'
+      jdbc_driver_class_name = 'org.gjt.mm.mysql.Driver'
+      jdbc_path = 'c:/users/vagrant'      
+      jars = ['com.mysql.jdbc_5.1.5.jar']
+      jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(':')
+      database_host = 'localhost'
+      database_name = 'information_schema'
+      username = 'root'
+      password =  'password'
+
+      class_name = 'Test'
+      sourcfile = "#{class_name}.java"
+      source = <<-EOF
+        import java.sql.Connection;
+        import java.sql.DriverManager;
+
+        public class #{class_name} {
+          public static void main(String[] argv) throws Exception {
+            String driverName = "#{jdbc_driver_class_name}";
+            Class.forName(driverName);
+
+            String serverName = "#{database_host}";
+            String databaseName = "#{database_name}";
+            String url = "jdbc:#{jdbc_prefix}://" + serverName + "/" + databaseName; 
+                                                                            
+            String username = "#{username}";
+            String password = "#{password}";
+            try {
+            Connection connection = DriverManager.getConnection(url, username, password);
+           } catch (Exception e) {
+              System.out.println("Exception: " + e.getMessage());
+            }
+           String className = "#{jdbc_driver_class_name}";
+        try {
+              Class driverObject = Class.forName(className);
+              System.out.println("driverObject=" + driverObject);
+            } catch (Exception e) {
+              System.out.println("Exception: " + e.getMessage());
+            }
+           }
+        }
+      EOF
+      ) do
+        its(:exit_status) { should eq 0 }
+        its(:stdout) { should match /driverObject=#{jdbc_driver_class_name}/}
+      end
+    end
   end
   context 'MS SQL' do
     catalina_home = '/apps/tomcat/7.0.77'
