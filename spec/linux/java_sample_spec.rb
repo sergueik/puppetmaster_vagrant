@@ -1,58 +1,67 @@
-require 'spec_helper'
+if File.exists?( 'spec/windows_spec_helper.rb')
+  require_relative '../windows_spec_helper'
+else
+  require 'spec_helper'
+end
 
 context 'JDBC tests' do
   context 'MySQL' do
+    # The following fragment is tailored to run in Windows node
     context 'Passing connection parameters directly' do
-      # origin: http://docs.oracle.com/javase/tutorial/jdbc/basics/processingsqlstatements.html
-
-      catalina_home =  '/apps/tomcat/7.0.77'
+      # origin: http://www.java2s.com/Code/Java/Database-SQL-JDBC/TestMySQLJDBCDriverInstallation.htm
       table = ''
       jdbc_prefix = 'mysql'
       jdbc_host = 'localhost'
       jdbc_driver_class_name = 'org.gjt.mm.mysql.Driver'
-      jdbc_path = 'c:/users/vagrant'      
+      jdbc_path = '.'
       jars = ['com.mysql.jdbc_5.1.5.jar']
-      jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(':')
+      path_separator = ';'
+      jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(path_separator)
       database_host = 'localhost'
       database_name = 'information_schema'
       username = 'root'
-      password =  'password'
+      password = 'password'
 
       class_name = 'Test'
-      sourcfile = "#{class_name}.java"
+     
       source = <<-EOF
         import java.sql.Connection;
         import java.sql.DriverManager;
 
         public class #{class_name} {
           public static void main(String[] argv) throws Exception {
-            String driverName = "#{jdbc_driver_class_name}";
-            Class.forName(driverName);
-
-            String serverName = "#{database_host}";
-            String databaseName = "#{database_name}";
-            String url = "jdbc:#{jdbc_prefix}://" + serverName + "/" + databaseName; 
-                                                                            
-            String username = "#{username}";
-            String password = "#{password}";
-            try {
-            Connection connection = DriverManager.getConnection(url, username, password);
-           } catch (Exception e) {
-              System.out.println("Exception: " + e.getMessage());
-            }
            String className = "#{jdbc_driver_class_name}";
-        try {
+           try {
               Class driverObject = Class.forName(className);
               System.out.println("driverObject=" + driverObject);
-            } catch (Exception e) {
-              System.out.println("Exception: " + e.getMessage());
+  
+              String serverName = "#{database_host}";
+              String databaseName = "#{database_name}";
+              String url = "jdbc:#{jdbc_prefix}://" + serverName + "/" + databaseName;
+
+              String username = "#{username}";
+              String password = "#{password}";
+              try {
+                Connection connection = DriverManager.getConnection(url, username, password);
+              } catch (Exception e1) {
+                System.out.println("Exception: " + e1.getMessage());
+              }
+            } catch (Exception e2) {
+              System.out.println("Exception: " + e2.getMessage());
             }
-           }
+          }
         }
+      EOF
+      describe command(<<-EOF
+        pushd $env:USERPROFILE
+        write-output '#{source}' | out-file #{class_name}.java -encoding ASCII
+        $env:PATH = "${env:PATH};c:\\java\\jdk1.7.0_65\\bin"
+        javac '#{class_name}.java'
+        cmd %%- /c "java -cp #{jars_cp}#{path_separator}. #{class_name}"
       EOF
       ) do
         its(:exit_status) { should eq 0 }
-        its(:stdout) { should match /driverObject=#{jdbc_driver_class_name}/}
+        its(:stdout) { should match /driverObject=class #{jdbc_driver_class_name}/}
       end
     end
   end
@@ -63,11 +72,11 @@ context 'JDBC tests' do
     jars = ['sqljdbc41.jar','sqljdbc42.jar', 'sqljdbc_6.0']
     jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(':')
     context 'Using tomcat context.xml' do
-      # based on: 
+      # based on:
       # https://stackoverflow.com/questions/25259836/how-to-get-attribute-value-using-xpath-in-java
       # http://www.java2s.com/Code/Java/Development-Class/CommandLineParser.htm
       # http://www.java2s.com/Code/Java/Database-SQL-JDBC/Connecttoadatabaseandreadfromtable.htm
-    
+
       #		<Resource name="jdbc/database_name"
       #		    auth="Container"
       #		    factory="org.apache.tomcat.dbcp.dbcp.BasicDataSourceFactory"
@@ -84,7 +93,7 @@ context 'JDBC tests' do
       #		    logAbandoned="true" />
       #
       table_name = 'dbo.items'
-      entity = 'Tridion_Broker'    
+      entity = 'Tridion_Broker'
       class_name = 'TestConnectionWithXMLXpathReader'
 
       config_file_path = "#{catalina_home}/conf/context.xml"
@@ -153,8 +162,9 @@ context 'JDBC tests' do
       describe command(<<-EOF
         pushd /tmp
         echo '#{source}' > '#{sourcfile}'
+        
         javac '#{sourcfile}'
-        java -cp #{jdbc_path}/sqljdbc41.jar:#{jdbc_path}/sqljdbc_6.0:#{jdbc_path}/sqljdbc42.jar:. '#{class_name}'
+        java -cp #{jars_cp}:. '#{class_name}'
         popd
       EOF
       ) do
@@ -162,7 +172,7 @@ context 'JDBC tests' do
         its(:stdout) { should match Regexp.new('\d+, \d+, \d+$', Regexp::IGNORECASE) }
       end
     end
-    
+
     context 'Passing connection parameters directly' do
       # origin: http://docs.oracle.com/javase/tutorial/jdbc/basics/processingsqlstatements.html
 
@@ -211,10 +221,11 @@ context 'JDBC tests' do
         }
       EOF
       describe command(<<-EOF
+        pushd $env:TEMP
         pushd /tmp
         echo '#{source}' > '#{sourcfile}'
         javac '#{sourcfile}'
-        java -cp #{jars_cp}:. '#{class_name}'
+        java -cp #{jars_cp}#{path_separator}. '#{class_name}'
      popd
       EOF
       ) do
