@@ -1,0 +1,17 @@
+{
+  "name": "jairojunior-example",
+  "version": "0.1.0",
+  "author": "jairojunior",
+  "summary": "Este projeto tem como objetivo iniciar com testes utilizando beaker e serverspev com o mínimo de configuração possível.",
+  "license": "Apache 2.0",
+  "source": "https://github.com/jairojunior/exemplo-puppet-beaker.git",
+  "project_page": "https://github.com/jairojunior/exemplo-puppet-beaker",
+  "issues_url": "https://github.com/jairojunior/exemplo-puppet-beaker/issues",
+  "dependencies": [
+    {
+      "version_range": ">= 1.11.0 < 2.0.0",
+      "name": "puppetlabs-apache"
+    }
+  ]
+}
+
