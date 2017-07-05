@@ -16,6 +16,7 @@
     [
       '# Puppet Name: wso2_deployment_sync',
       '*/5 * * * * /usr/bin/rsync -avz --delete --port 1873 --password-file=/opt/baswso2/rsync.secret baswso2@apim-api-manager-gateway-manager-0.node.qualified_primary_dc.consul::deployment_repo/ deployment_repo',
+      'find /opt/mule/logs/ -type f -mtime +30 -exec rm -rf {} \;',
     ].each do |line|
       {
           '\\' => '\\\\\\\\',
@@ -34,7 +35,7 @@
           }.each do |s,r|
         line.gsub!(s,r)
       end
-      its(:table) do
+      its(:stdout) do
         should match(Regexp.new(line, Regexp::IGNORECASE))
       end
     end
