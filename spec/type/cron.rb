@@ -16,41 +16,31 @@ module Serverspec::Type
 end
 
 # static override of https://github.com/mizzy/specinfra/blob/master/lib/specinfra/command/base/cron.rb
-
 Specinfra::Command::Base::Cron.class_eval do
   def self.check_has_entry(user, entry)
     entry_alt = entry
     {
       /\\/ => '\\\\\\\\',
       /\$/ => '\\\\$',
-      /\+/ => '\\\\+',
+  #    /\+/ => '\\\\+',
       /\?/ => '\\\\?',
       /\-/ => '\\\\-',
       /\*/ => '\\\\*',
-      /\{/ => '\\\\{',
-      /\}/ => '\\\\}',
-      /\(/ => '\\(',
-      /\)/ => '\\)',
-      /\[/ => '\\[',
-      /\]/ => '\\]',
+  #    /\{/ => '\\\\{',
+  #    /\}/ => '\\\\}',
+  #    /\(/ => '\\(',
+  #    /\)/ => '\\)',
+  #    /\[/ => '\\[',
+  #    /\]/ => '\\]',
       ' '  => ' *',
     }.each do |s,r|
-      # NOTE: in-place update appears to corrupt the original entry
-      # entry_alt.gsub!(s,r)
-      entry_alt = entry_alt.gsub(s,r)
+      entry_alt.gsub!(s,r)
     end
     # STDERR.puts entry_alt
-    # grep_command = "grep -v '^[[:space:]]*#' | grep -- ^#{entry_alt}"
-    # /bin/sh -c crontab\ -l\ \|\ grep\ -v\ \'\^\[\[:space:\]\]\*\#\'\ \|\ grep\ --\ \^0\ \*0\ \*\\\*\ \*\\\*\ \*\\\*\ \*/etc/cron.daily/script
-
-    entry_escaped = entry.gsub(/\\/, '\\\\\\').gsub(/\*/, '\\*').gsub(/\[/, '\\[').gsub(/\]/, '\\]')
-    # NOTE:  removed the trailing '$'
-    grep_command = "grep -v '^[[:space:]]*#' | grep -- ^#{escape(entry_escaped)}"
-    # /bin/sh -c crontab\ -l\ \|\ grep\ -v\ \'\^\[\[:space:\]\]\*\#\'\ \|\ grep\ --\ \^0\\\ 0\\\ \\\\\\\*\\\ \\\\\\\*\\\ \\\\\\\*\\\ /etc/cron.daily/script
     if user.nil?
-      "crontab -l | #{grep_command}"
+      "crontab -l | grep '#{entry_alt}'"
     else
-      "crontab -u #{escape(user)} -l | #{grep_command}"
+      "crontab -u #{escape(user)} -l | grep '#{entry_alt}'"
     end
   end
 
