@@ -18,14 +18,14 @@ end
 # static override of https://github.com/mizzy/specinfra/blob/master/lib/specinfra/command/base/cron.rb
 Specinfra::Command::Base::Cron.class_eval do
   def self.check_has_entry(user, entry)
-    entry_alt = entry
     {
       /\\/ => '\\\\\\\\',
       /\$/ => '\\\\$',
-  #    /\+/ => '\\\\+',
       /\?/ => '\\\\?',
       /\-/ => '\\\\-',
       /\*/ => '\\\\*',
+      /"/  => '\\\\"',
+  #    /\+/ => '\\\\+',
   #    /\{/ => '\\\\{',
   #    /\}/ => '\\\\}',
   #    /\(/ => '\\(',
@@ -34,13 +34,15 @@ Specinfra::Command::Base::Cron.class_eval do
   #    /\]/ => '\\]',
       ' '  => ' *',
     }.each do |s,r|
-      entry_alt.gsub!(s,r)
+      entry.gsub!(s,r)
     end
-    # STDERR.puts entry_alt
+    # STDERR.puts '---'
+    # STDERR.puts  entry
+    # STDERR.puts '---'
     if user.nil?
-      "crontab -l | grep '#{entry_alt}'"
+      "crontab -l | grep '#{entry}'"
     else
-      "crontab -u #{escape(user)} -l | grep '#{entry_alt}'"
+      "crontab -u #{escape(user)} -l | grep '#{entry}'"
     end
   end
 
