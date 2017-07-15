@@ -5,7 +5,7 @@ else
 end
 
 context 'JDBC tests' do
-  context 'MySQL' do
+  context 'MySQL', :if => os[:family] == 'windows' do
     # The following fragment is tailored to run in Windows node
     context 'Passing connection parameters directly' do
       # origin: http://www.java2s.com/Code/Java/Database-SQL-JDBC/TestMySQLJDBCDriverInstallation.htm
