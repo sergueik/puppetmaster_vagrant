@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_relative '../type/puppet_helper'
+
 context 'Puppet run' do
   describe puppet_helper do
     its(:events) { should_not be_nil }
