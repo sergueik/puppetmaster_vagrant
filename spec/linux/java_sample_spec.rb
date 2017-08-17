@@ -5,6 +5,94 @@ else
 end
 
 context 'JDBC tests' do
+  context 'Oracle' do
+    context 'Passing connection parameters directly' do
+      # <Resource
+      #   name="jdbc/confluence"
+      #   auth="Container"
+      #   type="javax.sql.DataSource"
+      #   driverClassName="oracle.jdbc.OracleDriver"
+      #   url="jdbc:oracle:thin:@hostname:port:sid"
+      #   username="<username>"
+      #   password="<password>"
+      #   connectionProperties="SetBigStringTryClob=true"
+      #   accessToUnderlyingConnectionAllowed="true"
+      #   maxTotal="60"
+      #   maxIdle="20"
+      #   maxWaitMillis="10000"
+      # />
+
+      jdbc_prefix = 'oracle:thin'
+      jdbc_host = 'localhost'
+      port_number = 3203
+      jdbc_driver_class_name = 'oracle.jdbc.driver.OracleDriver'
+      jdbc_path = '/var/run'
+      jars = ['ojdbc7.jar']
+      path_separator = ':'
+      jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(path_separator)
+      database_host = 'localhost'
+      database_query = 'SELECT DUMMY FROM dual'
+      sid_name = 'sid'
+      username = 'root'
+      password = 'password'
+      class_name = 'Test'
+      sourcfile = "#{class_name}.java"
+
+      source = <<-EOF
+        import java.sql.Connection;
+        import java.sql.DriverManager;
+        import java.sql.ResultSet;
+        import java.sql.Statement;
+
+        public class #{class_name} {
+          public static void main(String[] args) throws Exception {
+            Connection conn = getConnection();
+            Statement st = conn.createStatement();
+            String query = "#{database_query}";
+            ResultSet rs = st.executeQuery(query);
+                  while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                  }
+
+            rs.close();
+            st.close();
+            conn.close();
+          }
+          private static Connection getConnection() throws Exception {
+            String driver = "#{jdbc_driver_class_name}";
+            // try/catch
+            try {
+              Class.forName(driver);
+            } catch (Exception e) {
+              System.out.println("Exception: " + e.getMessage());
+            }
+            String serverName = "#{database_host}";
+            int portNumber = #{port_number};
+            String sidName = "#{sid_name}";
+            String url = "jdbc:#{jdbc_prefix}:@//" + serverName + ":" + portNumber +  "/" + sidName;
+            String username = "#{username}";
+            String password = "#{password}";
+            return DriverManager.getConnection(url, username, password);
+          }
+        }
+
+      EOF
+      describe command(<<-EOF
+        pushd /tmp
+        echo '#{source}' > '#{sourcfile}'
+
+        javac '#{sourcfile}'
+        java -cp #{jars_cp}:. '#{class_name}'
+        popd
+      EOF
+      ) do
+
+        its(:exit_status) { should eq 0 }
+        its(:stdout) { should contain 'X' }
+      end
+    end
+  end
+
   context 'MySQL', :if => os[:family] == 'windows' do
     # The following fragment is tailored to run in Windows node
     context 'Passing connection parameters directly' do
@@ -23,7 +111,7 @@ context 'JDBC tests' do
       password = 'password'
 
       class_name = 'Test'
-     
+
       source = <<-EOF
         import java.sql.Connection;
         import java.sql.DriverManager;
@@ -34,7 +122,7 @@ context 'JDBC tests' do
            try {
               Class driverObject = Class.forName(className);
               System.out.println("driverObject=" + driverObject);
-  
+
               String serverName = "#{database_host}";
               String databaseName = "#{database_name}";
               String url = "jdbc:#{jdbc_prefix}://" + serverName + "/" + databaseName;
@@ -65,6 +153,11 @@ context 'JDBC tests' do
       end
     end
   end
+  # with Oracle, the common query is
+  #     ResultSet rs = st.executeQuery("SELECT DUMMY FROM dual");
+  #        while (rs.next()) {
+  #         System.out.println(rs.getString(1));
+  #        }
   context 'MS SQL' do
     catalina_home = '/apps/tomcat/7.0.77'
     jdbc_prefix = 'microsoft:sqlserver'
@@ -162,7 +255,7 @@ context 'JDBC tests' do
       describe command(<<-EOF
         pushd /tmp
         echo '#{source}' > '#{sourcfile}'
-        
+
         javac '#{sourcfile}'
         java -cp #{jars_cp}:. '#{class_name}'
         popd
