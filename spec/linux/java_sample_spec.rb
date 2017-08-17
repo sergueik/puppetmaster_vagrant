@@ -1,3 +1,4 @@
+# NOTE: this logic not correct under uru 
 if File.exists?( 'spec/windows_spec_helper.rb')
   require_relative '../windows_spec_helper'
 else
@@ -6,6 +7,9 @@ end
 
 context 'JDBC tests' do
   context 'Oracle' do
+    # based on:
+    # http://www.java2s.com/Tutorial/Java/0340__Database/ConnectwithOraclesJDBCThinDriver.htm
+    # https://confluence.atlassian.com/doc/configuring-an-oracle-datasource-in-apache-tomcat-339739363.html
     context 'Passing connection parameters directly' do
       # <Resource
       #   name="jdbc/confluence"
@@ -89,6 +93,7 @@ context 'JDBC tests' do
 
         its(:exit_status) { should eq 0 }
         its(:stdout) { should contain 'X' }
+        its(:stderr) { should be_empty }
       end
     end
   end
@@ -153,11 +158,7 @@ context 'JDBC tests' do
       end
     end
   end
-  # with Oracle, the common query is
-  #     ResultSet rs = st.executeQuery("SELECT DUMMY FROM dual");
-  #        while (rs.next()) {
-  #         System.out.println(rs.getString(1));
-  #        }
+
   context 'MS SQL' do
     catalina_home = '/apps/tomcat/7.0.77'
     jdbc_prefix = 'microsoft:sqlserver'
