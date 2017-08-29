@@ -12,25 +12,26 @@ context 'JDBC tests' do
     # https://confluence.atlassian.com/doc/configuring-an-oracle-datasource-in-apache-tomcat-339739363.html
     context 'Passing connection parameters directly' do
       # <Resource
-      #   name="jdbc/confluence"
-      #   auth="Container"
-      #   type="javax.sql.DataSource"
-      #   driverClassName="oracle.jdbc.OracleDriver"
-      #   url="jdbc:oracle:thin:@hostname:port:sid"
-      #   username="<username>"
-      #   password="<password>"
-      #   connectionProperties="SetBigStringTryClob=true"
-      #   accessToUnderlyingConnectionAllowed="true"
-      #   maxTotal="60"
-      #   maxIdle="20"
-      #   maxWaitMillis="10000"
+      #   name = "jdbc/<entity>"
+      #   auth = 'Container'
+      #   type = 'javax.sql.DataSource'
+      #   driverClassName = 'oracle.jdbc.OracleDriver'
+      #   url = "jdbc:oracle:thin:@//<hostname>:<port>/<sid>"
+      #   username = "<username>"
+      #   password = "<password>"
+      #   connectionProperties = 'SetBigStringTryClob = true'
+      #   accessToUnderlyingConnectionAllowed = 'true'
+      #   maxTotal = '60'
+      #   maxIdle = '20'
+      #   maxWaitMillis = '10000'
       # />
 
       jdbc_prefix = 'oracle:thin'
       jdbc_host = 'localhost'
       port_number = 3203
       jdbc_driver_class_name = 'oracle.jdbc.driver.OracleDriver'
-      jdbc_path = '/var/run'
+      application = 'Tomcat Application Name'
+      jdbc_path = "/opt/tomcat/webapps/#{application}/WEB-INF/lib"
       jars = ['ojdbc7.jar']
       path_separator = ':'
       jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(path_separator)
@@ -98,71 +99,11 @@ context 'JDBC tests' do
     end
   end
 
-  context 'MySQL', :if => os[:family] == 'windows' do
-    # The following fragment is tailored to run in Windows node
-    context 'Passing connection parameters directly' do
-      # origin: http://www.java2s.com/Code/Java/Database-SQL-JDBC/TestMySQLJDBCDriverInstallation.htm
-      table = ''
-      jdbc_prefix = 'mysql'
-      jdbc_host = 'localhost'
-      jdbc_driver_class_name = 'org.gjt.mm.mysql.Driver'
-      jdbc_path = '.'
-      jars = ['com.mysql.jdbc_5.1.5.jar']
-      path_separator = ';'
-      jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(path_separator)
-      database_host = 'localhost'
-      database_name = 'information_schema'
-      username = 'root'
-      password = 'password'
-
-      class_name = 'Test'
-
-      source = <<-EOF
-        import java.sql.Connection;
-        import java.sql.DriverManager;
-
-        public class #{class_name} {
-          public static void main(String[] argv) throws Exception {
-           String className = "#{jdbc_driver_class_name}";
-           try {
-              Class driverObject = Class.forName(className);
-              System.out.println("driverObject=" + driverObject);
-
-              String serverName = "#{database_host}";
-              String databaseName = "#{database_name}";
-              String url = "jdbc:#{jdbc_prefix}://" + serverName + "/" + databaseName;
-
-              String username = "#{username}";
-              String password = "#{password}";
-              try {
-                Connection connection = DriverManager.getConnection(url, username, password);
-              } catch (Exception e1) {
-                System.out.println("Exception: " + e1.getMessage());
-              }
-            } catch (Exception e2) {
-              System.out.println("Exception: " + e2.getMessage());
-            }
-          }
-        }
-      EOF
-      describe command(<<-EOF
-        pushd $env:USERPROFILE
-        write-output '#{source}' | out-file #{class_name}.java -encoding ASCII
-        $env:PATH = "${env:PATH};c:\\java\\jdk1.7.0_65\\bin"
-        javac '#{class_name}.java'
-        cmd %%- /c "java -cp #{jars_cp}#{path_separator}. #{class_name}"
-      EOF
-      ) do
-        its(:exit_status) { should eq 0 }
-        its(:stdout) { should match /driverObject=class #{jdbc_driver_class_name}/}
-      end
-    end
-  end
-
   context 'MS SQL' do
     catalina_home = '/apps/tomcat/7.0.77'
     jdbc_prefix = 'microsoft:sqlserver'
-    jdbc_path = "#{catalina_home}/webapps/cd_upload/WEB-INF/lib"
+    application = 'Tomcat Application Name'
+    jdbc_path = "/opt/tomcat/webapps/#{application}/WEB-INF/lib"
     jars = ['sqljdbc41.jar','sqljdbc42.jar', 'sqljdbc_6.0']
     jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(':')
     context 'Using tomcat context.xml' do
@@ -187,7 +128,7 @@ context 'JDBC tests' do
       #		    logAbandoned="true" />
       #
       table_name = 'dbo.items'
-      entity = 'Tridion_Broker'
+      entity = 'Entity Name'
       class_name = 'TestConnectionWithXMLXpathReader'
 
       config_file_path = "#{catalina_home}/conf/context.xml"
