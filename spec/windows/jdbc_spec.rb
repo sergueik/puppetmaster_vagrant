@@ -1,6 +1,7 @@
 require_relative '../windows_spec_helper'
 
 context 'JDBC tests' do
+  # http://www.sqlines.com/articles/java/sql_server_jdbc_connection
   context 'MS SQL', :if => os[:family] == 'windows' do
     jdbc_prefix = 'sqlserver'
     jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
@@ -9,8 +10,15 @@ context 'JDBC tests' do
     database_name = 'testdb'
     path_separator = ';'
     # https://www.microsoft.com/en-us/download/details.aspx?id=11774
+    # TODO: automate
+    # pushd "$env:{USERPROFILE}\Downloads"
+    # copy 
+    # Microsoft JDBC Driver 6.0 for SQL Server\\sqljdbc_6.0\\enu\\auth\\x64\\sqljdbc_auth.dll
+    # Microsoft JDBC Driver 6.0 for SQL Server\\sqljdbc_6.0\\enu\\auth\\x86\\sqljdbc_auth.dll
+    # to 
+    # c:\Windows\system32
     jars = ['sqljdbc41.jar','sqljdbc42.jar', 'sqljdbc_6.0']
-    jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(';')
+    jars_cp = jars.collect{|jar| "#{jdbc_path}\\#{jar}"}.join(';')
     context 'Using Windows authentication' do
       table_name = 'sys.columns'
       class_name = 'TestConnectionWithWindowsAuthentication'
@@ -22,54 +30,71 @@ context 'JDBC tests' do
         import java.sql.ResultSet;
         import java.sql.Statement;
 
+        import java.lang.reflect.*;
+
         public class #{class_name} {
           private static Connection connection = null;
           private static Statement statement = null;
           private static ResultSet resultSet = null;
+
           public static void main(String[] argv) throws Exception {
             String className = "#{jdbc_driver_class_name}";
             String tableName = "#{table_name}";
+            // not working ?
+            System.setProperty("java.library.path",
+                "C:\\\\Users\\\\sergueik\\\\Downloads\\\\Microsoft JDBC Driver 6.0 for SQL Server\\\\sqljdbc_6.0\\\\enu\\\\auth\\\\x86\\\\");
+            final Field sysPathsField = ClassLoader.class.getDeclaredField("sys_paths");
+            sysPathsField.setAccessible(true);
+            sysPathsField.set(null, null);
             try {
               Class driverObject = Class.forName(className);
               System.out.println("driverObject=" + driverObject);
 
               String serverName = "#{database_host}";
               String databaseName = "#{database_name}";
-              String url = "jdbc:#{jdbc_prefix}://" + serverName + ":1443;databaseName=" + databaseName + ";integratedSecurity=true;";
-              url =  "jdbc:sqlserver://localhost:1433;databaseName=testdb;integratedSecurity=true;";
-              String query = String.format("SELECT * FROM %s", tableName);
-
-                try {
+              String url = "jdbc:#{jdbc_prefix}://" + serverName + ":1434;databaseName="
+                  + databaseName + ";integratedSecurity=true;";
+              url = "jdbc:sqlserver://localhost:1434;domain=SERGUEIK42;databaseName=testdb;integratedSecurity=true;";
+              try {
                 connection = DriverManager.getConnection(url);
                 statement = connection.createStatement();
+                String query = String.format("SELECT * FROM %s", tableName);
+
                 resultSet = statement.executeQuery(query);
+
                 while (resultSet.next()) {
                   System.out.println(resultSet.getString(1) + ", "
-                    + resultSet.getString(2) + ", " + resultSet.getString(3));
+                      + resultSet.getString(2) + ", " + resultSet.getString(3));
                 }
               } catch (Exception e1) {
                 System.out.println("Exception: " + e1.getMessage());
-              }  finally {
-                 if (connection != null) try { connection.close(); } catch(Exception e3) {}
+              } finally {
+                if (connection != null)
+                  try {
+                    connection.close();
+                  } catch (Exception e3) {
+                  }
               }
             } catch (Exception e2) {
               System.out.println("Exception: " + e2.getMessage());
             }
           }
         }
-
       EOF
       describe command(<<-EOF
         pushd $env:USERPROFILE
         write-output '#{source}' | out-file #{class_name}.java -encoding ASCII
         $env:PATH = "${env:PATH};c:\\java\\jdk1.8.0_101\\bin"
         javac '#{class_name}.java'
-        cmd %%- /c "java -cp #{jars_cp}#{path_separator}. #{class_name}"
+        cmd %%- /c "java  -Djava.library.path=C:\\windows\\system32 -cp #{jars_cp}#{path_separator}. #{class_name}"
       EOF
       ) do
         its(:exit_status) { should eq 0 }
-        its(:stdout) { should match Regexp.new('\d+, \d+, \d+$', Regexp::IGNORECASE) }
+        its(:stdout) { should match Regexp.new('\d+, (name|filename|status|column_guid|queuing_order|minoccur), \d+$', Regexp::IGNORECASE) }
       end
+      # Exception: This driver is not configured for integrated authentication. ClientConnectionId:...
+      # com.microsoft.sqlserver.jdbc.AuthenticationJNI <clinit>
+      # WARNING: Failed to load the sqljdbc_auth.dll cause : no sqljdbc_auth in java.library.pat
     end  
   end
   context 'MySQL', :if => os[:family] == 'windows' do
