@@ -18,7 +18,10 @@ context 'Event Log' do
     describe command(<<-EOF
       $event_log_id = '#{event_log_id}'
       $log_name = '#{log_name}'
-      get-winevent -FilterHashTable @{LogName=$log_name; ID=$event_log_id; } -MaxEvents 10  |
+      get-winevent -FilterHashTable @{
+        LogName=$log_name; 
+        ID=$event_log_id; 
+      } -MaxEvents 10 |
       sort-object TimeCreated -descending |
       select-object -first 1 |
       select-object -ExpandProperty 'Message'
@@ -50,7 +53,9 @@ context 'Event Log' do
     describe command(<<-EOF
       $event_log_id = '#{event_log_id}'
       $log_name = '#{log_name}'
-      get-winevent -FilterHashTable @{LogName=$log_name; ID=$event_log_id; } -MaxEvents 10  |
+      get-winevent -FilterHashTable @{ 
+        LogName=$log_name; 
+        ID=$event_log_id; } -MaxEvents 10 |
       sort-object TimeCreated -descending |
       select-object -first 1 |
       select-object -ExpandProperty 'Message'
@@ -77,13 +82,13 @@ context 'Event Log' do
       message = row[:message]
       describe command(<<-EOF
         param(
-          [int]$LastDays = 50
+          [int]$numLastDays = 50
         )
 
-        $QueryDiff =
-        if ($LastDays) {
-          $Diff = [math]::Round((Get-Date).Subtract((Get-Date).AddDays(- $LastDays)).TotalMilliseconds)
-          " and (TimeCreated[timediff(@SystemTime) <= $Diff])"
+        $queryDateDiff =
+        if ($numLastDays) {
+          $dateDiffValue = [math]::Round((Get-Date).Subtract((Get-Date).AddDays(- $numLastDays)).TotalMilliseconds)
+          " and (TimeCreated[timediff(@SystemTime) <= $dateDiffValue])"
         }
 
         $eventId = '#{event_id}'
@@ -92,7 +97,7 @@ context 'Event Log' do
         $o = Get-WinEvent -ErrorAction silentlycontinue -LogName $eventLogName -FilterXPath (@"
         *[
         (
-          System[(EventID=${eventId}) $QueryDiff] and
+          System[(EventID=${eventId}) $queryDateDiff] and
           EventData[
             (Data[@Name='LogonType']=2) or
             (Data[@Name='LogonType']=10)
@@ -103,9 +108,9 @@ context 'Event Log' do
 
         if ($o -ne $null) {
           $o |
-          ForEach-Object { Write-Output ([xml]$_.ToXml()) } |
-          ForEach-Object { $_.Event } |
-          Select-Object @(
+          foreach-object { write-output ([xml]$_.ToXml()) } |
+          foreach-object { $_.Event } |
+          select-object @(
             @{ n = 'EventID'; e = { $_.System.EventID } },
             @{ n = 'TimeCreated'; e = { $_.System.TimeCreated.SystemTime | Get-Date } },
             @{ n = 'TargetUserSid'; e = { $_.EventData.SelectSingleNode('*[@Name="TargetUserSid"]').innertext } },
@@ -122,5 +127,33 @@ context 'Event Log' do
           its(:stdout) { should match(/(?:#{message})/) }
       end
     end
+  end
+
+  # https://blogs.technet.microsoft.com/heyscriptingguy/2011/01/25/use-powershell-to-parse-saved-event-logs-for-errors/
+  describe 'Window event' do
+    describe command(<<-EOF
+      param(
+        [int]$LogName = 'Application'
+      )
+      get-childItem -Include "${LogName}.*" -Path 'c:\Windows\system32\winevt\Logs' -Recurse |
+      foreach-object {
+        write-output "Parsing $($_.fullname)`r`n"
+        try {
+          Get-WinEvent -FilterHashtable @{
+            LogName = $_.BaseName;
+            ProviderName = 'Application Error';
+            Path = $_.fullname;
+            Level = 2;
+            StartTime = "1/1/2017";
+            EndTime = "8/5/2017";
+          } -ErrorAction Stop |
+          Where-Object { -not ($_.Message -match 'Faulting application name: (?:firefox.exe|plugin-container.exe|SharpDevelop.exe|stardict.exe|devenv.exe)') } |
+          select-object -First 10 | select-object -Property TimeCreated,Message,LevelDisplayName,Id | format-list}
+        catch [System.Exception]{ write-output 'No errors in current log' }
+      }
+      EOF
+      ) do
+        its(:stdout) { should be_empty/) }
+      end
   end
 end

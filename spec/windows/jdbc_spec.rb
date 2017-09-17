@@ -1,7 +1,77 @@
 require_relative '../windows_spec_helper'
 
 context 'JDBC tests' do
+  context 'MS SQL', :if => os[:family] == 'windows' do
+    jdbc_prefix = 'sqlserver'
+    jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
+    jdbc_path = "c:\\users\\sergueik\\desktop"
+    database_host = 'localhost'
+    database_name = 'testdb'
+    path_separator = ';'
+    # https://www.microsoft.com/en-us/download/details.aspx?id=11774
+    jars = ['sqljdbc41.jar','sqljdbc42.jar', 'sqljdbc_6.0']
+    jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(';')
+    context 'Using Windows authentication' do
+      table_name = 'sys.columns'
+      class_name = 'TestConnectionWithWindowsAuthentication'
+      sourcfile = "#{class_name}.java"
 
+      source = <<-EOF
+        import java.sql.Connection;
+        import java.sql.DriverManager;
+        import java.sql.ResultSet;
+        import java.sql.Statement;
+
+        public class #{class_name} {
+          private static Connection connection = null;
+          private static Statement statement = null;
+          private static ResultSet resultSet = null;
+          public static void main(String[] argv) throws Exception {
+            String className = "#{jdbc_driver_class_name}";
+            String tableName = "#{table_name}";
+            try {
+              Class driverObject = Class.forName(className);
+              System.out.println("driverObject=" + driverObject);
+
+              String serverName = "#{database_host}";
+              String databaseName = "#{database_name}";
+              String url = "jdbc:#{jdbc_prefix}://" + serverName + ":1443;databaseName=" + databaseName + ";integratedSecurity=true;";
+              url =  "jdbc:sqlserver://localhost:1433;databaseName=testdb;integratedSecurity=true;";
+              String query = String.format("SELECT * FROM %s", tableName);
+
+                try {
+                connection = DriverManager.getConnection(url);
+                statement = connection.createStatement();
+                resultSet = statement.executeQuery(query);
+                while (resultSet.next()) {
+                  System.out.println(resultSet.getString(1) + ", "
+                    + resultSet.getString(2) + ", " + resultSet.getString(3));
+                }
+              } catch (Exception e1) {
+                System.out.println("Exception: " + e1.getMessage());
+              }  finally {
+                 if (connection != null) try { connection.close(); } catch(Exception e3) {}
+              }
+            } catch (Exception e2) {
+              System.out.println("Exception: " + e2.getMessage());
+            }
+          }
+        }
+
+      EOF
+      describe command(<<-EOF
+        pushd $env:USERPROFILE
+        write-output '#{source}' | out-file #{class_name}.java -encoding ASCII
+        $env:PATH = "${env:PATH};c:\\java\\jdk1.8.0_101\\bin"
+        javac '#{class_name}.java'
+        cmd %%- /c "java -cp #{jars_cp}#{path_separator}. #{class_name}"
+      EOF
+      ) do
+        its(:exit_status) { should eq 0 }
+        its(:stdout) { should match Regexp.new('\d+, \d+, \d+$', Regexp::IGNORECASE) }
+      end
+    end  
+  end
   context 'MySQL', :if => os[:family] == 'windows' do
     context 'Passing connection parameters directly' do
       # origin: http://www.java2s.com/Code/Java/Database-SQL-JDBC/TestMySQLJDBCDriverInstallation.htm
@@ -35,7 +105,6 @@ context 'JDBC tests' do
               String serverName = "#{database_host}";
               String databaseName = "#{database_name}";
               String url = "jdbc:#{jdbc_prefix}://" + serverName + "/" + databaseName;
-
               String username = "#{username}";
               String password = "#{password}";
               try {
