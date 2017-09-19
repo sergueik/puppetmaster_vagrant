@@ -6,6 +6,12 @@ else
 end
 
 context 'JDBC tests' do
+  catalina_home = '/opt/tomcat'
+  path_separator = ':'
+  application = 'Tomcat Application Name'
+  jdbc_path = "#{catalina_home}/webapps/#{application}/WEB-INF/lib/"
+  config_file_path = "#{catalina_home}/conf/context.xml"
+
   context 'Oracle' do
     context 'Using tomcat context.xml' do
       # <Resource
@@ -18,19 +24,15 @@ context 'JDBC tests' do
       # />
 
       jdbc_driver_class_name = 'oracle.jdbc.driver.OracleDriver'
-      class_name = 'TestConnectionWithCredentialsInUrl'
       database_query = 'SELECT DUMMY FROM dual'
       jars = ['ojdbc7.jar']
-      jdbc_path = "#{catalina_home}/webapps/cd_upload/WEB-INF/lib/"
-      path_separator = ':'
       jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(path_separator)
       entity = 'confluence'
-      config_file_path = "#{catalina_home}/conf/context.xml"
+      class_name = 'TestConnectionWithCredentialsInUrl'
       sourcfile = "#{class_name}.java"
       source = <<-EOF
 
         import java.io.File;
-
         import java.io.FileInputStream;
         import java.io.IOException;
 
@@ -41,9 +43,11 @@ context 'JDBC tests' do
         import javax.xml.xpath.XPathConstants;
         import javax.xml.xpath.XPathExpressionException;
         import javax.xml.xpath.XPathFactory;
+
         import org.w3c.dom.Document;
         import org.w3c.dom.Element;
         import org.xml.sax.SAXException;
+
         import java.sql.Connection;
         import java.sql.DriverManager;
         import java.sql.ResultSet;
@@ -52,10 +56,7 @@ context 'JDBC tests' do
 
         public class #{class_name} {
 
-          public static void main(String[] args)
-              throws SAXException, IOException, ParserConfigurationException,
-              XPathExpressionException, ClassNotFoundException, SQLException {
-            String tableName = "#{table_name}";
+          public static void main(String[] args) throws SAXException, IOException, ParserConfigurationException, XPathExpressionException, ClassNotFoundException, SQLException {
             DocumentBuilder db = (DocumentBuilderFactory.newInstance())
                 .newDocumentBuilder();
             String configFilePath = "#{config_file_path}";
@@ -97,7 +98,7 @@ context 'JDBC tests' do
         pushd /tmp
         echo '#{source}' > '#{sourcfile}'
         javac '#{sourcfile}'
-        java -cp #{jars_cp}:. '#{class_name}'
+        java -cp #{jars_cp}#{path_separator}. '#{class_name}'
         popd
       EOF
       ) do
@@ -105,23 +106,19 @@ context 'JDBC tests' do
         its(:stdout) { should contain 'X' }
       end
     end
+    context 'Passing connection parameters directly' do
       # based on:
       # http://www.java2s.com/Tutorial/Java/0340__Database/ConnectwithOraclesJDBCThinDriver.htm
       # https://confluence.atlassian.com/doc/configuring-an-oracle-datasource-in-apache-tomcat-339739363.html
-    context 'Passing connection parameters directly' do
       jdbc_prefix = 'oracle:thin'
-      jdbc_host = 'localhost'
       port_number = 3203
       jdbc_driver_class_name = 'oracle.jdbc.driver.OracleDriver'
-      application = 'Tomcat Application Name'
-      jdbc_path = "/opt/tomcat/webapps/#{application}/WEB-INF/lib"
       jars = ['ojdbc7.jar']
-      path_separator = ':'
       jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(path_separator)
       database_host = 'localhost'
       database_query = 'SELECT DUMMY FROM dual'
       sid_name = 'sid'
-      username = 'root'
+      username = 'sa'
       password = 'password'
       class_name = 'TestWithUserPassword'
       sourcfile = "#{class_name}.java"
@@ -169,7 +166,7 @@ context 'JDBC tests' do
         pushd /tmp
         echo '#{source}' > '#{sourcfile}'
         javac '#{sourcfile}'
-        java -cp #{jars_cp}:. '#{class_name}'
+        java -cp #{jars_cp}#{path_separator}. '#{class_name}'
         popd
       EOF
       ) do
@@ -180,12 +177,11 @@ context 'JDBC tests' do
     end
   end
   context 'MS SQL' do
-    catalina_home = '/apps/tomcat/7.0.77'
+
     jdbc_prefix = 'microsoft:sqlserver'
-    application = 'Tomcat Application Name'
-    jdbc_path = "/opt/tomcat/webapps/#{application}/WEB-INF/lib"
     jars = ['sqljdbc41.jar','sqljdbc42.jar', 'sqljdbc_6.0']
     jars_cp = jars.collect{|jar| "#{jdbc_path}/#{jar}"}.join(':')
+
     context 'Using tomcat context.xml' do
       # based on:
       # https://stackoverflow.com/questions/25259836/how-to-get-attribute-value-using-xpath-in-java
@@ -222,7 +218,6 @@ context 'JDBC tests' do
       table_name = 'dbo.items'
       entity = 'Entity Name'
       class_name = 'TestConnectionWithXMLXpathReader'
-      config_file_path = "#{catalina_home}/conf/context.xml"
       sourcfile = "#{class_name}.java"
       source = <<-EOF
         import java.io.File;
@@ -248,9 +243,8 @@ context 'JDBC tests' do
         import java.sql.SQLException;
 
         public class Test #{class_name} {
-          public static void main(String[] args)
-              throws SAXException, IOException, ParserConfigurationException,
-              XPathExpressionException, ClassNotFoundException, SQLException {
+
+          public static void main(String[] args) throws SAXException, IOException, ParserConfigurationException, XPathExpressionException, ClassNotFoundException, SQLException {
             String tableName = "#{table_name}";
             DocumentBuilder db = (DocumentBuilderFactory.newInstance())
                 .newDocumentBuilder();
@@ -291,7 +285,7 @@ context 'JDBC tests' do
       pushd /tmp
       echo '#{source}' > '#{sourcfile}'
       javac '#{sourcfile}'
-      java -cp #{jars_cp}:. '#{class_name}'
+      java -cp #{jars_cp}#{path_separator}. '#{class_name}'
       popd
     EOF
     ) do
@@ -300,17 +294,18 @@ context 'JDBC tests' do
     end
   end
   context 'Passing connection parameters directly' do
-  # origin: http://docs.oracle.com/javase/tutorial/jdbc/basics/processingsqlstatements.html
-    catalina_home =  '/apps/tomcat/7.0.77'
-    table = ''
+    # origin: http://docs.oracle.com/javase/tutorial/jdbc/basics/processingsqlstatements.html
+
+    database_table = 'name of the table'
     jdbc_prefix = 'sqlserver'
     jdbc_driver_class_name = 'com.microsoft.sqlserver.jdbc.SQLServerDriver'
-    database_host = ''
+    database_host = 'localhost'
     database_name = ''
-    username = ''
-    password =  ''
+    username = 'sa'
+    password =  'password'
     class_name = 'TestConnectionSimple'
     sourcfile = "#{class_name}.java"
+
     source = <<-EOF
       import java.sql.CallableStatement;
       import java.sql.Connection;
@@ -327,7 +322,7 @@ context 'JDBC tests' do
               "#{username}", "#{password}");
 
           Statement statement = null;
-          String query = "select * from #{table}";
+          String query = "select * from #{database_table}";
           try {
             statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(query);
