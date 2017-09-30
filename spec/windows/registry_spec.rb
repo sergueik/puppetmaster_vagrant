@@ -1,3 +1,4 @@
+
 require_relative '../windows_spec_helper'
 
 context 'Registry' do
@@ -72,7 +73,41 @@ context 'Registry' do
     end
   end
 end
-# TODO:
-#    'RequiredPrivileges' => [ 'SeAssignPrimaryTokenPrivilege', 'SeIncreaseQuotaPrivilege', 'SeTcbPrivilege', 'SeBackupPrivilege', 'SeRestorePrivilege', 'SeDebugPrivilege', 'SeAuditPrivilege', 'SeChangeNotifyPrivilege', 'SeImpersonatePrivilege' ],
+  # TODO:
+  # 'RequiredPrivileges' => [ 'SeAssignPrimaryTokenPrivilege', 'SeIncreaseQuotaPrivilege', 'SeTcbPrivilege', 'SeBackupPrivilege', 'SeRestorePrivilege', 'SeDebugPrivilege', 'SeAuditPrivilege', 'SeChangeNotifyPrivilege', 'SeImpersonatePrivilege' ],
 
+
+  # based on: https://github.com/SHIFT-ware/shift_ware/blob/master/Serverspec/spec/2-0001_Base/Advanced/2-0001-106_Registry_spec.rb  
+  # NOTE: forward slashes not accepted by cmdlet:
+  # Get-Item : Cannot find path
+  # 'HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/services/Appinfo' because it does not exist.
+  context 'cmdlets' do
+    key = 'HKEY_LOCAL_MACHINE/SYSTEM/CurrentControlSet/Services/Appinfo'
+    name = 'ImagePath'
+    valueType = 'ExpandString'
+    value = 'C:\windows\system32\svchost.exe -k netsvcs'
+    describe ("Registry Property Name #{name}") do
+      describe command("(Get-Item 'Registry::#{ key.gsub('/', '\\\\') }').Property") do
+        its(:stdout) { should match /(\A|\R)#{name}(\R|\Z)/}
+      end
+    end
+    describe ("Registry Value kind of #{name}") do
+      describe command("(Get-Item 'Registry::#{ key.gsub('/', '\\\\') }').GetValueKind('#{name}')" ) do
+        its(:stdout) { should match valueType }
+      end
+    end
+    describe ("Registry Value of #{name}") do
+      describe command("(Get-Item 'Registry::#{ key.gsub('/', '\\\\') }').GetValue('#{name}') -replace \"\\n\", '' -replace '\\\\', '/' " ) do
+        its(:stdout) { should match Regexp.new(value.gsub('\\', '/'), Regexp::IGNORECASE) }
+        its(:stdout) { should match /#{value.gsub('\\', '/')}/i}
+        its(:stdout) { should match /(\A|\R)#{value.gsub('\\', '/')}(\R|\Z)/i}
+      end
+    end
+    describe ("Registry Value of #{name}") do
+      describe command("(Get-Item 'Registry::#{ key.gsub('/', '\\\\') }').GetValue('#{name}') " ) do
+        its(:stdout) { should match /(\A|\R)#{value.gsub('\\', '\\\\\\\\')}(\R|\Z)/i }
+        its(:stdout) { should match Regexp.new(value.gsub('\\', '\\\\\\\\'), Regexp::IGNORECASE) }
+      end
+    end
+  end
 end
