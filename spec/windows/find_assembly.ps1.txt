@@ -1,6 +1,0 @@
-###
-
-# origin: https://github.com/gregzakh/alt-ps/blob/master/tools/Find-Assembly.ps1
-
-function Find-Assembly {  param(    [Parameter(ValueFromPipeline=$true)]    [String]$AssemblyName  )
-  $al = New-Object Collections.ArrayList  [Object].Assembly.GetType(    'Microsoft.Win32.Fusion'  ).GetMethod('ReadCache').Invoke($null, @(    [Collections.ArrayList]$al,    $(if ([String]::IsNullOrEmpty($AssemblyName)) {      $null    } else {      $AssemblyName    }),    [UInt32]2  ))  $al}
