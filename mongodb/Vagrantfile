@@ -1,0 +1,127 @@
+# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+
+# origins:
+# https://gist.github.com/wouterd/6624764
+# http://blog.scottlowe.org/2014/10/22/multi-machine-vagrant-with-yaml/
+require 'yaml'
+require 'pp'
+
+$mongoInitScript = <<-SCRIPT
+  YUM_REPO_CONFIG_PATH="/etc/yum.repos.d/mongodb.repo"
+
+  tee $YUM_REPO_CONFIG_PATH <<-EOF
+[mongodb]
+name=MongoDB Repository
+baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
+gpgcheck=0
+enabled=1
+EOF
+
+  yum -y install mongo-10gen mongo-10gen-server
+
+  MONGOD_CONF_FILE="/etc/mongod.conf"
+
+  tee -a $MONGOD_CONF_FILE <<-EOF
+smallfiles = true
+oplogSize = 64
+replSet = bogus-replica-set
+EOF
+
+yum install -qqy iptables
+
+  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 27017 -j ACCEPT
+  iptables-save > /etc/sysconfig/iptables
+  service iptables restart
+  service network restart
+
+  service mongod start
+  # https://github.com/stedolan/jq/releases/latest ?
+  wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
+chmod +x ./jq
+cp jq /usr/bin
+
+SCRIPT
+
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+# Read YAML file with nodes details
+nodes = {}
+nodes_yaml = "#{dir}/nodes.yaml"
+if File.exists?(nodes_yaml)
+  puts "Loading nodes '#{nodes_yaml}'"
+  nodes = YAML.load_file(nodes_yaml)
+else
+  # TODO: throw an error
+end
+# pp nodes
+
+# Read YAML file with box details
+configs = {}
+boxes_yaml = "#{dir}/boxes.yaml"
+if File.exists?(boxes_yaml)
+  # puts "Loading boxes configs '#{boxes_yaml}'"
+  configs = YAML::load_file( boxes_yaml )
+else
+  # TODO: throw an error
+end
+# pp configs
+
+mongo_hosts = []
+cnt = 0
+nodes.each do |box|
+  # pp box
+  # p box['ipaddress']
+  mongo_hosts.push( "{ _id : #{cnt}, host : \"#{box['ipaddress']}:27017\"}" )
+  cnt = cnt + 1
+end
+
+$rs_setup_script = <<-SCRIPT
+cat > /tmp/rs.config <<EOF
+config = { _id: "bogus-replica-set", members:[
+#{mongo_hosts.join(",\n")}
+ ]};
+rs.initiate(config);
+EOF
+PRIMARY=$(grep '_id : 0' /tmp/rs.config  | sed 's/[" {},]//g;s/_id:0//g;s/host://g;s/:27017//')
+cat /tmp/rs.config
+mongo --host $PRIMARY < /tmp/rs.config
+SCRIPT
+# bind_ip=127.0.0.1
+
+box_config = {}
+# Create boxes
+Vagrant.configure('2') do |config|
+  nodes.each do |box|
+    box_name = box['name']
+    box_config = configs[box['box']]
+    # pp box_config
+    image_name = box_config[:image_name]
+    box_gui = box_config[:box_gui] != nil && box_config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
+    box_cpus = box_config[:box_cpus].to_i
+    box_memory = box_config[:box_memory].to_i
+    newbox = box_config[:config_vm_newbox]
+    image_filename = box_config[:image_filename]
+    box_url = "file://#{basedir}/Downloads/#{image_filename}"
+    config.vm.define box['name'] do |guest|
+      guest.vm.box = image_name
+      guest.vm.box_url = box_url
+      # with some versions e.g. Vagrant 1.9.1 / Virtual Box 5.1.28 a reboot from within a VM
+      # may be required for the private network confguration to become available
+      # puts " guest.vm.network 'private_network', ip: '#{box['ipaddress']}'"
+      guest.vm.network 'private_network', ip: box['ipaddress']
+      guest.vm.provider :virtualbox do |vb|
+        vb.name = box_name
+        vb.memory = box_memory
+      end
+      guest.vm.provision 'shell', inline: $mongoInitScript
+      if box_name == 'mongo1'
+      guest.vm.provision 'shell', inline: $rs_setup_script
+      end
+    end
+  end
+end

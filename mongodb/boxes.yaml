@@ -1,0 +1,14 @@
+---
+# NOTE: vagrant box names are keys
+:boot: 'centos'
+#
+# centos 6.6 x64 with Puppet 3.8.1
+'centos':
+  :image_name: 'centos'
+  :box_memory: '512'
+  :box_cpus: '1'
+  :box_gui: false
+  :config_vm_newbox: false
+  :config_vm_default: 'linux'
+  :config_vm_box: 'centos'
+  :image_filename: 'centos-6.6-x86_64.box'

@@ -1,0 +1,13 @@
+---
+- name: 'mongo1'
+  box: 'centos'
+  ram: '512'
+  ipaddress: '172.17.8.101'
+- name: 'mongo2'
+  box: 'centos'
+  ram: '512'
+  ipaddress: '172.17.8.102'
+- name: 'mongo3'
+  box: 'centos'
+  ram: '512'
+  ipaddress: '172.17.8.103'
