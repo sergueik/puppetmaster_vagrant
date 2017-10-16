@@ -1,8 +1,4 @@
 ---
-- name: 'mongo1'
-  box: 'centos'
-  ram: '512'
-  ipaddress: '172.17.8.101'
 - name: 'mongo2'
   box: 'centos'
   ram: '512'
@@ -11,3 +7,7 @@
   box: 'centos'
   ram: '512'
   ipaddress: '172.17.8.103'
+- name: 'mongo1'
+  box: 'centos'
+  ram: '512'
+  ipaddress: '172.17.8.101'
