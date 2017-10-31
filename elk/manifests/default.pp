@@ -1,6 +1,7 @@
 # Update APT Cache
 class { 'apt':
-  always_apt_update => true,
+# obsolete
+#  always_apt_update => true,
 }
 
 
@@ -25,13 +26,14 @@ elasticsearch::instance { 'es-01':
   before => Exec['start kibana']
 }
 
-elasticsearch::plugin{'royrusso/elasticsearch-HQ':
-  instances  => 'es-01'
-}
-
-elasticsearch::plugin{'elasticsearch/marvel/latest':
-  instances  => 'es-01'
-}
+# elasticsearch::plugin{'royrusso/elasticsearch-HQ':
+#   instances  => 'es-01'
+# }
+# 
+# elasticsearch::plugin{'elasticsearch/marvel/latest':
+#   instances  => 'es-01'
+# }
+ 
 
 # Logstash
 class { 'logstash':
