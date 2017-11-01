@@ -1,7 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = '2'
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
@@ -13,10 +12,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vbguest.auto_update = true
   end
   config.vm.box = 'ubuntu/xenial64-puppet'
-  # NOTE: Vagrant provision failed on a few Ubuntu 16.04 base boxes, in particular the Ubuntu 16.04 with Docker installed
-  # with
-  # timeout during server version negotiating
-
   # https://atlas.hashicorp.com/puppetlabs/boxes/ubuntu-16.04-64-puppet
   # config.vm.box = 'puppetlabs/ubuntu-16.04-64-puppet'
   config_vm_box_name = 'ubuntu-16.04-64-puppet.box'
@@ -28,16 +23,64 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.network :forwarded_port, guest: 9200, host: 9200
   config.vm.network :forwarded_port, guest: 9300, host: 9300
 
-  config.vm.provider :virtualbox do |vb|
-    vb.customize ['modifyvm', :id, '--cpus', '2', '--memory', '2048']
+  config.vm.provider :virtualbox do |v|
+    v.name = 'ELK GD Timings Vagrant Box'
+    v.customize ['modifyvm', :id, '--cpus', '2', '--memory', '2048']
   end
 
-  config.vm.provider 'vmware_fusion' do |v, override|
-    v.provision 'shell', path: 'ubuntu.sh'
-    v.box = 'phusion/ubuntu-16.04-amd64'
-    v.vmx['numvcpus'] = '2'
-    v.vmx['memsize'] = '2048'
-  end
-  config.vm.provision 'shell', path: 'setup.sh'
+  config.vm.provision 'shell', inline: <<-END_OF_SHELL_SCRIPT
+#!/usr/bin/env bash
+
+# Install wget
+sudo apt-get install -qqy curl wget git;
+
+sed -e '/templatedir/ s/^#*/#/' -i.back /etc/puppet/puppet.conf
+
+## set local/fastest mirror
+mv /etc/apt/sources.list /etc/apt/sources.list.orig
+
+cat > /etc/apt/sources.list <<EOF
+deb mirror://mirrors.ubuntu.com/mirrors.txt xenial main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt xenial-updates main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt xenial-backports main restricted universe multiverse
+deb mirror://mirrors.ubuntu.com/mirrors.txt xenial-security main restricted universe multiverse
+EOF
+sudo apt-get -qqy update
+
+## set local timezone
+export tz=`wget -qO - http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\(.*\)<\/TimeZone>.*/\1/p'` &&  sudo timedatectl set-timezone $tz
+
+MODULE_PATH='/etc/puppetlabs/code/environments/production/modules'
+
+mkdir -p $MODULE_PATH
+if [ ! -d ${MODULE_PATH}/file_concat ]; then
+ # puppet module install ispavailability/file_concat
+ puppet module install 'electrical-file_concat'
+fi
+if [ ! -d ${MODULE_PATH}/apt ]; then
+ # need recent version
+ puppet module install 'puppetlabs-apt' --version '2.4.0'
+fi
+if [ ! -d ${MODULE_PATH}/java ]; then
+ puppet module install 'puppetlabs-java'
+fi
+if [ ! -d ${MODULE_PATH}/elasticsearch ]; then
+ puppet module install 'elasticsearch-elasticsearch'
+fi
+if [ ! -d ${MODULE_PATH}/logstash ]; then
+ puppet module install 'elasticsearch-logstash'
+fi
+if [ ! -d ${MODULE_PATH}/nodejs ]; then
+ puppet module install 'puppetlabs-nodejs'
+fi
+if [ ! -f /etc/init.d/kibana ]; then
+ sudo cp /vagrant/kibana4_init /etc/init.d/kibana
+ sudo sed -i 's/\r//' /etc/init.d/kibana
+ sudo chmod +x /etc/init.d/kibana
+ sudo update-rc.d kibana defaults
+ wget -q http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+fi
+
+  END_OF_SHELL_SCRIPT
   config.vm.provision 'shell', inline: '/opt/puppetlabs/bin/puppet apply --modulepath=/etc/puppetlabs/code/environments/production/modules /vagrant/manifests/default.pp'
 end
