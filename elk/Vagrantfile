@@ -81,6 +81,12 @@ if [ ! -f /etc/init.d/kibana ]; then
  wget -q http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 fi
 
+# http://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/#
+# https://stackoverflow.com/questions/37815790/syntaxerror-unexpected-token-function-async-await-nodejs
+sudo apt-get install python-software-properties
+curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
+sudo apt-get install -qqy nodejs
+
   END_OF_SHELL_SCRIPT
   config.vm.provision 'shell', inline: '/opt/puppetlabs/bin/puppet apply --modulepath=/etc/puppetlabs/code/environments/production/modules /vagrant/manifests/default.pp'
 end
