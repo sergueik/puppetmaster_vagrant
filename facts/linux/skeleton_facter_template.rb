@@ -2,6 +2,11 @@
 # and libraries already in $LOAD_PATH
 # otherwise use find command to locate Ruby embedded in the Puppet agent like
 # sudo find /opt/puppetlabs/ -iname 'ruby' -executable -a -type f
+# on some RHEL systems, the fact wrapper needs to run on Puppet's embedded ruby:
+# /opt/puppetlabs/puppet/bin/ruby 'skeleton_facter_template.rb'
+# will print fact_name = 'sample fact value'
+# When run on system ruby, it would throw exception complaining about lack of puppet:
+#   /usr/share/rubygems/rubygems/core_ext/kernel_require.rb:55:in `require': cannot load such file -- puppet (LoadError)
 
 puppet_lib_home='/usr/share/ruby/vendor_ruby' # for atlas
 puppet_lib_home='/opt/puppetlabs/puppet/lib/ruby/vendor_ruby' # for enterprise
