@@ -66,10 +66,6 @@ if [ ! -d ${MODULE_PATH}/apt ]; then
  # need recent version
  puppet module install 'puppetlabs-apt' --version '2.4.0'
 fi
-if [ ! -d ${MODULE_PATH}/mongodb ]; then
- # need latest version
- puppet module install 'puppetlabs-mongodb' --version '1.0.0'
-fi
 if [ ! -d ${MODULE_PATH}/java ]; then
  puppet module install 'puppetlabs-java'
 fi

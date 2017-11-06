@@ -1,7 +1,6 @@
 include apt
 include java
 
-
 file { 'node setup':
   ensure => file,
   path   => '/tmp/setup_7.x',

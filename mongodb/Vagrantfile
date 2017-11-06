@@ -7,10 +7,10 @@
 require 'yaml'
 require 'pp'
 
-$mongoInitScript = <<-SCRIPT
-  YUM_REPO_CONFIG_PATH="/etc/yum.repos.d/mongodb.repo"
+$mongo_init_script = <<-SCRIPT
+YUM_REPO_CONFIG_PATH='/etc/yum.repos.d/mongodb.repo'
 
-  tee $YUM_REPO_CONFIG_PATH <<-EOF
+tee $YUM_REPO_CONFIG_PATH <<-EOF
 [mongodb]
 name=MongoDB Repository
 baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
@@ -18,11 +18,11 @@ gpgcheck=0
 enabled=1
 EOF
 
-  yum -y install mongo-10gen mongo-10gen-server
+yum -y install mongo-10gen mongo-10gen-server
 
-  MONGOD_CONF_FILE="/etc/mongod.conf"
+MONGOD_CONF_FILE='/etc/mongod.conf'
 
-  tee -a $MONGOD_CONF_FILE <<-EOF
+tee -a $MONGOD_CONF_FILE <<-EOF
 smallfiles = true
 oplogSize = 64
 replSet = bogus-replica-set
@@ -30,14 +30,14 @@ EOF
 
 yum install -qqy iptables
 
-  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 27017 -j ACCEPT
-  iptables-save > /etc/sysconfig/iptables
-  service iptables restart
-  service network restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 27017 -j ACCEPT
+iptables-save > /etc/sysconfig/iptables
+service iptables restart
+service network restart
 
-  service mongod start
-  # https://github.com/stedolan/jq/releases/latest ?
-  wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
+service mongod start
+# https://github.com/stedolan/jq/releases/latest ?
+wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64
 chmod +x ./jq
 cp jq /usr/bin
 
@@ -91,6 +91,24 @@ PRIMARY=$(grep '_id : 0' /tmp/rs.config  | sed 's/[" {},]//g;s/_id:0//g;s/host:/
 cat /tmp/rs.config
 mongo --host $PRIMARY < /tmp/rs.config
 SCRIPT
+$puppet_prereq_script = <<-SCRIPT
+#!/usr/bin/env bash
+
+# force the locale change
+cat >/etc/environment <<EOF
+LANG=en_US.utf-8
+LC_ALL=en_US.utf-8
+EOF
+MODULE_PATH='/etc/puppet/modules'
+
+if [ ! -d ${MODULE_PATH}/mongodb ]; then
+  puppet module install 'puppetlabs-mongodb' --version '1.0.0'
+fi
+if [ ! -d ${MODULE_PATH}/java ]; then
+  puppet module install 'puppetlabs-java' --version '1.3.0'
+fi
+SCRIPT
+
 # bind_ip=127.0.0.1
 
 box_config = {}
@@ -118,77 +136,22 @@ Vagrant.configure('2') do |config|
         vb.name = box_name
         vb.memory = box_memory
       end
-      # converting to Puppet module. Uncomment for debugging
-      # guest.vm.provision 'shell', inline: $mongoInitScript
+
+      # converting to Puppet module. Uncomment inline scripts $mongo_init_script and $rs_setup_script for debugging
+
+      # guest.vm.provision 'shell', inline: $mongo_init_script
+
       if box_name == 'mongo1'
-        # converting to Puppet module. Uncomment for debugging
         # guest.vm.provision 'shell', inline: $rs_setup_script
       end
-        config.vm.provision 'shell', inline: <<-END_OF_SHELL_SCRIPT
-	
-	#!/usr/bin/env bash
 
-        # force the locale change
-cat >/etc/environment <<EOF
-LANG=en_US.utf-8
-LC_ALL=en_US.utf-8
-EOF
-	MODULE_PATH='/etc/puppet/modules'
+      config.vm.provision 'shell', inline: $puppet_prereq_script
 
-	if [ ! -d ${MODULE_PATH}/mongodb ]; then
-	  puppet module install 'puppetlabs-mongodb'
-	fi
-	if [ ! -d ${MODULE_PATH}/java ]; then
-	  puppet module install 'puppetlabs-java' --version '1.3.0'
-	fi
-	END_OF_SHELL_SCRIPT
-        # workaround for Puppet 4 / Vagrant compatibility issue
-        # guest.vm.provision 'shell', inline: '/opt/puppetlabs/bin/puppet apply --modulepath=/etc/puppetlabs/code/environments/production/modules /vagrant/manifests/default.pp'
-        guest.vm.provision 'puppet',  manifest_file: 'default.pp'
+      guest.vm.provision 'puppet',  manifest_file: 'default.pp'
 
+      # see also: 
+      # https://github.com/pkdone/mongo-multi-svr-generator
+      # https://github.com/GuyMograbi/vagrant-automation-machines
     end
   end
 end
-
-# potential serverspec tests:
-
-# connect to replicaset via mongo shell host option
-# mongo --host bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017 --eval "printjson(rs.status())"
-#
-# rs.isMaster()
-# {
-#         "setName" : "bogus-replica-set",
-#         "setVersion" : 1,
-#         "ismaster" : true,
-#         "secondary" : false,
-#         "hosts" : [
-#                 "172.17.8.101:27017",
-#                 "172.17.8.103:27017",
-#                 "172.17.8.102:27017"
-#         ],
-#         "primary" : "172.17.8.101:27017",
-#         "me" : "172.17.8.101:27017",
-#         "electionId" : ObjectId("59e4e796b645887cf43163f4"),
-#         "maxBsonObjectSize" : 16777216,
-#         "maxMessageSizeBytes" : 48000000,
-#         "maxWriteBatchSize" : 1000,
-#         "localTime" : ISODate("2017-10-16T17:26:14.780Z"),
-#         "maxWireVersion" : 2,
-#         "minWireVersion" : 0,
-#         "ok" : 1
-# }
-#
-# from mongo shell
-# mongo  --eval "conn = new Mongo('bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017') ; db = conn.getDB('local') ; db.getCollectionNames().join('\n');"
-# conn = new Mongo("bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017") ; db = cnn.getDB("local") ;
-# local
-# me
-# oplog.rs
-# slaves
-# startup_log
-# system.indexes
-# system.replset
-#
-# also, when connecting to specificallt to a replicaset secondary, would find one connected to the primary:
-#
-# mongo --host bogus-replica-set/172.17.8.102:27017 --eval "printjson(rs.isMaster())"

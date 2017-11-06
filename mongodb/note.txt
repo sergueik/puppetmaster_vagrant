@@ -1,0 +1,42 @@
+potential serverspec tests:
+
+connect to replicaset via mongo shell host option
+mongo --host bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017 --eval "printjson(rs.status())"
+
+rs.isMaster()
+{
+        "setName" : "bogus-replica-set",
+        "setVersion" : 1,
+        "ismaster" : true,
+        "secondary" : false,
+        "hosts" : [
+                "172.17.8.101:27017",
+                "172.17.8.103:27017",
+                "172.17.8.102:27017"
+        ],
+        "primary" : "172.17.8.101:27017",
+        "me" : "172.17.8.101:27017",
+        "electionId" : ObjectId("59e4e796b645887cf43163f4"),
+        "maxBsonObjectSize" : 16777216,
+        "maxMessageSizeBytes" : 48000000,
+        "maxWriteBatchSize" : 1000,
+        "localTime" : ISODate("2017-10-16T17:26:14.780Z"),
+        "maxWireVersion" : 2,
+        "minWireVersion" : 0,
+        "ok" : 1
+}
+
+from mongo shell
+mongo  --eval "conn = new Mongo('bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017') ; db = conn.getDB('local') ; db.getCollectionNames().join('\n');"
+conn = new Mongo("bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017") ; db = cnn.getDB("local") ;
+local
+me
+oplog.rs
+slaves
+startup_log
+system.indexes
+system.replset
+
+also, when connecting to specificallt to a replicaset secondary, would find one connected to the primary:
+
+mongo --host bogus-replica-set/172.17.8.102:27017 --eval "printjson(rs.isMaster())"
