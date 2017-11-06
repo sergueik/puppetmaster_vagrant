@@ -33,11 +33,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 # Install wget
 sudo apt-get install -qqy curl wget git;
-
-sed -e '/templatedir/ s/^#*/#/' -i.back /etc/puppet/puppet.conf
+if [[ -f '/etc/puppet/puppet.conf' ]] ; then
+  sed -i.back  -e '/templatedir/s/^#*/#/' /etc/puppet/puppet.conf
+fi
 
 ## set local/fastest mirror
 mv /etc/apt/sources.list /etc/apt/sources.list.orig
+
+gpg --keyserver pgp.mit.edu --recv-key '7F438280EF8D349F'
+gpg -a --export EF8D349F | apt-key add -
 
 cat > /etc/apt/sources.list <<EOF
 deb mirror://mirrors.ubuntu.com/mirrors.txt xenial main restricted universe multiverse
@@ -48,7 +52,8 @@ EOF
 sudo apt-get -qqy update
 
 ## set local timezone
-export tz=`wget -qO - http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\(.*\)<\/TimeZone>.*/\1/p'` &&  sudo timedatectl set-timezone $tz
+# sed: -e expression #1, char 33: unknown option to `s'
+export tz=`wget -qO - http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\\(.*\\)<\\/TimeZone>.*/\\1/p'` &&  sudo timedatectl set-timezone $tz
 
 MODULE_PATH='/etc/puppetlabs/code/environments/production/modules'
 
@@ -60,6 +65,10 @@ fi
 if [ ! -d ${MODULE_PATH}/apt ]; then
  # need recent version
  puppet module install 'puppetlabs-apt' --version '2.4.0'
+fi
+if [ ! -d ${MODULE_PATH}/mongodb ]; then
+ # need latest version
+ puppet module install 'puppetlabs-mongodb' --version '1.0.0'
 fi
 if [ ! -d ${MODULE_PATH}/java ]; then
  puppet module install 'puppetlabs-java'
@@ -75,7 +84,7 @@ if [ ! -d ${MODULE_PATH}/nodejs ]; then
 fi
 if [ ! -f /etc/init.d/kibana ]; then
  sudo cp /vagrant/kibana4_init /etc/init.d/kibana
- sudo sed -i 's/\r//' /etc/init.d/kibana
+ sudo sed -i 's/\\r//' /etc/init.d/kibana
  sudo chmod +x /etc/init.d/kibana
  sudo update-rc.d kibana defaults
  wget -q http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
@@ -83,10 +92,17 @@ fi
 
 # http://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/#
 # https://stackoverflow.com/questions/37815790/syntaxerror-unexpected-token-function-async-await-nodejs
-sudo apt-get install python-software-properties
+sudo apt-get install -qqy python-software-properties
 curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
 sudo apt-get install -qqy nodejs
 
   END_OF_SHELL_SCRIPT
-  config.vm.provision 'shell', inline: '/opt/puppetlabs/bin/puppet apply --modulepath=/etc/puppetlabs/code/environments/production/modules /vagrant/manifests/default.pp'
+# workaround Puppet 4 / Vagrant compatibility issue
+config.vm.provision 'shell', inline: '/opt/puppetlabs/bin/puppet apply --modulepath=/etc/puppetlabs/code/environments/production/modules /vagrant/manifests/default.pp'
+ # config.vm.provision :puppet do |puppet|
+ #    puppet.manifests_path = '/vagrant/manifests/'
+ #    puppet.manifest_file  = 'default.pp'
+ #  # NOTE:  the module_path is assumed to exist on the host machine
+ #  # puppet.module_path    = '/etc/puppetlabs/code/environments/production/modules'
+ #  end
 end
