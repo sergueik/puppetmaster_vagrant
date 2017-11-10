@@ -1,21 +1,22 @@
 potential serverspec tests:
 
 connect to replicaset via mongo shell host option
-mongo --host bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017 --eval "printjson(rs.status())"
+mongo --quiet --host replica-set/mongo-0:27017,mongo-1:27017,mongo-2:27017 --eval "printjson(rs.status())"| sed '/Starting/d'
+# NOTE: still does not get accepted by jq
 
 rs.isMaster()
 {
-        "setName" : "bogus-replica-set",
+        "setName" : "replica-set",
         "setVersion" : 1,
         "ismaster" : true,
         "secondary" : false,
         "hosts" : [
-                "172.17.8.101:27017",
-                "172.17.8.103:27017",
-                "172.17.8.102:27017"
+                "mongo-1:27017",
+                "mongo-2:27017",
+                "mongo-3:27017"
         ],
-        "primary" : "172.17.8.101:27017",
-        "me" : "172.17.8.101:27017",
+        "primary" : "mongo-1:27017",
+        "me" : "mongo-1:27017",
         "electionId" : ObjectId("59e4e796b645887cf43163f4"),
         "maxBsonObjectSize" : 16777216,
         "maxMessageSizeBytes" : 48000000,
@@ -26,9 +27,9 @@ rs.isMaster()
         "ok" : 1
 }
 
-from mongo shell
-mongo  --eval "conn = new Mongo('bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017') ; db = conn.getDB('local') ; db.getCollectionNames().join('\n');"
-conn = new Mongo("bogus-replica-set/172.17.8.101:27017,172.17.8.102:27017,172.17.8.103:27017") ; db = cnn.getDB("local") ;
+# from mongo shell
+mongo  --eval "conn = new Mongo('replica-set/mongo-1:27017,mongo-2:27017,mongo-3:27017') ; db = conn.getDB('local') ; db.getCollectionNames().join('\n');"
+
 local
 me
 oplog.rs
@@ -37,6 +38,6 @@ startup_log
 system.indexes
 system.replset
 
-also, when connecting to specificallt to a replicaset secondary, would find one connected to the primary:
+# also, when connecting to specificallt to a replicaset secondary, would find one connected to the primary:
 
-mongo --host bogus-replica-set/172.17.8.102:27017 --eval "printjson(rs.isMaster())"
+mongo --host replica-set/mongo-2:27017 --eval "printjson(rs.isMaster())"
