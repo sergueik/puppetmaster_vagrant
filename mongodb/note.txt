@@ -1,8 +1,33 @@
 potential serverspec tests:
 
-connect to replicaset via mongo shell host option
-mongo --quiet --host replica-set/mongo-0:27017,mongo-1:27017,mongo-2:27017 --eval "printjson(rs.status())"| sed '/Starting/d'
+connect to single host of the replica set and check if it is master 
+mongo  --quiet --eval 'printjson(rs.isMaster())'
+{
+        "setName" : "rs",
+        "setVersion" : 1,
+        "ismaster" : false,
+        "secondary" : true,       
+        "hosts" : [
+                "sample-mongo-1:27017",
+                "sample-mongo-2:27017",
+                "sample-mongo-3:27017"
+        ],
+        "primary" : "sample-mongo-1:27017",
+        "me" : "sample-mongo-3:27017",
+        "maxBsonObjectSize" : 16777216,
+        "maxMessageSizeBytes" : 48000000,
+        "maxWriteBatchSize" : 1000,
+        "localTime" : ISODate("2017-11-17T15:38:10.085Z"),
+        "maxWireVersion" : 3,
+        "minWireVersion" : 0,
+        "ok" : 1
+}
+mongo --quiet --host replica-set/sample-mongo-127017,sample-mongo-2:27017,sample-mongo-3:27017 --quiet --eval 'printjson(rs.isMaster())'
+#  | sed '/Starting/d'
 # NOTE: still does not get accepted by jq
+
+NETWORK  starting new replica set monitor for replica set rs with seeds sample-mongo-1:27017,sample-mongo-2:27017,sample-mongo-3:27017
+NETWORK  [ReplicaSetMonitorWatcher] starting
 
 rs.isMaster()
 {
@@ -11,11 +36,11 @@ rs.isMaster()
         "ismaster" : true,
         "secondary" : false,
         "hosts" : [
-                "mongo-1:27017",
-                "mongo-2:27017",
-                "mongo-3:27017"
+                "sample-mongo-1:27017",
+                "sample-mongo-2:27017",
+                "sample-mongo-3:27017"
         ],
-        "primary" : "mongo-1:27017",
+        "primary" : "sample-mongo-1:27017",
         "me" : "mongo-1:27017",
         "electionId" : ObjectId("59e4e796b645887cf43163f4"),
         "maxBsonObjectSize" : 16777216,
