@@ -31,6 +31,16 @@ module Serverspec::Type
       end
     end
 
+    def stdout_as_data
+      begin
+        @res = eval(command_result.stdout)
+        # pp @res
+        @res
+      rescue => e
+        nil
+      end
+    end
+
     def stderr
       command_result.stderr
     end
