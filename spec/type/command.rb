@@ -34,7 +34,13 @@ module Serverspec::Type
     def stdout_as_data
       begin
         # hack around logstash logging its operations together with rubydebug output
-        rawdata = command_result.stdout.split(/\r?\n/).reject { |line| line =~ /Sending Logstash's/ ; }.reject { |line| line =~ /@timestamp/i }.reject {|line| line =~ /(?:_dateparsefailure|_grokparsefailure)/ } 
+        rawdata = command_result.stdout.split(/\r?\n/).reject { |line|
+          line =~ /(?:No log4j2 configuration file found|Sending Logstash's)/ ;
+          }.reject { |line|
+          line =~ /@timestamp/i
+          }.reject {|line|
+          line =~ /(?:_dateparsefailure|_grokparsefailure)/
+        } 
         @res = eval(rawdata.join("\n"))
         # pp @res
         @res
