@@ -36,9 +36,9 @@ module Serverspec::Type
         # hack around logstash logging its operations together with rubydebug output
         rawdata = command_result.stdout.split(/\r?\n/).reject { |line|
           line =~ /(?:No log4j2 configuration file found|Sending Logstash's)/ ;
-          }.reject { |line|
+        }.reject { |line|
           line =~ /@timestamp/i
-          }.reject {|line|
+        }.reject {|line|
           line =~ /(?:_dateparsefailure|_grokparsefailure)/
         } 
         @res = eval(rawdata.join("\n"))
