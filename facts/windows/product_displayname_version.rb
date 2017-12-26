@@ -42,3 +42,47 @@ if Facter.value(:kernel) == 'windows'
     end
   end
 end  
+# alternative code:
+
+
+# name of the custom fact
+fact_name = 'product_version'
+if Facter.value(:kernel) == 'windows'
+  require 'win32/registry'
+  def registry_uninstall_version(product_displayname)
+    # e.g. Puppet 'Puppet Agent (64-bit)'
+    debug = false
+    product_version = nil
+    found_product = nil
+    $access = Win32::Registry::KEY_READ | 0x100 # Win32::Registry::KEY_ALL_ACCESS
+    Win32::Registry::HKEY_LOCAL_MACHINE.open("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall", $access ) do |reg_key| ;
+      found_product = nil
+      reg_key.each_key do |subkey_name|
+        Win32::Registry::HKEY_LOCAL_MACHINE.open("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\#{subkey_name}", $access ) do |reg_subkey|
+          reg_subkey.each do |name, type, data|
+            if name.eql?('DisplayVersion')
+              product_version = data
+            end
+            if name.eql?('DisplayName')
+              if data == product_displayname
+                found_product = true
+              end
+            end
+          end
+          if found_product
+            break
+          end
+        end
+      end
+    end
+    if found_product
+      product_version
+    end
+  end
+  Facter.add(fact_name) do
+    setcode do
+      registry_uninstall_version('Puppet Agent (64-bit)')
+      # product_version '1.7.1'
+    end
+  end
+end
