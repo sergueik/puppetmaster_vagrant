@@ -21,7 +21,7 @@ if Facter.value(:kernel) == 'windows'
                 found_name = true
               end
             end
-          end
+          endd
           if found_name
             product_version = found_data
             if debug
@@ -48,7 +48,9 @@ end
 # name of the custom fact
 fact_name = 'product_version'
 if Facter.value(:kernel) == 'windows'
+  # NOTE: discovered that changing the case to require 'Win32/registry'in the next line leads to a ton of warnings under facter 
   require 'win32/registry'
+  # Select package version from uninstall keys that match DisplayName
   def registry_uninstall_version(product_displayname)
     # e.g. Puppet 'Puppet Agent (64-bit)'
     debug = false
@@ -81,6 +83,8 @@ if Facter.value(:kernel) == 'windows'
   end
   Facter.add(fact_name) do
     setcode do
+      # suppress the warnings
+      $VERBOSE = nil
       registry_uninstall_version('Puppet Agent (64-bit)')
       # product_version '1.7.1'
     end
