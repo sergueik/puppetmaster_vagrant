@@ -3,6 +3,11 @@ require 'yaml'
 require 'json'
 require 'csv'
 
+# use embedded XML  class
+# https://www.xml.com/pub/a/2005/11/09/rexml-processing-xml-in-ruby.html
+require 'rexml/document'
+include REXML
+
 # origin: https://github.com/mizzy/serverspec/blob/master/lib/serverspec/type/command.rb
 # monkey-patching the Command class in the uru environment
 module Serverspec::Type
@@ -17,16 +22,29 @@ module Serverspec::Type
         # pp @res
         @res
       rescue => e
+        $stderr.puts e.to_s
         nil
       end
     end
 
+    def stdout_as_xml
+      begin
+        @res = Document.new(command_result.stdout)
+        # pp @res
+        @res
+      rescue => e
+        $stderr.puts e.to_s
+        nil
+      end
+    end
+    
     def stdout_as_yaml
       begin
         @res = YAML.load(command_result.stdout)
         # pp @res
         @res
       rescue => e
+        $stderr.puts e.to_s
         nil
       end
     end
