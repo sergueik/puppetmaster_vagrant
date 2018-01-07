@@ -16,6 +16,17 @@ module Serverspec::Type
       command_result.stdout
     end
 
+    def stdout_as_csv
+      begin
+        @res = CSV.parse(command_result.stdout)
+        # pp @res
+        @res
+      rescue => e
+        $stderr.puts e.to_s
+        nil
+      end
+    end
+
     def stdout_as_json
       begin
         @res = JSON.parse(command_result.stdout)
