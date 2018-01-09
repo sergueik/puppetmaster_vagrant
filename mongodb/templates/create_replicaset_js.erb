@@ -1,0 +1,6 @@
+config = {
+  _id: "<%= @replicaset_name -%>",
+  members: [ <%= @replicaset_members_expression %> ]
+};
+printjson(config);
+rs.initiate(config);

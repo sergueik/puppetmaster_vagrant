@@ -1,0 +1,18 @@
+#!/bin/sh
+
+NODES='<%= @cluster_peers -%>'
+PORT='<%= @port -%>'
+
+for NODE in $NODES ;
+do
+  echo 'quit' |  telnet $NODE $PORT 2>& 1 | grep -v 'Trying'|grep -Eqvi 'Connetion refused|No route to host'
+  if [[ $? != '0' ]] ;  then
+    echo "${NODE} is down"
+    exit 1
+  else
+    echo "${NODE} is responding"
+  fi
+done
+echo 'Done.'
+exit 0
+

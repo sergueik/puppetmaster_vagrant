@@ -1,0 +1,1 @@
+mongo --quiet --eval 'printjson(rs.isMaster())'| grep primary | grep -E '(<%= @mongodb_replicaset_members -%>):<%= @port -%>'

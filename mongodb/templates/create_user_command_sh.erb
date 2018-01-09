@@ -1,0 +1,15 @@
+#!/bin/bash
+CNT=0
+STATUS=1
+MAX_RETRY=5
+TMP_FOLDER='/var/tmp'
+while [ $STATUS != '0' ]
+do
+  CNT=$((CNT = CNT + 1)),.
+  mongo --host <%= @replicaset_name -%>/<%= @mongodb_configure_node -%>:<%= @port -%> -u <%= @admin_user -%> -p <%= @admin_password -%> --authenticatonDatabase 'admin' < "${TMP_FOLDER}/create_database_user.js"
+  STATUS=$?
+  if [[ $CNT > $MAX_RETRY ]] ; then
+  break
+  fi
+  sleep 10
+done

@@ -1,0 +1,12 @@
+database_name = "<%= @admin_database -%>"
+
+db_handle = db.getSiblingDb(database_name)
+
+db_handle.createUser({
+  user: "<%= @admin_user -%>",
+  pwd: "<%= @admin_password -%>",
+  roles: [
+    { role: "userAdminAnyDatabase", db: database_name }
+  ]
+  })
+
