@@ -1,21 +1,31 @@
 require 'spec_helper'
-# use embedded XML  class
+# use embedded XML class
 # https://www.xml.com/pub/a/2005/11/09/rexml-processing-xml-in-ruby.html
 require 'rexml/document'
 include REXML
 require 'spec_helper'
-context 'Jenkins' do
+
+# NOTE: malformed XML would abort the spec run altogether.
+context 'Detect malformed XML Document in Jenkins' do
   jobs_dir = '/opt/jenkins/jobs'
   [
     'build1',
     'build2',
     'build3',
   ].each do |job|
-    context "able to load #{job}" do
-      file = File.new("#{jobs_dir}/#{job}/config.xml")
-      doc = Document.new(file)
-      puts doc.version
-      it { should match 'able to load' }
+    context "Able to load #{job} config" do
+      file_path = "#{jobs_dir}/#{job}/config.xml"
+      if File.exists?(file_path)
+        begin
+          file = File.new(file_path)
+        rescue => ex
+          $stderr.puts ex.to_s
+          # throw ex
+        end
+        doc = Document.new(file)
+        puts doc.version
+        it { should match 'Able to load' }
+      end
     end
   end
 end
