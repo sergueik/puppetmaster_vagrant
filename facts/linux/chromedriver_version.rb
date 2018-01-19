@@ -2,7 +2,7 @@
 Facter.add("chromedriver_version") do
   setcode do
     begin
-      /^ChromeDriver\s+(\d+\.\d+\.\d+)\s+.*$/.match(Facter::Util::Resolution.exec('chromedriver --version 2>&1')).at(1)
+      /^ChromeDriver\s+(\d+\.\d+\.\d+)\s+.*$/.match(Facter::Util::Resolution.exec('chromedriver --version 2>&1')).captures.at(0)
     rescue
       false
     end
