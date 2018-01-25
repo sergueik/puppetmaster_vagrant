@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<Info version="1.0.1" platform="win64">  
+  <Product name="Venafi Agent" version="17.2.0.0">
+    <Date value="06/25/17 22:05:05" timestamp="1498449905"/>
+    <File build="69218" name="config.sql">
+      <Rpath value="Agent/Data/"/>
+      <Rtag value="%DB_DIR%"/>
+      <Sum value="0af288658960bef2bf9cc30f9eb63496c9159ad0846c9e91c1395853b35854ed"/>
+      <Permission value="438"/>
+    </File>
+    <Library build="52027" name="apr_ldap-1.dll">
+      <Rpath value="Agent/Libs/"/>
+      <Rtag value="%LIBS_DIR%"/>
+      <Sum value="4c9a7127bd2b67c258b4bf5721ad4fd68af78a03d4798b3dde8e2edb07358033"/>
+      <Permission value="438"/>
+    </Library>
+  </Product>
+</Info>
