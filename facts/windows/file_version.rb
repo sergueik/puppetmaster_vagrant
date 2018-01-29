@@ -76,6 +76,8 @@ if Facter.value(:kernel) == 'windows'
         rstring = result.unpack('v*').map{|s| s.chr if s<256 } * ''
         r = /FileVersion..(.*?)\000/.match(rstring)
         file_version = "#{r ? r[1] : '??' }"
+        # alternatively
+        # file_version = r.to_s.split(/\000/)[1]
       end
     end
   end
