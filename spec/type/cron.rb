@@ -40,7 +40,7 @@ Specinfra::Command::Base::Cron.class_eval do
     # STDERR.puts  entry
     # STDERR.puts '---'
     if user.nil?
-      "crontab -l | grep '#{entry}'"
+      "cat /etc/cron.d/* /etc/crontab /var/spool/cron/* /var/spool/cron/crontabs/* 2> /dev/nul | grep '#{entry}'"
     else
       "crontab -u #{escape(user)} -l | grep '#{entry}'"
     end
@@ -48,7 +48,7 @@ Specinfra::Command::Base::Cron.class_eval do
 
   def self.get_table(user = nil)
     if user.nil?
-      'crontab -l'
+      'cat /etc/cron.d/* /etc/crontab /var/spool/cron/* /var/spool/cron/crontabs/* 2> /dev/null'
     else
       "crontab -u #{escape(user)} -l"
     end
