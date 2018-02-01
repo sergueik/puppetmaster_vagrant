@@ -1,6 +1,6 @@
 require 'spec_helper'
 context 'mongodb' do
-  context 'Connecting to replica set' do
+  context 'Connecting to replica set' do
     rs_name = 'rs'
     # https://stackoverflow.com/questions/13912765/how-do-you-connect-to-a-replicaset-from-a-mongodb-shell
     rs_members = [
@@ -34,4 +34,4 @@ context 'mongodb' do
       its(:exit_status) {should eq 0 }
     end
   end
-end  
+end
