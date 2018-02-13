@@ -7,7 +7,8 @@ if File.exists?( 'spec/serverspec/versions.rb')
 context 'Hypervisor' do
   describe command(<<-EOF
     $manufacturers =  @(
-      'Oracle Corporation'
+      'Oracle Corporation',
+      'VMware, Inc.'
     )
     $items = get-wmiobject -class 'Win32_PnPEntity' -namespace 'root\\CIMV2' -computername '.' |
     where-object { $_.Status -eq 'OK' } |
@@ -37,5 +38,12 @@ context 'Hypervisor' do
     ) do
       its(:stdout) { should match Regexp.new('Name: VirtualBox Device' ) }
       its(:stdout) { should match Regexp.new('Service: VBoxGuest' ) }
+
+      # its(:stdout) { should match Regexp.new('Name: VMware VMCI Bus Device' ) } 
+      # its(:stdout) { should match Regexp.new('Service: vmci' ) } 
+
+
+      # its(:stdout) { should match Regexp.new('Name: VMware VMCI Host Device' ) }
+      # its(:stdout) { should match Regexp.new('Service: vmci' ) } 
     end
   end
