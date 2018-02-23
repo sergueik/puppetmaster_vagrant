@@ -9,9 +9,8 @@ context 'xmllint' do
     its(:stderr) { should be_empty }
   end
   end
-  context 'querying XPaths' do
-    catalina_version = '8.0.43'
-    catalina_home = "/apps/tomcat/#{catalina_version}"
+  context 'querying Tomcat configuration XPaths with Namespaces' do
+    catalina_home = '/apps/tomcat/current' 
     web_xml = "#{catalina_home}/conf/web.xml"
     #  tomcat configuration is heavily name-spaced
     describe command(<<-EOF
@@ -38,5 +37,27 @@ context 'xmllint' do
       its(:stdout) { should match Regexp.new(servlet_class_name, Regexp::IGNORECASE) }
       its(:stderr) { should be_empty }
     end
+  end
+end
+
+context 'querying tomcat configuration simple XPaths value validation' do
+  catalina_home = '/apps/tomcat/current'
+  server_xml = "#{catalina_home}/conf/server.xml"
+  port = '8443'
+  ciphers = [
+    'TLS_RSA_WITH_AES_128_CBC_SHA',
+    'TLS_RSA_WITH_AES_128_CBC_SHA256',
+    'TLS_RSA_WITH_AES_128_GCM_SHA256',
+    'TLS_RSA_WITH_AES_256_CBC_SHA',
+    'TLS_RSA_WITH_AES_256_CBC_SHA256',
+    'TLS_RSA_WITH_AES_256_GCM_SHA384'
+  ]
+  describe command(<<-EOF
+    xmllint --xpath "/Server/Service/Connector[@port='#{port}']/@ciphers" #{server_xml}
+  EOF
+  ) do
+    its(:exit_status) { should eq 0 }
+    its(:stdout) { should match Regexp.new('ciphers="' + ciphers.join(', ') + '"', Regexp::IGNORECASE) }
+    its(:stderr) { should be_empty }
   end
 end
