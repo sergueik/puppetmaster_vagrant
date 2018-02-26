@@ -3,16 +3,16 @@ require 'spec_helper'
 context 'xmllint' do
 
   context 'availability' do
-  describe command('which xmllint') do
-    its(:exit_status) { should eq 0 }
-    its(:stdout) { should match Regexp.new('/bin/xmllint', Regexp::IGNORECASE) }
-    its(:stderr) { should be_empty }
+    describe command('which xmllint') do
+      its(:exit_status) { should eq 0 }
+      its(:stdout) { should match Regexp.new('/bin/xmllint', Regexp::IGNORECASE) }
+      its(:stderr) { should be_empty }
+    end
   end
-  end
-  context 'querying Tomcat configuration XPaths with Namespaces' do
+  context 'Tomcat web.xml configuration ' do
+    # XPaths with namespaces
     catalina_home = '/apps/tomcat/current' 
     web_xml = "#{catalina_home}/conf/web.xml"
-    #  tomcat configuration is heavily name-spaced
     describe command(<<-EOF
       xmllint --xpath "//*[local-name()='servlet']/*[local-name()='servlet-class']/text()" #{web_xml}
     EOF
@@ -39,7 +39,8 @@ context 'xmllint' do
     end
   end
 
-  context 'querying tomcat configuration simple XPaths value validation' do
+  context 'Tomcat server.xml configuration' do
+    # simple node attribute value validation
     catalina_home = '/apps/tomcat/current'
     server_xml = "#{catalina_home}/conf/server.xml"
     port = '8443'
@@ -60,7 +61,8 @@ context 'xmllint' do
       its(:stderr) { should be_empty }
     end
   end
-  context 'querying XPaths node set' do
+  context 'Jetty configuration' do
+    # querying DOM node set
     jetty_home = '/openidm'
     jetty_xml = "#{jetty_home}/conf/jetty.xml"
     ciphers = [
