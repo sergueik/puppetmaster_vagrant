@@ -15,6 +15,21 @@ context 'Augeas' do
       its(:exit_status) {should eq 0 }
     end
   end
+  context 'Use Puppet Augeas Provider to no-op modify the Apache httpd.conf' do
+    apache_home = '/apps/apache/current'
+    node_server_name = 'node-server-name'
+    describe command(<<-EOF
+      puppet apply -e 'augeas {"apache aug": lens => "Httpd.lns", incl => "#{apache_home}/etc/httpd/conf/httpd.conf", context => "/files/#{apache_home}/etc/httpd/conf/httpd.conf", changes => "set directive[.=\\"ServerName\\"]/arg \\"#{node_server_name}.puppet.localdomain\\" ",}'
+    EOF
+    ) do
+      # NOTE: using Puppet apply is a bad idea,
+      # since it leads to corrupting the configuration when no match found
+      let(:path) { '/bin:/usr/bin:/sbin:/opt/puppetlabs/bin'}
+      its(:stdout) { should match /Notice: Applied catalog/ }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
+    end
+  end
   context 'Use Augeas Commands to inspect the Tomcat server.xml' do
     tcp_port = '8443'
     catalina_home = '/apps/tomcat/current'
