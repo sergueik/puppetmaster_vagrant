@@ -82,4 +82,17 @@ context 'xmllint' do
       its(:stderr) { should be_empty }
     end
   end
+  context 'HTML attribute validation' do
+    describe command(<<-EOF
+      xmllint --html --xpath \\
+      '/html/body//form[@action="/account/login/"]//input[@type="password" or @type = "text"]'  \\
+      /opt/graphite/webapp/graphite/templates/login.html
+    EOF
+    ) do
+      its(:exit_status) { should eq 0 }
+      its(:stdout) { should match Regexp.new('autocomplete="false"' )}
+      its(:stdout) { should_not match 'HTML parser error' }
+      its(:stderr) { should be_empty }
+    end
+  end
 end
