@@ -4,7 +4,7 @@ context 'Postfix Local-Only Modtest' do
   postfix_state = command('systemctl status postfix').stdout
   if postfix_state =~ Regexp.new(Regexp.escape('active (running)'))
     describe port(25) do
-      it { should be_listening.with('127.0.0.1') }
+      it { should be_listening.on('127.0.0.1') }
     end
     # mongo insert tests
   else
