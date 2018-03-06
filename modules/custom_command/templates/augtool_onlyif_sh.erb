@@ -1,0 +1,29 @@
+#!/bin/sh
+
+NODE_SELECTOR='wso2registry/indexingConfiguration/lastAccessTimeLocation/#text';
+DEBUG=true
+NODE_DATA=${1:-some text}; 
+if $DEBUG ; then echo "NODE_DATA=\"$NODE_DATA\""; fi
+FILE_PATH='/home/vagrant/registry.xml'; 
+AUG_LENS='Xml.lns'
+SCRIPT_FILE='/tmp/dummy.aug'
+
+# NOTE: need to break lines 
+# Too many arguments. Command set takes only 2 arguments
+
+echo "set /augeas/load/xml/lens \"$AUG_LENS\"; set /augeas/load/xml/incl \"$FILE_PATH\"; load; match \"/files${FILE_PATH}/${NODE_SELECTOR}\" '${NODE_DATA}'; " |  sed -e 's/;/\n/g' >$SCRIPT_FILE
+if $DEBUG ; then
+  cat $SCRIPT_FILE ;
+fi
+export PATH=$PATH:/opt/puppetlabs/puppet/bin
+RESPONSE=$(augtool --noload --noautoload  --file $SCRIPT_FILE)
+if $DEBUG ; then
+  echo "augtool: " $RESPONSE
+fi
+if [[ $RESPONSE != "" ]] ; then  
+  echo "Exit with 0"
+  exit 0 ;
+else
+  echo "Exit with 1"
+  exit 1 ;
+fi
