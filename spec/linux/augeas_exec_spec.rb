@@ -66,7 +66,7 @@ context 'Augeas' do
     end
     context 'Single node' do
       class_name = 'org.apache.catalina.startup.VersionLoggerListener'
-      aug_path = "Server/Listener[1][#attribute/className="#{class_name}"]/#attribute/className"
+      aug_path = "Server/Listener[1][#attribute/className=\"#{class_name}\"]/#attribute/className"
       program=<<-EOF
         set /augeas/load/xml/lens "Xml.lns"
         set /augeas/load/xml/incl "#{xml_file}"
@@ -85,6 +85,28 @@ context 'Augeas' do
         its(:stderr) { should be_empty }
         its(:exit_status) {should eq 0 }
       end
+    end
+  end
+  context 'Matched node' do
+    class_name = 'org.apache.catalina.startup.VersionLoggerListener'
+    aug_path = "Server/Listener[#attribute/className=\"#{class_name}\"]/#attribute/className"
+    # the augtool match command returns a set of matching nodes in abbreviated aug path e.g.
+    aug_path_response = 'Server/Listener[1]/#attribute/className'
+    program=<<-EOF
+      set /augeas/load/xml/lens "Xml.lns"
+      set /augeas/load/xml/incl "#{xml_file}"
+      load
+      match /files#{xml_file}/#{aug_path} #{class_name}
+    EOF
+    describe command(<<-EOF
+      echo '#{program}' > #{aug_script}
+      augtool -f #{aug_script}
+    EOF
+    ) do
+      let(:path) { '/bin:/usr/bin:/sbin:/opt/puppetlabs/puppet/bin'}
+      its(:stdout) { should match Regexp.escape(aug_path_response) }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
     end
   end
 end
