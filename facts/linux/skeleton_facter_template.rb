@@ -11,9 +11,12 @@
 puppet_lib_home='/usr/share/ruby/vendor_ruby' # for atlas
 puppet_lib_home='/opt/puppetlabs/puppet/lib/ruby/vendor_ruby' # for enterprise
 
-$LOAD_PATH.insert(0, '#{puppet_lib_home}/facter/lib') # absent for enterprise
-$LOAD_PATH.insert(0, '#{puppet_lib_home}/hiera/lib')
-$LOAD_PATH.insert(0, '#{puppet_lib_home}/puppet/lib')
+$LOAD_PATH.insert(0, "#{puppet_lib_home}/facter/lib") # absent for enterprise
+$LOAD_PATH.insert(0, "#{puppet_lib_home}/hiera/lib")
+$LOAD_PATH.insert(0, "#{puppet_lib_home}/puppet/lib")
+# with Puppet 4.4.2 Enterprise the 'hiera', 'facter','puppet' directories are no longer present
+$LOAD_PATH.insert(0, puppet_lib_home)
+# $stderr.puts $LOAD_PATH
 
 require 'yaml'
 require 'puppet'
