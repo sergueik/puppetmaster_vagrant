@@ -1,0 +1,3 @@
+# this is a standalone Puppet fragment exec that is useful to place together with Puppetlabs transition custom type and make the 
+# latter refreshonly
+puppet apply -e '$service_name = "mongod.service" ; exec { "before trigger"  :  command => "/bin/systemctl status ${service_name}|/bin/grep \"active (running)\"", onlyif => "/bin/systemctl status ${service_name}|/bin/grep -q \"active (running)\"", logoutput => true }'
