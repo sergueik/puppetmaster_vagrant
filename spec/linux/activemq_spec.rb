@@ -237,24 +237,22 @@ context 'ActiveMQ' do
     end
   end
   context 'Basic' do
-    # origin https://www.codenotfound.com/jms-hello-world-activemq-maven.html
-    # see also https://examples.javacodegeeks.com/enterprise-java/jms/apache-activemq-hello-world-example/
+    # origins:
+    # https://www.codenotfound.com/jms-hello-world-activemq-maven.html
+    # https://examples.javacodegeeks.com/enterprise-java/jms/apache-activemq-hello-world-example/
+    # https://philipp-boss.de/blog/2013/07/activemq-simple-authentication-for-consumers-and-producers/
     activemq_home = '/opt/bitnami/activemq'
+    # ActiveMQ Connector Password
+    # https://docs.bitnami.com/virtual-machine/infrastructure/activemq/
     activemq_connector_username = 'admin'
     activemq_connector_password = 'ySrNNajZQ1RR'
+    activemq_queue = 'helloworld.q'
     path_separator = ':'
     jar_path = "#{activemq_home}/lib/"
-    jar_path = '/var/tmp/target/lib/'
     jars = [
           'activemq-all-5.15.2.jar',
-          'slf4j-api-1.7.25.jar',
-          'junit-4.12.jar',
-          'logback-core-1.2.3.jar',
     ]
-    # TODO: get rid of junit and log dependencies
     jars_cp = jars.collect{|jar| "#{jar_path}/#{jar}"}.join(path_separator)
-    server_ipaddress = '127.0.0.1'
-    server_port = 61616
     class_name = 'ActiveMQTest'
     sourcfile = "#{class_name}.java"
     source = <<-EOF
@@ -271,10 +269,6 @@ context 'ActiveMQ' do
       import org.apache.activemq.ActiveMQConnection;
       import org.apache.activemq.ActiveMQConnectionFactory;
 
-      import org.slf4j.Logger;
-      import org.slf4j.LoggerFactory;
-      import static org.junit.Assert.*;
-
       public class ActiveMQTest {
 
         private static Producer producer;
@@ -282,19 +276,19 @@ context 'ActiveMQ' do
 
         public static void main(String[] args) throws Exception {
           producer = new Producer();
-          producer.create("helloworld.q");
+          producer.create("#{activemq_queue}");
 
           consumer = new Consumer();
-          consumer.create("helloworld.q");
+          consumer.create("#{activemq_queue}");
 
           try {
             producer.sendName("John", "Doe");
 
             String greeting = consumer.getGreeting(1000);
-            assertEquals("Hello John Doe!", greeting);
+            System.out.println( greeting);
 
           } catch (JMSException e) {
-            fail("a JMS Exception occurred");
+            System.out.println("JMS Exception: " + e.toString());
           }
 
           producer.close();
@@ -302,9 +296,6 @@ context 'ActiveMQ' do
         }
 
         public static class Consumer {
-
-          private static final Logger LOGGER =
-              LoggerFactory.getLogger(Consumer.class);
 
           private static String NO_GREETING = "no greeting";
 
@@ -355,23 +346,15 @@ context 'ActiveMQ' do
 
               // retrieve the message content
               String text = textMessage.getText();
-              LOGGER.debug("consumer received message with text='{}'", text);
 
               // create greeting
               greeting = "Hello " + text + "!";
-            } else {
-              LOGGER.debug("consumer received no message");
             }
-
-            LOGGER.info("greeting={}", greeting);
             return greeting;
           }
         }
 
         public static class Producer {
-
-          private static final Logger LOGGER =
-              LoggerFactory.getLogger(Producer.class);
 
           private Connection connection;
           private Session session;
@@ -415,7 +398,6 @@ context 'ActiveMQ' do
             // send the message to the queue destination
             messageProducer.send(textMessage);
 
-            LOGGER.debug("producer sent message with text='{}'", text);
           }
         }
       }
@@ -431,8 +413,9 @@ context 'ActiveMQ' do
 
     ) do
         its(:exit_status) { should eq 0 }
-        its(:stdout) { should contain(/Successfully connected to tcp://localhost:61616/)  }
-        its(:stdout) { should contain(/greeting=Hello John Doe!/)  }
+        # NOTE: will still contain 'INFO | Successfully connected to tcp://localhost:61616'
+        # its(:stdout) { should contain(/Successfully connected to tcp://localhost:61616/)  }
+        its(:stdout) { should contain(/Hello John Doe!/)  }
     end
   end
 end
