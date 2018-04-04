@@ -1,4 +1,5 @@
 # based on: https://github.com/hashicorp/consul/tree/master/demo/vagrant-cluster
+# https://www.consul.io/intro/getting-started/services.html
 # used to test
 # https://www.consul.io/api/agent/check.html
 # https://www.consul.io/api/catalog.html
@@ -6,21 +7,23 @@
 # vi: set ft=ruby :
 
 consul_version = ENV['CONSUL_DEMO_VERSION']
-box_name = ENV['BOX_NAME'] ||'ubuntu/xenial64'
+box_name = ENV['BOX_NAME'] ||'ubuntu/trusty64'
 VAGRANTFILE_API_VERSION = '2'
 basedir = ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')
-box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
+box_memory = ENV.fetch('BOX_MEMORY', '512').to_i
 basedir = basedir.gsub('\\', '/')
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box =  box_name
   # Localy cached vagrant box image from https://atlas.hashicorp.com/Th33x1l3/boxes/vagrant-selenium/versions/0.2.1/providers/virtualbox.box
-  config_vm_box_name = 'xenial-server-amd64-vagrant-selenium.box'
+  # config_vm_box_name = 'xenial-server-amd64-vagrant-selenium.box'
+  config_vm_box_name = 'trusty-server-amd64-vagrant-selenium.box'
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
   config.vm.provision 'shell',
     env: {'CONSUL_VERSION' => consul_version},
     inline: <<-SHELL
 # echo Clearing the proxy settings
+# this is only necessary for xenial-server-amd64-vagrant-selenium.box 
 sed -i 's/^/# /' /etc/apt/apt.conf.d/01proxy
 sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
 rm -f /etc/profile.d/proxy.sh
@@ -62,6 +65,7 @@ sudo chmod a+w /etc/consul.d
     n.vm.hostname = 'node2'
     n.vm.network 'private_network', ip: '172.20.20.11'
   end
+  # only required for 
   config.vm.boot_timeout = 600
   config.vm.provider :virtualbox do |v|
     v.customize ['modifyvm', :id, '--cableconnected1', 'on']
