@@ -37,9 +37,27 @@ output {
   EOF
 # https://discuss.elastic.co/t/logstash-grok-filter-for-apache-customized-logs/92915
 # https://www.elastic.co/guide/en/kibana/6.1/xpack-grokdebugger.html
+# https://github.com/elastic/logstash/blob/v1.4.2/patterns/grok-patterns
+# http://svops.com/blog/changing-the-events-date/
   data = <<-EOF
 127.0.0.1 [11/Dec/2013:00:01:45 -0800] GET  200 3891 /index.html "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/25.0"
 127.0.0.1 GET /index.html 15824 0.043 
+  EOF
+  result = <<-EOF
+    ERROR StatusLogger No log4j2 configuration file found. Using default configuration: logging only errors to the console.    
+    Sending Logstash's logs to /var/log/logstash which is now configured via log4j2.properties      
+    {
+       "duration" => "0.043",
+       "request" => "/index.html",
+       "@timestamp" => 2018-03-19T23:44:18.772Z,
+       "method" => "GET",
+       "bytes" => "15824",
+       "clientip" => "127.0.0.1",
+       "@version" => "1",
+       "host" => "test-server.puppet.localdomain",
+       "message" => "127.0.0.1 GET /index.html 15824 0.043 ",
+       "type" => "console"
+     }
   EOF
   describe command(<<-EOF
     pushd /tmp > /dev/null
