@@ -6,32 +6,33 @@ context 'File version' do # example of handling the convertto_json format
    'c:/programdata/chocolatey/choco.exe' =>  '0.9.9.11',
   }.each do |file_path, file_version|
     describe command(<<-EOF
-$file_path = '#{file_path}'
-if ($file_path -eq '') {
- $file_path = "${env:windir}\\system32\\notepad.exe"
-}
-try {
-  $info = get-item -path $file_path
-  write-output ($info.VersionInfo | convertto-json)
-} catch [Exception]  { 
-  write-output 'Error reading file'
-}
-EOF
-  ) do
+      $file_path = '#{file_path}'
+      if ($file_path -eq '') {
+       $file_path = "${env:windir}\\system32\\notepad.exe"
+      }
+      try {
+        # a long version of the command
+        # (Get-Item $file_path).VersionInfo.FileVersion
+        $info = get-item -path $file_path
+        write-output ($info.VersionInfo | convertto-json)
+      } catch [Exception] {
+        write-output 'Error reading file'
+      }
+    EOF
+    ) do
       its(:stdout) do
-
+        # NOTE:
         # x = '(abc)' # => "(abc)"
         # x.gsub(/[abc]/,"\\#{$&}")  # => "(\\a\\a\\a)"
         # x.gsub(/(a|b|c)/,"\\#{$&}") # => "(\\c\\c\\c)"
-
         should match Regexp.new('"FileName":  "' + file_path.gsub('/','\\').gsub(/\\/,'\\\\\\\\\\\\\\\\').gsub('(','\\(').gsub(')','\\)') + '"', Regexp::IGNORECASE)
         should match /"ProductVersion":  "#{file_version}"/
       end
-    end 
+    end
     describe file(file_path.gsub('/','\\')) do
       it { should be_version(file_version) }
     end
-  end 
+  end
 end
 
 
@@ -42,9 +43,9 @@ context 'File version Powershell 2.0' do # Powershell 2.0 lacks convertto-json c
     describe command(<<-EOF
     $file_path = '#{file_path}'
       try {
-        $info = get-item -path $file_path        
+        $info = get-item -path $file_path
         write-output ($info.VersionInfo | format-list)
-      } catch [Exception]  { 
+      } catch [Exception]  {
         write-output 'Error reading file'
       }
     EOF
@@ -52,6 +53,6 @@ context 'File version Powershell 2.0' do # Powershell 2.0 lacks convertto-json c
         its(:stdout) do
           should match /ProductVersion +: +#{file_version}/
         end
-      end 
-    end 
+      end
+    end
   end
