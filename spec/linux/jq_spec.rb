@@ -3,18 +3,19 @@ require 'spec_helper'
 context 'jq' do
 
   context 'availability' do
-  describe command('which jq') do
-    its(:exit_status) { should eq 0 }
-    its(:stdout) { should match Regexp.new('/bin/jq', Regexp::IGNORECASE) }
-    its(:stderr) { should be_empty }
+    describe command('which jq') do
+      its(:exit_status) { should eq 0 }
+      its(:stdout) { should match Regexp.new('/bin/jq', Regexp::IGNORECASE) }
+      its(:stderr) { should be_empty }
+    end
   end
-  end
-  context 'querying json' do
+  context 'querying JSON' do
+
+   datafile = '/tmp/sample.json'
 
    before(:each) do
-    json = '/tmp/sample.json'
     Specinfra::Runner::run_command( <<-EOF
-      cat <<END>#{json}
+      cat <<END>#{datafile}
 {
 "code": 401
 }
@@ -23,10 +24,12 @@ END
   )
   end
 
-    #  tomcat configuration is heavily name-spaced
+    # Tomcat configuration is heavily name-spaced
     describe command(<<-EOF
-      DATA='#{json}'
-      jq -r '.code' < ${DATA}
+
+      DATAFILE='#{datafile}'
+      jq -r '.code' < ${DATAFILE}
+
     EOF
     ) do
       its(:stdout) { should contain '401' }
