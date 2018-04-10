@@ -1,8 +1,38 @@
 require 'spec_helper'
+
 context 'Augeas' do
+
   catalina_home = '/apps/tomcat/current'
   aug_script = '/tmp/example.aug'
   xml_file = "#{catalina_home}/conf/server.xml"
+
+  # uses puppet augtool to verify expectations of the systemd service
+  # dependenciees:
+  #   $ augtool
+  #   augtool> ls /files/lib/systemd/system/systemd-networkd.socket/Unit/Before
+  #   value = sockets.target
+  #   augtool> quit
+  context 'Systemd Services' do
+    service_name = 'systemd-networkd.socket'
+    service_dependency = 'sockets.target'
+    program=<<-EOF
+      print /files/lib/systemd/system/#{service_name}/Unit/Before
+    EOF
+
+    describe command(<<-EOF
+      echo '#{program}' > #{aug_script}
+      augtool -f #{aug_script}
+    EOF
+    ) do
+      # NOTE: augtool may get installed strictly into Puppet applicarion directory
+      # or under /usr/bin
+      # when installed standalone by apt-get install augeas-tools
+      let(:path) { '/bin:/usr/bin:/sbin:/opt/puppetlabs/bin'}
+      its(:stdout) { should match Regexp.new("/files/lib/systemd/system/#{service_name}/Unit/Before/value = \"#{service_dependency}\"") }
+      its(:stderr) { should be_empty }
+      its(:exit_status) {should eq 0 }
+    end
+  end
   context 'Use Puppet Augeas Provider to no-op modify the Tomcat server.xml' do
     tcp_port = '8443'
     describe command(<<-EOF
