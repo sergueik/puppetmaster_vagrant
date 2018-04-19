@@ -1,5 +1,6 @@
 require 'spec_helper'
 # use embedded XML class
+# # alternarively use xmllint or xmlstarlet when installed
 # https://www.xml.com/pub/a/2005/11/09/rexml-processing-xml-in-ruby.html
 require 'rexml/document'
 include REXML

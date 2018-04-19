@@ -1,15 +1,19 @@
 require 'spec_helper'
 
 context 'udeploy' do
-  # udeploy is provisioned by Puppet but later may be removed by udeploy master server
+  # udeploy or buildforge agent are provisioned by Puppet but later may
+  # become managed and can be removed by udeploy master server
   package_name = 'udeploy'
+  application_jar = 'air-monitor.jar'
+  service_user = 'udeploy'
   package_state = command("/opt/puppetlbs/bin/puppet resource package '#{package_name}'").stdout
   if package_state != /ensure => 'purged'/
     context 'Process' do
-      app_jar = 'air-monitor.jar'
-      app_user = 'udeploy'
-      describe command("/bin/pgrep -a java -u #{app_user}") do
-        its(:stdout) {should match app_jar }
+      # there may be multiple java processes and
+      # the specinfra `process` type will fail to examine the right one
+      # running underlying command explicitly
+      describe command("/bin/pgrep -a java -u #{service_user}") do
+        its(:stdout) { should match application_jar }
       end
     end
     context 'Directory' do
@@ -25,8 +29,8 @@ context 'udeploy' do
         end
       end
     end
-      # more app-specific tests
   else
     # package was removed
+    # all app-specific tests are to be skipped
   end
 end

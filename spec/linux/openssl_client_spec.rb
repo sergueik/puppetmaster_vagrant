@@ -1,9 +1,10 @@
 require 'spec_helper'
+#
 # origin: http://securityevaluators.com/knowledge/blog/20151102-openssl_and_ciphers/
 context 'SSL ciphers and Protocols' do
   host = 'localhost'
   port = '8443'
-  protocols='ssl2 ssl3 tls1 tls1_1 tls1_2'
+  protocols = 'ssl2 ssl3 tls1 tls1_1 tls1_2'
   protocol = 'tls1_2'
   ciphers = [
     'AES256-GCM-SHA384',
@@ -17,9 +18,9 @@ context 'SSL ciphers and Protocols' do
     HOST='#{host}';\\
     PORT='#{port}';\\
     PROTOCOLS='#{protocols}' ;\\
-    for v in $PROTOCOLS; do \\
-    for c in $(openssl ciphers 'ALL:eNULL' | tr ':' ' '); do \\
-    openssl s_client -connect $HOST:$PORT -cipher $c -$v < /dev/null > /dev/null 2>&1 && echo -e "$v:\\t$c"; \\
+    for protocol in $PROTOCOLS; do \\
+    for cipher in $(openssl ciphers 'ALL:eNULL' | tr ':' ' '); do \\
+    openssl s_client -connect $HOST:$PORT -cipher $cipher -$prototol < /dev/null > /dev/null 2>&1 && echo -e "$protocol:\\t$cipher"; \\
     done; \\
     done
   EOF

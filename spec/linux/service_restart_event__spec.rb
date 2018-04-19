@@ -20,7 +20,7 @@ context 'Service Restart Verification' do
       echo "PROCESS=${PROCESS}"
       ps -opid,cmd -ax | grep "${PROCESS}"  |  grep -v 'grep'
     fi
-    
+
     PID=$(ps -opid,cmd -ax | grep "${PROCESS}" | grep -v 'grep' | sed -E 's/^  *([0-9][0-9]*) .*$/\\1/')
     if $DEBUG ; then
       echo "PID=${PID}"
@@ -30,7 +30,7 @@ context 'Service Restart Verification' do
       echo "Process $PID is $PROCESS_AGE_SECONDS seconds"
       echo "$CONFIG_FILE is $FILE_AGE seconds"
     fi
-    STATUS=0    
+    STATUS=0   
     if [[ $PROCESS_AGE_SECONDS -gt $FILE_AGE ]]; then
       echo 'Service was not restarted.'
       STATUS=1
@@ -38,7 +38,7 @@ context 'Service Restart Verification' do
       echo "Service has been restarted after configuration change."
       STATUS=0
     fi
-    exit $STATUS  
+    exit $STATUS 
     EOF
     ) do
       let(:path) { '/bin:/usr/bin:/sbin:/usr/local/bin:/opt/opendj/bin'}

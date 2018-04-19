@@ -15,7 +15,7 @@ context 'Tomcat server xml Test' do
     # Example emulates an tomcat server.xml configuration file using the example from
     # http://www.wellho.net/resources/ex.php4?item=a656/server.xml
     # NOTE: no leading whitespace allowed by XML spec
-    if content.to_s.empty? 
+    if content.to_s.empty?
       content = <<-EOF
 <?xml version="1.0"?>
       <Server port="8005" shutdown="SHUTDOWN">
@@ -77,7 +77,7 @@ context 'Tomcat server xml Test' do
         rescue NoMethodError => e
           $stderr.puts e.to_s
         end
-      end 
+      end
       $stderr.puts result
       it { result.should be_truthy }
     end

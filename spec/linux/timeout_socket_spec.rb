@@ -17,7 +17,7 @@ def is_port_open(ip, port)
         return false
       end
     end
-  rescue Timeout::Error
+  rescue Timeout::Error => e
   end
   return false
 end

@@ -11,7 +11,7 @@ if ['redhat', 'debian', 'ubuntu'].include?(os[:family])
   # on Linux
   jenkins_home = '/var/lib/jenkins'
 else
-  # on Windows 
+  # on Windows
   jenkins_home = 'C:/java/jenkins.2.321/master/'
 end
 
@@ -19,7 +19,7 @@ context 'Bad Example to skip XML test', :if => !test_xml do
   puts 'Skipped XML test: '
   puts "test_xml = '#{test_xml}'"
 end
-  
+
 context 'Jenkins' do
 
   context 'Plugins' do
@@ -46,7 +46,7 @@ context 'Jenkins' do
           it { should be_file }
         end
       end
-    end  
+    end
   end
 
   context 'Jobs' do
@@ -67,7 +67,7 @@ context 'Jenkins' do
     end
 
     context 'config.xml' do
-      if test_xml 
+      if test_xml
         {
           'pipeline' =>  [
             'plugin',

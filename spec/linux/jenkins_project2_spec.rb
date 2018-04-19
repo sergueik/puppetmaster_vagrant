@@ -5,6 +5,7 @@ require 'json'
 require 'csv'
 
 context 'Confirm able to load XML' do
+  jobs_dir = '/opt/jenkins/jobs'
   config_dir = '/vagrant'
   [
     'good.xml',
