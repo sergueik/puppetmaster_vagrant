@@ -29,9 +29,13 @@ context 'Artifact deployment' do
         echo curl -k -I $(facter $FACT_NAME)/$ARTIFACT_URL/$JAR_FILENAME\\| sed -n 's/Content-Length: \\([0-9][0-9]*\\)/\\1/p'
         curl -k -I $(facter $FACT_NAME)/$ARTIFACT_URL/$JAR_FILENAME| sed -n 's/Content-Length: \\([0-9][0-9]*\\)/\\1/p'
       fi
-      SIZE_TARGET=$(stat $CATALINA_HOME/lib/$JAR_FILENAME | sed -n  's/Size: \\([0-9][0-9]*\\)/\\1/p')
-      SIZE_SOURCE=$(curl -k -I $(facter $FACT_NAME)/$ARTIFACT_URL/$JAR_FILENAME| sed -n 's/Content-Length: \\([0-9][0-9]*\\)/\\1/p')
-      if [[ $(expr $SIZE_SOURCE - $SIZE_TARGET) -ne '0' ]] ; then
+      TARGET_SIZE=$(stat $CATALINA_HOME/lib/$JAR_FILENAME | sed -n  's/Size: \\([0-9][0-9]*\\)  *.*$/\\1/p')
+      SOURCE_SIZE=$(curl -k -I $(facter $FACT_NAME)/$ARTIFACT_URL/$JAR_FILENAME| sed -n 's/Content-Length: \\([0-9][0-9]*\\)/\\1/p')
+      if $DEBUG ; then
+        echo "Source size: '${SOURCE_SIZE}'"
+        echo "Target size: '${TARGET_SIZE}'"
+      fi
+      if [[ $(expr $SOURCE_SIZE - $TARGET_SIZE) -ne '0' ]] ; then
         echo Artifact size mismatch for $JAR_FILENAME
         exit 1
       else
