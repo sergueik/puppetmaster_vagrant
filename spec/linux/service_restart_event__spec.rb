@@ -25,7 +25,10 @@ context 'Service Restart Verification' do
     if $DEBUG ; then
       echo "PID=${PID}"
     fi
-    PROCESS_AGE=$(ps -o etime= -p $PID)    PROCESS_AGE_SECONDS=$(echo "${PROCESS_AGE}"| sed -E 's/(.*):(.+):(.+)/\\1*3600+\\2*60+\\3/;s/(.+):(.+)/\\1*60+\\2/' | bc)
+    PROCESS_AGE=$(ps -o etime= -p $PID)
+    # alternatively
+    # PROCESS_AGE=$(ps -ax -o etime,pid | grep $PID)
+    PROCESS_AGE_SECONDS=$(echo "${PROCESS_AGE}"| sed -E 's/(.*):(.+):(.+)/\\1*3600+\\2*60+\\3/;s/(.+):(.+)/\\1*60+\\2/' | bc)
     if $DEBUG ; then
       echo "Process $PID is $PROCESS_AGE_SECONDS seconds"
       echo "$CONFIG_FILE is $FILE_AGE seconds"
