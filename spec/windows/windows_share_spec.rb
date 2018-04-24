@@ -31,4 +31,26 @@ context 'Windows Shares' do
       its(:exit_status) { should eq 0 }
       its(:stdout) { should match( /<list of shares>/i ) }
   end
+  # origin: https://docs.microsoft.com/en-us/powershell/module/smbshare/get-smbshare?view=win10-ps
+  # Windows Server 2012, server service enabled and running
+  # NOTE: can get shares that are connected to a specific server, via $scopename
+  share_name = 'temp'
+  scope_name = '*'
+  describe command(<<-EOF
+    $share_name = '#{share_name}'
+    $scope_name = '#{scope_name}'
+    if ($scope_name -eq '' ) {
+      $scope_name = '*'
+    }
+    $computer = $env:computername
+    get-smbshare -name $share_name -scopeName $scope_name | format-list -property *
+
+    EOF
+  ) do
+      its(:exit_status) { should eq 0 }
+      # NOTE: Preparing modules for first use error
+      {'path' => 'c:\\temp'}.each do |key,value|
+        its (:stdout) { should match(Regexp.new( "#{key} * : *" + Regexp.escape(value), Regexp.IRNORECASE)) }
+    end
+  end
 end
