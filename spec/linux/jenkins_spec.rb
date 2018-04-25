@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'pp'
+
 begin
   require 'xmlsimple'
   test_xml = true
@@ -16,8 +17,8 @@ else
 end
 
 context 'Bad Example to skip XML test', :if => !test_xml do
-  puts 'Skipped XML test: '
-  puts "test_xml = '#{test_xml}'"
+  $stderr.puts 'Skipped XML test: '
+  $stderr.puts "test_xml = '#{test_xml}'"
 end
 
 context 'Jenkins' do
@@ -97,12 +98,22 @@ context 'Jenkins' do
           begin
             config = XmlSimple.xml_in("#{jenkins_home}/jobs/#{job_name}/config.xml")
             pp config.keys
-            pp config["plugin"] # {'plugin'=>'workflow-job@2.9',
+            pp config['plugin'] # {'plugin'=>'workflow-job@2.9',
           rescue ArgumentError => e
           end
         end
+
+        # NOTE: the root node could e.g. be com.tikal.jenkins.plugins.multijob.MultiJobProject
+        # if https://wiki.jenkins.io/display/JENKINS/Multijob+Plugin is used
+        describe command(<<-EOF
+          xmlsimple -xpath "name(//*[contains(local-name(),'Project') or contains(local-name(), 'project') or contains(local-name(), 'flow-definition') ])" "#{jenkins_home}/jobs/#{job_name}/config.xml"
+        EOF
+        ) do
+          let(:path) { '/bin:/usr/bin:/usr/local/bin'}
+          its(:stdout) { should match /(?:project|flow)/ }
+        end
       else
-        puts 'Skipped XML test for' + "#{jenkins_home}/jobs/#{job_name}/config.xml"
+        puts 'Skipped using xmlsimple gem for XML test'
       end
     end
 
