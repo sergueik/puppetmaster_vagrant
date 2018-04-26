@@ -106,7 +106,7 @@ context 'Jenkins' do
         # NOTE: the root node could e.g. be com.tikal.jenkins.plugins.multijob.MultiJobProject
         # if https://wiki.jenkins.io/display/JENKINS/Multijob+Plugin is used
         describe command(<<-EOF
-          xmlsimple -xpath "name(//*[contains(local-name(),'Project') or contains(local-name(), 'project') or contains(local-name(), 'flow-definition') ])" "#{jenkins_home}/jobs/#{job_name}/config.xml"
+          xmllint -xpath "name(//*[contains(local-name(),'Project') or contains(local-name(), 'project') or contains(local-name(), 'flow-definition') ])" "#{jenkins_home}/jobs/#{job_name}/config.xml"
         EOF
         ) do
           let(:path) { '/bin:/usr/bin:/usr/local/bin'}
@@ -114,6 +114,24 @@ context 'Jenkins' do
         end
       else
         puts 'Skipped using xmlsimple gem for XML test'
+      end
+    end
+    context 'Job retry plugin' do
+      jenkins_home = '/var/lib/jenkins'
+      class_name = 'Naginator'
+      job_name = 'sample_job'
+      describe command(<<-EOF
+        JENKINS_HOME='#{jenkins_home}'
+        CLASS_NAME='#{class_name}'
+        JOB_NAME='#job_name'
+        # some Jenkins nodes list the package / class name as the name of the node, others set it as an attribute
+        xmllint -xpath "name(//publishers/*[contains(local-name(),'${CLASS_NAME}') ])" "#{jenkins_home}/jobs/#{job_name}/config.xml"
+      EOF
+      ) do
+        let(:path) { '/bin:/usr/bin:/usr/local/bin' }
+        its(:stdout) { should match /(?:#{class_name})/ }
+        its(:stderr) { should be_empty }
+        its(:exit_status) {should eq 0 }
       end
     end
 
