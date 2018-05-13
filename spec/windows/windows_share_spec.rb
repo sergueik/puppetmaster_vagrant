@@ -32,6 +32,10 @@ context 'Windows Shares' do
       its(:stdout) { should match( /<list of shares>/i ) }
   end
   # origin: https://docs.microsoft.com/en-us/powershell/module/smbshare/get-smbshare?view=win10-ps
+  # https://github.com/karmafeast/windows_smb/blob/master/manifests/manage_smb_share.pp
+  # for registry configuration details see
+  # https://github.com/karmafeast/windows_smb/blob/master/manifests/manage_smb_server_config.pp
+  # https://github.com/karmafeast/windows_smb/blob/master/manifests/manage_smb_client_config.pp 
   # Windows Server 2012, server service enabled and running
   # NOTE: can get shares that are connected to a specific server, via $scopename
   share_name = 'temp'

@@ -1,8 +1,10 @@
 require_relative '../windows_spec_helper'
 
 context 'Loading assembly from the GAC' do
-
-  describe command (<<-EOF 
+  # see also: https://github.com/zappy-shu/puppet-windowsgac	
+  # https://blogs.msdn.microsoft.com/miguelnunez/2014/10/06/installing-dll-into-gac-with-powershell/ 
+  # https://msdn.microsoft.com/en-us/library/system.enterpriseservices.internal.publish.gacinstall(v=vs.110).aspx
+  describe command (<<-EOF
 [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
 $o = New-Object System.Windows.Forms.Form
 write-output ($o.getType().Namespace)
@@ -14,7 +16,7 @@ EOF
   end
 
   # http://www.madwithpowershell.com/2013/10/add-type-vs-reflectionassembly-in.html
-  describe command (<<-EOF 
+  describe command (<<-EOF
 $long_name = 'System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
 [reflection.assembly]::Load($long_name)
 EOF
@@ -24,7 +26,7 @@ EOF
 
   describe command (<<-EOF
 ([System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')).GetExportedTypes() |
-foreach-object { 
+foreach-object {
   if ($_.Name -eq 'Form') {
     write-output $_.NameSpace
   }
@@ -41,7 +43,7 @@ foreach-object {
     write-output ($assembly.Location  -replace '\\\\', '/')
     Write-output ('FullName:{0} ' -f $assembly.GetName().FullName  )
   EOF
-  
+
   ) do
     # expectations derived by running powershell snippet directly in Powershell x86
     its(:exit_status) {should eq 0 }
@@ -51,7 +53,7 @@ foreach-object {
     its(:stdout) {should match Regexp.new('v4.0_4.0.0.0__b77a5c561934e089') }
     its(:stdout) {should contain 'FullName:System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089') }
   end
-  
+
   describe command (<<-EOF
 $verify_assemblies = @(
   @{
@@ -65,7 +67,7 @@ $verify_assemblies | foreach-object {
 
   [void][System.Reflection.Assembly]::LoadWithPartialName($assembly_name)
   $loaded_assemblies = [System.Threading.Thread]::GetDomain().GetAssemblies()
-  $loaded_assemblies | where-object {$_.GetName().Name -match $assembly_name } | 
+  $loaded_assemblies | where-object {$_.GetName().Name -match $assembly_name } |
     foreach-object {
       if ( $_.GetName().FullName -ne $assembly_full_name ){
         Write-Error ('Wrong assembly for "{0}": "{1x}"' -f $assembly_name, $_.GetName().FullName)
@@ -78,7 +80,7 @@ $verify_assemblies | foreach-object {
     its(:stderr) { should be_empty }
   end
 
-  describe command (<<-EOF 
+  describe command (<<-EOF
 add-Type @"
 using System;
 using System.Windows.Forms;
@@ -103,8 +105,8 @@ public class ClassTest : Form
             myAssembly = myAssemblies[i];
 
       if(myAssembly != null)
-      { 
-         
+      {
+
          string name = myAssembly.GetName().Name;
          string assemblyName = myAssembly.GetName().FullName;
          byte[] publicKeyTokenBytes = myAssembly.GetName().GetPublicKeyToken();
@@ -124,7 +126,7 @@ public class ClassTest : Form
     its(:stderr) { should be_empty }
     its(:exit_status) {should eq 0 }
   end
-end 
+end
 
 
-     
+
