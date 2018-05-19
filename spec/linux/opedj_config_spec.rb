@@ -19,14 +19,22 @@ END
   )
   end
   {
-    'LDAP'  => '1389',
-    'HTTP'  => '8080',
-  }.each do |handler,port|
+    'LDAP'  => {
+      :port    => '1389',
+      :enabled => 'true'
+    },
+    'HTTP'  => {
+      :port    => '8080',
+      :enabled => 'true'
+    },
+  }.each do |handler,config|
+    port = config[:port]
+    enabled = config[:enabled]
     describe command(<<-EOF
       PORT='#{port}'
       # set -x
       HANDLER='#{handler} Connection Handler'
-      STATE='#{state}'
+      ENABLED='#{enabled}'
       DEBUG=#{debug}
       USER='user'
       PASSWORD='password'
@@ -35,15 +43,15 @@ END
       # DATA=$(/opt/opendj/bin/dsconfig --X --hostname $HOSTNAME --port 4444 -D $USER -w $PASSWORD --handler-name $HANDLER | grep -E '($PORT|$STATE)')
       # mock it
       DATAFILE='#{datafile}'
-      RESULT=$(cat $DATAFILE | grep -Ei '($PORT|enabled)')
+      CONFIG_RESULT=$(cat $DATAFILE | grep -Ei '($PORT|enabled)')
       if $DEBUG ; then
-        echo "RESULT=$RESULT"
+        echo "CONFIG_RESULT=$CONFIG_RESULT"
       fi
-      echo $RESULT| grep $PORT
+      echo $CONFIG_RESULT| grep $PORT
       STATUS=1
       if [ $? -eq 0 ]
       then
-        echo $RESULT| grep $STATE
+        echo $CONFIG_RESULT| grep $ENABLED
         if [ $? -eq 0 ]
         then
         echo "Success: Found $PORT"
@@ -62,4 +70,3 @@ END
     end
   end
 end
-
