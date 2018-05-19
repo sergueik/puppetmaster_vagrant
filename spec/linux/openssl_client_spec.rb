@@ -26,7 +26,7 @@ context 'SSL ciphers and Protocols' do
   EOF
   ) do
     # its(:exit_status) { should eq 0 }
-    ciphers.each do |cipher|
+    ciphers.each do |cipher|
       its(:stdout) { should match Regexp.new(protocol + ':\s+' + cipher, Regexp::IGNORECASE) }
       # TODO: negative lookahead
     end
