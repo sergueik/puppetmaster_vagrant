@@ -6,8 +6,10 @@ class profiles::bootstrap (
     'set useSecurity/#text false',
     'set port/#text 8000',
     'set securityRealm/#attribute/class "example attribute"',
-    'insert "test" before securityRealm/authContext',
-    'clear securityRealm/authContext', # this does not work
+    'insert "test" before securityRealm/authContext', # add node
+    'set securityRealm/test/#attribute/class "test class"', # set attribute 
+    'set securityRealm/test/#text "test text"', # set text
+    'clear securityRealm/authContext', # this does not appear to work
     'rm securityRealm/authContext', # this will work
   ],
 ) {
@@ -38,7 +40,7 @@ END
        # source =>'puppet:///modules/profiles/bootstrap/config.xml',
        content  => inline_epp($config_template, {'service_name' => 'xntpd', 'iburst_enable' => true}),
      }
-  -> augeas{ 'auges changes':
+  -> augeas{ 'augeas changes':
        incl    => '/var/lib/jenkins/config.xml',
        lens    => 'Xml.lns',
        context => '/files/var/lib/jenkins/config.xml/hudson',
