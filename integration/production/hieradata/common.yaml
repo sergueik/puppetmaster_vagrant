@@ -1,0 +1,19 @@
+---
+profiles::bootstrap::file: true
+profiles::bootstrap::setting: 'foo'
+# https://twiki.cern.ch/twiki/bin/view/Main/TerjeAndersenAugeas
+profiles::bootstrap::augeas_changes:
+  - 'set useSecurity/#text true'
+  - 'set slaveAgentPort/#text 9090'
+  - 'set securityRealm/#attribute/class org.jenkinsci.plugins.reverse_proxy_auth.ReverseProxySecurityRealm'
+  - 'set securityRealm/#attribute/plugin reverse-proxy-auth-plugin@1.4.0'
+  - 'set securityRealm/inhibitInferRootDN/#text false'
+  - 'set securityRealm/userSearch/#text uid={0}'
+  - 'set securityRealm/updateInterval/#text 15'
+  - 'set securityRealm/forwardedUser/#text ADFS_LOGIN'
+  - 'set securityRealm/headerGroups/#text ADFS_GROUP'
+  - 'set securityRealm/headerGroupsDelimiter/#text ;'
+  - 'clear securityRealm/proxyTemplate'
+  - 'clear securityRealm/authContext'
+  - 'clear securityRealm/authorityUpdateCache'
+  - 'clear securityRealm/userSearchBase'
