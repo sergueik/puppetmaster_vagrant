@@ -16,6 +16,20 @@ context 'XML validation' do
    ) do
      its(:exit_status) { should eq 0 }
    end
+   # XPaths with namespaces
+   describe command(<<-EOF
+     xmllint --xpath "/*[local-name()='hudson']/*[local-name()='securityRealm']/*[local-name()='filter']/*[local-name()='init-param']" /var/lib/jenkins/config.xml
+   EOF
+   ) do
+     its(:exit_status) { should eq 0 }
+     its(:exit_status) { should eq 0 }
+     # <init-param><param-name>antiClickJackingOption</param-name>
+     # <param-value>SAMEORIGIN</param-value>
+     # </init-param><init-param><param-name>antiClickJackingEnabled</param-name>
+     # <param-value>true</param-value>
+     its(:stdout) { should contain /SAMEORIGIN/  }
+
+   end
 end
 context 'XML validation 2' do
   describe file(xmlfile) do
@@ -35,4 +49,4 @@ context 'XML validation 2' do
     $stderr.puts result
     it { result.should be_truthy }
   end
-end  
+end

@@ -1,16 +1,7 @@
 <hudson>
 <useSecurity>true</useSecurity>
-  <slaveAgentPort>9090</slaveAgentPort>
+  <port>9090</port>
   <securityRealm class="org.jenkinsci.plugins.reverse_proxy_auth.ReverseProxySecurityRealm" plugin="reverse-proxy-auth-plugin@1.4.0">
-    <inhibitInferRootDN>false</inhibitInferRootDN>
-    <userSearch>uid={0}</userSearch>
-    <updateInterval>15</updateInterval>
-    <forwardedUser>ADFS_LOGIN</forwardedUser>
-    <headerGroups>ADFS_GROUP</headerGroups>
-    <headerGroupsDelimiter>;</headerGroupsDelimiter>
-    <proxyTemplate/>
-    <authContext/>
-    <authorityUpdateCache/>
-    <userSearchBase/>
+    <authContext>some data to disappear</authContext>
   </securityRealm>
-</hudson>  
+</hudson>
