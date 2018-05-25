@@ -1,7 +1,8 @@
 # TODO: hiera configuration is not correct.
 class profiles::bootstrap (
   Boolean $file         = false,
-  Boolean $exercise     = false,
+  Boolean $exercise     = false, # set true to exercise augeas resource
+  Boolean $security_modification     = true, # set true to exercice augtool command workaround for failing
   String $setting       = 'some setting',
   Array $augeas_testing_changes = [
     'set useSecurity/#text false',
@@ -33,15 +34,19 @@ class profiles::bootstrap (
     'set securityRealm/filter/init-param[1]/param-value/#text "SAMEORIGIN"',
   ],
   Array $augeas_security_part1_changes = [
+    "insert 'dummy' session-config",
+    "set 'dummy/#text' 'some text'"
+  ],
+  Array $augeas_security_part2_changes = [
     'insert "filter-mapping" before session-config',
     'set filter-mapping/filter-name/#text "httpHeaderSecurity"',
     'set filter-mapping/url-pattern/#text "/*"',
     'set filter-mapping/dispatcher/#text "REQUEST"',
   ],
-  Array $augeas_security_part2_changes = [
+  Array $augeas_security_part3_changes = [
     'insert "filter" before session-config',
     'set filter/filter-name/#text "httpHeaderSecurity"',
-    'set /filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"',
+    'set filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"',
     'set filter/async-supported/#text "true"',
     'insert "init-param" after filter/async-supported',
     'set filter/init-param/param-name/#text "antiClickJackingEnabled"',
@@ -55,8 +60,7 @@ class profiles::bootstrap (
   if $file {
     class { '::profiles::bootstrap::file': }
   }
-  notify {"test setting: ${setting} ${file}":
-  }
+
   $config_template = @(END)
 <hudson>
 <useSecurity>true</useSecurity>
@@ -99,33 +103,39 @@ END
        changes => $augeas_exercise_part2_changes,
      }
   }
-  augeas{ 'augeas web.xml security changes part 1':
-    incl    => '/usr/share/tomcat/conf/web.xml',
-    lens    => 'Xml.lns',
-    context => '/files/usr/share/tomcat/conf/web.xml',
-    changes => $augeas_security_part1_changes,
-    require => File['/var/lib/jenkins/web.xml'],
-  }
-  -> augeas{ 'augeas web.xml security changes part 2':
-    incl    => '/usr/share/tomcat/conf/web.xml',
-    lens    => 'Xml.lns',
-    context => '/files/usr/share/tomcat/conf/web.xml',
-    changes => $augeas_security_part2_changes,
-  }
+  if $security_modification {
+    file { '/tmp/script.au':
+      ensure => 'file',
+      source =>'puppet:///modules/profiles/bootstrap/script.au',
+    }
+    -> exec { 'Run agutool with script':
+      command   => 'augtool -f /tmp/script.au',
+      path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
+      provider  => shell,
+      logoutput => true,
+    }
 
-    # # roughly equivalent manual commands
-    # set /augeas/load/xml/lens 'Xml.lns'
-    # set /augeas/load/xml/incl  '/var/lib/jenkins/web.xml'
-    # load
-    # print /files//var/lib/jenkins/web.xml/web-app/filter-mapping/dispatcher
-    #
-    #
-    # insert '/files/var/lib/jenkins/web.xml/web-app/filter-mapping/dummy' before /files/var/lib/jenkins/web.xml/web-app/filter-mapping/dispatcher
-    # # not creating the node yet. need the next command
-    # set '/files/var/lib/jenkins/web.xml/web-app/filter-mapping/dummy/#text' 'some text'
-    #
-    # save
-
+  # # this will mysteriously fail
+  # augeas{ 'augeas web.xml security changes part 1':
+  #   incl    => '/var/lib/jenkins/web.xml',
+  #   lens    => 'Xml.lns',
+  #   context => '/files/var/lib/jenkins/web.xml',
+  #   changes => $augeas_security_part1_changes,
+  #   require => File['/var/lib/jenkins/web.xml'],
+  # }
+  # -> augeas{ 'augeas web.xml security changes part 2':
+  #   incl    => '/var/lib/jenkins/web.xml',
+  #   lens    => 'Xml.lns',
+  #   context => '/files/var/lib/jenkins/web.xml',
+  #   changes => $augeas_security_part2_changes,
+  # }
+  # -> augeas{ 'augeas web.xml security changes part 3':
+  #   incl    => '/var/lib/jenkins/web.xml',
+  #   lens    => 'Xml.lns',
+  #   context => '/files/var/lib/jenkins/web.xml',
+  #   changes => $augeas_security_part3_changes,
+  # }
+  }
 }
 
 

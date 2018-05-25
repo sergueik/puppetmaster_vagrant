@@ -110,7 +110,7 @@ Vagrant.configure('2') do |config|
         puppet.module_path    = 'production/modules'
         puppet.manifest_file  = 'default.pp'
 	# puppet.options = "--modulepath '/etc/puppetlabs/puppet/modules:/tmp/puppet/modules'"
-	puppet.options = '--debug'
+	# puppet.options = '--debug'
       end
     end
   end
