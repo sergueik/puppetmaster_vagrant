@@ -100,13 +100,17 @@ Vagrant.configure('2') do |config|
       config.vm.provision "shell", inline: <<-SHELL
         sudo rpm -Uvh https://yum.puppet.com/puppet5/puppet5-release-el-7.noarch.rpm
         sudo yum install -y puppet-agent
+	# https://www.digitalocean.com/community/tutorials/how-to-install-apache-tomcat-7-on-centos-7-via-yum
+        sudo yum install -y tomcat
       SHELL
     
-      config.vm.provision "puppet" do |puppet|
-        puppet.manifests_path = "production/manifests"
-        puppet.hiera_config_path = "production/hiera.yaml"
-        puppet.module_path    = "production/modules"
-        puppet.manifest_file  = "default.pp"
+      config.vm.provision 'puppet' do |puppet|
+        puppet.manifests_path = 'production/manifests'
+        puppet.hiera_config_path = 'production/hiera.yaml'
+        puppet.module_path    = 'production/modules'
+        puppet.manifest_file  = 'default.pp'
+	# puppet.options = "--modulepath '/etc/puppetlabs/puppet/modules:/tmp/puppet/modules'"
+	puppet.options = '--debug'
       end
     end
   end

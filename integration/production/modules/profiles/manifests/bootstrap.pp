@@ -1,6 +1,7 @@
 # TODO: hiera configuration is not correct.
 class profiles::bootstrap (
   Boolean $file         = false,
+  Boolean $exercise     = false,
   String $setting       = 'some setting',
   Array $augeas_testing_changes = [
     'set useSecurity/#text false',
@@ -13,13 +14,13 @@ class profiles::bootstrap (
     # 'clear securityRealm/authContext', # this operation does not appear to work
     # 'rm securityRealm/authContext', # this will work
   ],
-  Array $augeas_security_part1_changes = [
+  Array $augeas_exercise_part1_changes = [
     'insert "filter-mapping" before securityRealm/authContext',
     'set securityRealm/filter-mapping/filter-name/#text "httpHeaderSecurity"',
     'set securityRealm/filter-mapping/url-pattern/#text "/*"',
     'set securityRealm/filter-mapping/dispatcher/#text "REQUEST"',
   ],
-  Array $augeas_security_part2_changes = [
+  Array $augeas_exercise_part2_changes = [
     'insert "filter" before securityRealm/authContext',
     'set securityRealm/filter/filter-name/#text "httpHeaderSecurity"',
     'set securityRealm/filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"',
@@ -31,13 +32,13 @@ class profiles::bootstrap (
     'set securityRealm/filter/init-param[1]/param-name/#text "antiClickJackingOption"',
     'set securityRealm/filter/init-param[1]/param-value/#text "SAMEORIGIN"',
   ],
-  Array $augeas_security_part3_changes = [
+  Array $augeas_security_part1_changes = [
     'insert "filter-mapping" before session-config',
     'set filter-mapping/filter-name/#text "httpHeaderSecurity"',
     'set filter-mapping/url-pattern/#text "/*"',
     'set filter-mapping/dispatcher/#text "REQUEST"',
   ],
-  Array $augeas_security_part4_changes = [
+  Array $augeas_security_part2_changes = [
     'insert "filter" before session-config',
     'set filter/filter-name/#text "httpHeaderSecurity"',
     'set /filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"',
@@ -69,49 +70,48 @@ END
   file { '/var/lib/jenkins/':
     ensure => 'directory',
   }
-  -> notify {"augeas change to apply:":
-       message => $augeas_changes,
-     }
   -> file { '/var/lib/jenkins/config.xml':
        ensure => 'file',
-       # source =>'puppet:///modules/profiles/bootstrap/config.xml',
        content  => inline_epp($config_template, {'service_name' => 'some service'}),
      }
   -> file { '/var/lib/jenkins/web.xml':
        ensure => 'file',
        source =>'puppet:///modules/profiles/bootstrap/web.xml',
      }
-  -> augeas{ 'augeas capability testing changes':
+  if $exercise {
+    augeas{ 'augeas capability testing changes':
        incl    => '/var/lib/jenkins/config.xml',
        lens    => 'Xml.lns',
        context => '/files/var/lib/jenkins/config.xml/hudson',
        changes => $augeas_testing_changes,
+       require => File['/var/lib/jenkins/config.xml'],
      }
-  -> augeas{ 'augeas web.xml security changes part 1':
+  -> augeas{ 'augeas practice changes part 1':
        incl    => '/var/lib/jenkins/config.xml',
        lens    => 'Xml.lns',
        context => '/files/var/lib/jenkins/config.xml/hudson',
-       changes => $augeas_security_part1_changes,
+       changes => $augeas_exercise_part1_changes,
      }
+  -> augeas{ 'augeas practice changes part 2':
+       incl    => '/var/lib/jenkins/config.xml',
+       lens    => 'Xml.lns',
+       context => '/files/var/lib/jenkins/config.xml/hudson',
+       changes => $augeas_exercise_part2_changes,
+     }
+  }
+  augeas{ 'augeas web.xml security changes part 1':
+    incl    => '/usr/share/tomcat/conf/web.xml',
+    lens    => 'Xml.lns',
+    context => '/files/usr/share/tomcat/conf/web.xml',
+    changes => $augeas_security_part1_changes,
+    require => File['/var/lib/jenkins/web.xml'],
+  }
   -> augeas{ 'augeas web.xml security changes part 2':
-       incl    => '/var/lib/jenkins/config.xml',
-       lens    => 'Xml.lns',
-       context => '/files/var/lib/jenkins/config.xml/hudson',
-       changes => $augeas_security_part2_changes,
-     }
-
-  -> augeas{ 'augeas web.xml security changes part 3':
-       incl    => '/var/lib/jenkins/web.xml',
-       lens    => 'Xml.lns',
-       context => '/files/var/lib/jenkins/web.xml/web-app',
-       changes => $augeas_security_part3_changes,
-     }
-  -> augeas{ 'augeas web.xml security changes part 4':
-       incl    => '/var/lib/jenkins/web.xml',
-       lens    => 'Xml.lns',
-       context => '/files/var/lib/jenkins/web.xml/web-app',
-       changes => $augeas_security_part4_changes,
-     }
+    incl    => '/usr/share/tomcat/conf/web.xml',
+    lens    => 'Xml.lns',
+    context => '/files/usr/share/tomcat/conf/web.xml',
+    changes => $augeas_security_part2_changes,
+  }
 
     # # roughly equivalent manual commands
     # set /augeas/load/xml/lens 'Xml.lns'

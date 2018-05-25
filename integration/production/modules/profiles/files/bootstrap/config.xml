@@ -1,7 +1,0 @@
-<hudson>
-<useSecurity>true</useSecurity>
-  <port>9090</port>
-  <securityRealm class="org.jenkinsci.plugins.reverse_proxy_auth.ReverseProxySecurityRealm" plugin="reverse-proxy-auth-plugin@1.4.0">
-    <authContext>some data to disappear</authContext>
-  </securityRealm>
-</hudson>
