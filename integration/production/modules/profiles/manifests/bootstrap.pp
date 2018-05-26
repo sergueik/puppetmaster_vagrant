@@ -33,28 +33,6 @@ class profiles::bootstrap (
     'set securityRealm/filter/init-param[1]/param-name/#text "antiClickJackingOption"',
     'set securityRealm/filter/init-param[1]/param-value/#text "SAMEORIGIN"',
   ],
-  Array $augeas_security_part1_changes = [
-    "insert 'dummy' session-config",
-    "set 'dummy/#text' 'some text'"
-  ],
-  Array $augeas_security_part2_changes = [
-    'insert "filter-mapping" before session-config',
-    'set filter-mapping/filter-name/#text "httpHeaderSecurity"',
-    'set filter-mapping/url-pattern/#text "/*"',
-    'set filter-mapping/dispatcher/#text "REQUEST"',
-  ],
-  Array $augeas_security_part3_changes = [
-    'insert "filter" before session-config',
-    'set filter/filter-name/#text "httpHeaderSecurity"',
-    'set filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"',
-    'set filter/async-supported/#text "true"',
-    'insert "init-param" after filter/async-supported',
-    'set filter/init-param/param-name/#text "antiClickJackingEnabled"',
-    'set filter/init-param/param-value/#text "true"',
-    'insert "init-param" after filter/async-supported',
-    'set filter/init-param[1]/param-name/#text "antiClickJackingOption"',
-    'set filter/init-param[1]/param-value/#text "SAMEORIGIN"',
-  ],
 ) {
 
   if $file {
@@ -80,7 +58,7 @@ END
      }
   -> file { '/var/lib/jenkins/web.xml':
        ensure => 'file',
-       source =>'puppet:///modules/profiles/bootstrap/web.xml',
+       source =>'puppet:///modules/profiles/tomcat/web.xml',
      }
   if $exercise {
     augeas{ 'augeas capability testing changes':
@@ -106,7 +84,7 @@ END
   if $security_modification {
     file { '/tmp/script.au':
       ensure => 'file',
-      source =>'puppet:///modules/profiles/bootstrap/script.au',
+      source =>'puppet:///modules/profiles/augtool/script.au',
     }
     -> exec { 'Run agutool with script':
       command   => 'augtool -f /tmp/script.au',
@@ -115,27 +93,5 @@ END
       logoutput => true,
     }
 
-  # # this will mysteriously fail
-  # augeas{ 'augeas web.xml security changes part 1':
-  #   incl    => '/var/lib/jenkins/web.xml',
-  #   lens    => 'Xml.lns',
-  #   context => '/files/var/lib/jenkins/web.xml',
-  #   changes => $augeas_security_part1_changes,
-  #   require => File['/var/lib/jenkins/web.xml'],
-  # }
-  # -> augeas{ 'augeas web.xml security changes part 2':
-  #   incl    => '/var/lib/jenkins/web.xml',
-  #   lens    => 'Xml.lns',
-  #   context => '/files/var/lib/jenkins/web.xml',
-  #   changes => $augeas_security_part2_changes,
-  # }
-  # -> augeas{ 'augeas web.xml security changes part 3':
-  #   incl    => '/var/lib/jenkins/web.xml',
-  #   lens    => 'Xml.lns',
-  #   context => '/files/var/lib/jenkins/web.xml',
-  #   changes => $augeas_security_part3_changes,
-  # }
   }
 }
-
-

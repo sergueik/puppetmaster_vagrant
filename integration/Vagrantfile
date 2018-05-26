@@ -54,26 +54,6 @@ if debug
 end
 modulepath = '/opt/puppetlabs/puppet/modules'
 
-$puppet_prereq_script = <<-SCRIPT
-#!/usr/bin/env bash
-
-# force the locale change
-cat<<EOF>/etc/environment
-LANG=en_US.utf-8
-LC_ALL=en_US.utf-8
-EOF
-MODULE_PATH='#{modulepath}'
-
-if [ ! -d ${MODULE_PATH}/stdlib ]; then
-  puppet module install 'puppetlabs-stdlib' --version '4.22.0'
-fi
-if [ ! -d ${MODULE_PATH}/java ]; then
-  puppet module install 'puppetlabs-java' --version '1.3.0'
-fi
-# for encrypted 
-# gem install hiera-eyaml --no-rdoc --no-ri
-SCRIPT
-
 # bind_ip=127.0.0.1
 
 box_config = {}
@@ -98,12 +78,36 @@ Vagrant.configure('2') do |config|
       end
 
       config.vm.provision "shell", inline: <<-SHELL
+	UPGRADE_PUPPET=false
+        # optionally upgrade puppet to the latest version
+	if $UPGRADE_PUPPET ; then
         sudo rpm -Uvh https://yum.puppet.com/puppet5/puppet5-release-el-7.noarch.rpm
         sudo yum install -y puppet-agent
+	fi
 	# https://www.digitalocean.com/community/tutorials/how-to-install-apache-tomcat-7-on-centos-7-via-yum
+	# change locale of the base image
+cat<<EOF>/etc/environment
+LANG=en_US.utf-8
+LC_ALL=en_US.utf-8
+EOF
+MODULE_PATH='#{modulepath}'
+DIRECT_INSTALL_PUPPET_MODULES=false
+
+if $DIRECT_INSTALL_PUPPET_MODULES ; then
+  if [ ! -d ${MODULE_PATH}/stdlib ]; then
+    puppet module install 'puppetlabs-stdlib' --version '4.22.0'
+  fi
+  if [ ! -d ${MODULE_PATH}/java ]; then
+    puppet module install 'puppetlabs-java' --version '1.3.0'
+  fi
+
+  # for encrypted
+  # gem install hiera-eyaml --no-rdoc --no-ri
+fi
+# default install for tomcat7
         sudo yum install -y tomcat
       SHELL
-    
+
       config.vm.provision 'puppet' do |puppet|
         puppet.manifests_path = 'production/manifests'
         puppet.hiera_config_path = 'production/hiera.yaml'
