@@ -101,10 +101,10 @@ if $DIRECT_INSTALL_PUPPET_MODULES ; then
     puppet module install 'puppetlabs-java' --version '1.3.0'
   fi
 
-  # for encrypted
+  # for encrypted yaml
   # gem install hiera-eyaml --no-rdoc --no-ri
 fi
-
+# for integration testing
 # default install for tomcat7
 # sudo yum install -y tomcat
       SHELL

@@ -1,3 +1,66 @@
 ---
-version: '1.2.3'
-urugeas::version: '4.5.6'
+urugeas::version: '0.2.0'
+urugeas::augeas_testing:
+  - 'set useSecurity/#text false'
+  - 'set port/#text 8000'
+  - 'set securityRealm/#attribute/class "example attribute"'
+  - 'insert "test" before securityRealm/authContext' # add node
+  - 'set securityRealm/test/#attribute/class "test class"' # set attribute
+  - 'set securityRealm/test/#text "test text"' # set text
+# - 'clear securityRealm/authContext' # this operation does not appear to work
+# - 'rm securityRealm/authContext' # this will work, commented for exrcise
+
+urugeas::tomcat_security_part1:
+  - 'insert "filter-mapping" before securityRealm/authContext'
+  - 'set securityRealm/filter-mapping/filter-name/#text "httpHeaderSecurity"'
+  - 'set securityRealm/filter-mapping/url-pattern/#text "/*"'
+  - 'set securityRealm/filter-mapping/dispatcher/#text "REQUEST"'
+
+urugeas::tomcat_security_part2:
+  - 'insert "filter" before securityRealm/authContext'
+  - 'set securityRealm/filter/filter-name/#text "httpHeaderSecurity"'
+  - 'set securityRealm/filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"'
+  - 'set securityRealm/filter/async-supported/#text "true"'
+  - 'insert "init-param" after securityRealm/filter/async-supported'
+  - 'set securityRealm/filter/init-param/param-name/#text "antiClickJackingEnabled"'
+  - 'set securityRealm/filter/init-param/param-value/#text "true"'
+  - 'insert "init-param" after securityRealm/filter/async-supported'
+  - 'set securityRealm/filter/init-param[1]/param-name/#text "antiClickJackingOption"'
+  - 'set securityRealm/filter/init-param[1]/param-value/#text "SAMEORIGIN"'
+
+urugeas::augtool_command:
+  - "set /augeas/load/xml/lens 'Xml.lns'"
+  - "set /augeas/load/xml/incl  '/var/lib/jenkins/web.xml'"
+  - "load"
+  - "# insert 'dummy' before /files/var/lib/jenkins/web.xml/web-app/session-config"
+  - "# set '/files/var/lib/jenkins/web.xml/web-app/dummy/#text' 'some puppt generated text'"
+  - "# save"
+  - "# print /files//var/lib/jenkins/web.xml/web-app/dummy"
+  - "# part 1 "
+  - "insert 'filter-mapping' before /files/var/lib/jenkins/web.xml/web-app/session-config"
+  - "save"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/filter-name/#text 'httpHeaderSecurity'"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/url-pattern/#text '/*'"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/dispatcher/#text 'REQUEST'"
+  - ""
+  - "save"
+  - "print /files/var/lib/jenkins/web.xml/web-app/filter-mapping"
+  - ""
+  - "# part 2"
+  - "insert 'filter' before /files/var/lib/jenkins/web.xml/web-app/session-config"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/filter-name/#text 'httpHeaderSecurity'"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/filter-class/#text 'org.apache.catalina.filters.HttpHeaderSecurityFilter'"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/async-supported/#text 'true'"
+  - "save"
+  - "print /files/var/lib/jenkins/web.xml/web-app/filter"
+  - ""
+  - "# part 3"
+  - "insert 'init-param' after /files/var/lib/jenkins/web.xml/web-app/filter/async-supported"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-name/#text 'antiClickJackingEnabled'"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-value/#text 'true'"
+  - "insert 'init-param' after /files/var/lib/jenkins/web.xml/web-app/filter/async-supported"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-name/#text 'antiClickJackingOption'"
+  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#text 'SAMEORIGIN'"
+  - ""
+  - "save"
+  - "print /files/var/lib/jenkins/web.xml/web-app/filter-mapping"
