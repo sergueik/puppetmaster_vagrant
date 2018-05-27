@@ -19,7 +19,7 @@ dir = File.expand_path(File.dirname(__FILE__))
 nodes = {}
 nodes = YAML.load(<<-NODES)
 ---
-- name: 'uru'
+- name: 'urugeas'
   box: 'centos'
   ram: '512'
   ipaddress: '172.17.8.102'
@@ -104,18 +104,28 @@ if $DIRECT_INSTALL_PUPPET_MODULES ; then
   # for encrypted
   # gem install hiera-eyaml --no-rdoc --no-ri
 fi
+
 # default install for tomcat7
-        sudo yum install -y tomcat
+# sudo yum install -y tomcat
       SHELL
 
-      config.vm.provision 'puppet' do |puppet|
-        puppet.manifests_path = 'production/manifests'
-        puppet.hiera_config_path = 'production/hiera.yaml'
-        puppet.module_path    = 'production/modules'
-        puppet.manifest_file  = 'default.pp'
-	# puppet.options = "--modulepath '/etc/puppetlabs/puppet/modules:/tmp/puppet/modules'"
-	# puppet.options = '--debug'
-      end
+      config.vm.synced_folder './' , '/vagrant'
+
+      manifest = 'default.pp'
+
+      # workaround for older Vagrant / Puppet 4 compatibility issue
+      # NOTE: hiera arguments not set
+      # config.vm.provision 'shell', inline: "puppet apply --modulepath=#{modulepath}:/vagrant/modules /vagrant/manifests/#{manifest}"
+
+       config.vm.provision :puppet do |puppet|
+         puppet.hiera_config_path = 'hiera.yaml'
+         puppet.module_path       = 'modules'
+         puppet.manifests_path    = 'manifests'
+         puppet.manifest_file     = manifest
+         puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules "
+         puppet.working_directory = '/tmp/vagrant-puppet'
+         config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
+       end
     end
   end
 end
