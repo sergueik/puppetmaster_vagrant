@@ -28,39 +28,37 @@ urugeas::tomcat_security_part2:
   - 'set securityRealm/filter/init-param[1]/param-name/#text "antiClickJackingOption"'
   - 'set securityRealm/filter/init-param[1]/param-value/#text "SAMEORIGIN"'
 
+# augeas commands to not need to be quoted except for commented lines 
+# which otherwise would create an 'undef' lines leading to augtool error 
 urugeas::augtool_command:
-  - "set /augeas/load/xml/lens 'Xml.lns'"
-  - "set /augeas/load/xml/incl  '/var/lib/jenkins/web.xml'"
-  - "load"
-  - "# insert 'dummy' before /files/var/lib/jenkins/web.xml/web-app/session-config"
+  - set '/augeas/load/xml/lens' 'Xml.lns'
+  - set '/augeas/load/xml/incl'  '/var/lib/jenkins/web.xml'
+  - load
+  - "# insert 'dummy' before '/files/var/lib/jenkins/web.xml/web-app/session-config'"
   - "# set '/files/var/lib/jenkins/web.xml/web-app/dummy/#text' 'some puppt generated text'"
   - "# save"
-  - "# print /files//var/lib/jenkins/web.xml/web-app/dummy"
-  - "# part 1 "
-  - "insert 'filter-mapping' before /files/var/lib/jenkins/web.xml/web-app/session-config"
-  - "save"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/filter-name/#text 'httpHeaderSecurity'"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/url-pattern/#text '/*'"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/dispatcher/#text 'REQUEST'"
-  - ""
-  - "save"
-  - "print /files/var/lib/jenkins/web.xml/web-app/filter-mapping"
-  - ""
+  - "# print '/files//var/lib/jenkins/web.xml/web-app/dummy'"
+  - "# part 1"
+  - insert 'filter-mapping' before '/files/var/lib/jenkins/web.xml/web-app/session-config'
+  - save
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter-mapping/filter-name/#text' 'httpHeaderSecurity'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter-mapping/url-pattern/#text' '/*'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter-mapping/dispatcher/#text' 'REQUEST'
+  - save
+  - print '/files/var/lib/jenkins/web.xml/web-app/filter-mapping'
   - "# part 2"
-  - "insert 'filter' before /files/var/lib/jenkins/web.xml/web-app/session-config"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/filter-name/#text 'httpHeaderSecurity'"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/filter-class/#text 'org.apache.catalina.filters.HttpHeaderSecurityFilter'"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/async-supported/#text 'true'"
-  - "save"
-  - "print /files/var/lib/jenkins/web.xml/web-app/filter"
-  - ""
+  - insert 'filter' before '/files/var/lib/jenkins/web.xml/web-app/session-config'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/filter-name/#text' 'httpHeaderSecurity'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/filter-class/#text' 'org.apache.catalina.filters.HttpHeaderSecurityFilter'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/async-supported/#text' 'true'
+  - save
+  - print '/files/var/lib/jenkins/web.xml/web-app/filter'
   - "# part 3"
-  - "insert 'init-param' after /files/var/lib/jenkins/web.xml/web-app/filter/async-supported"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-name/#text 'antiClickJackingEnabled'"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-value/#text 'true'"
-  - "insert 'init-param' after /files/var/lib/jenkins/web.xml/web-app/filter/async-supported"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-name/#text 'antiClickJackingOption'"
-  - "set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#text 'SAMEORIGIN'"
-  - ""
-  - "save"
-  - "print /files/var/lib/jenkins/web.xml/web-app/filter-mapping"
+  - insert 'init-param' after '/files/var/lib/jenkins/web.xml/web-app/filter/async-supported'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-name/#text' 'antiClickJackingEnabled'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-value/#text' 'true'
+  - insert 'init-param' after '/files/var/lib/jenkins/web.xml/web-app/filter/async-supported'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
+  - set '/files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
+  - save
+  - print '/files/var/lib/jenkins/web.xml/web-app/filter-mapping'
