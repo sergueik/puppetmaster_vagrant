@@ -116,3 +116,9 @@ set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#tex
 save
 print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
 ```
+
+### License
+This project is licensed under the terms of the MIT license.
+
+### Author
+[Serguei Kouzmine](kouzmine_serguei@yahoo.com)
