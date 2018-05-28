@@ -1,32 +1,32 @@
 ---
 urugeas::version: '0.2.0'
 urugeas::augeas_testing:
-  - 'set useSecurity/#text false'
-  - 'set port/#text 8000'
-  - 'set securityRealm/#attribute/class "example attribute"'
-  - 'insert "test" before securityRealm/authContext' # add node
-  - 'set securityRealm/test/#attribute/class "test class"' # set attribute
-  - 'set securityRealm/test/#text "test text"' # set text
-# - 'clear securityRealm/authContext' # this operation does not appear to work
-# - 'rm securityRealm/authContext' # this will work, commented for exrcise
+  - set 'useSecurity/#text' 'false'
+  - set 'port/#text' '8000'
+  - set 'securityRealm/#attribute/class' 'example attribute'
+  - insert 'test' before 'securityRealm/authContext' # add node
+  - set 'securityRealm/test/#attribute/class' 'test class' # set attribute
+  - set 'securityRealm/test/#text' 'test text' # set text
+# - clear 'securityRealm/authContext' # this operation does not appear to work
+# - rm 'securityRealm/authContext' # this will work, commented for exrcise
 
 urugeas::tomcat_security_part1:
-  - 'insert "filter-mapping" before securityRealm/authContext'
-  - 'set securityRealm/filter-mapping/filter-name/#text "httpHeaderSecurity"'
-  - 'set securityRealm/filter-mapping/url-pattern/#text "/*"'
-  - 'set securityRealm/filter-mapping/dispatcher/#text "REQUEST"'
+  - insert 'filter-mapping' before 'ecurityRealm/authContext'
+  - set 'securityRealm/filter-mapping/filter-name/#text' 'httpHeaderSecurity'
+  - set 'securityRealm/filter-mapping/url-pattern/#text' '/*'
+  - set 'securityRealm/filter-mapping/dispatcher/#text' 'REQUEST'
 
 urugeas::tomcat_security_part2:
-  - 'insert "filter" before securityRealm/authContext'
-  - 'set securityRealm/filter/filter-name/#text "httpHeaderSecurity"'
-  - 'set securityRealm/filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"'
-  - 'set securityRealm/filter/async-supported/#text "true"'
-  - 'insert "init-param" after securityRealm/filter/async-supported'
-  - 'set securityRealm/filter/init-param/param-name/#text "antiClickJackingEnabled"'
-  - 'set securityRealm/filter/init-param/param-value/#text "true"'
-  - 'insert "init-param" after securityRealm/filter/async-supported'
-  - 'set securityRealm/filter/init-param[1]/param-name/#text "antiClickJackingOption"'
-  - 'set securityRealm/filter/init-param[1]/param-value/#text "SAMEORIGIN"'
+  - insert 'filter' before 'securityRealm/authContext'
+  - set 'securityRealm/filter/filter-name/#text' 'httpHeaderSecurity'
+  - set 'securityRealm/filter/filter-class/#text' 'org.apache.catalina.filters.HttpHeaderSecurityFilter'
+  - set 'securityRealm/filter/async-supported/#text' 'true'
+  - insert 'init-param' after 'securityRealm/filter/async-supported'
+  - set 'securityRealm/filter/init-param/param-name/#text' 'antiClickJackingEnabled'
+  - set 'securityRealm/filter/init-param/param-value/#text 'true'
+  - insert 'init-param' after 'securityRealm/filter/async-supported'
+  - set 'securityRealm/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
+  - set 'securityRealm/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
 
 # augeas commands to not need to be quoted except for commented lines 
 # which otherwise would create an 'undef' lines leading to augtool error 
