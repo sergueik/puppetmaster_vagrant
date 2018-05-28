@@ -2,6 +2,32 @@
 
 This directory contains a replica of the Puppet 5.x skeleton role/profile/hieradata Vagrantfile project [example_puppet-serverspec](https://github.com/wstinkens/example_puppet-serverspec/) set up to practice [augeas-driven](https://twiki.cern.ch/twiki/bin/view/Main/TerjeAndersenAugeas) XML file modifications.
 
+This class adds the fllowing two DOM nodes to `/usr/share/tomcat/conf/web.xml`:
+
+```xml
+<filter>
+  <filter-name>httpHeaderSecurity</filter-name>
+  <filter-class>org.apache.catalina.filters.HttpHeaderSecurityFilter</filter-class>
+  <async-supported>true</async-supported>
+  <init-param>
+    <param-name>antiClickJackingEnabled</param-name>
+    <param-value>true</param-value>
+  </init-param>
+  <init-param>
+    <param-name>antiClickJackingOption</param-name>
+    <param-value>SAMEORIGIN</param-value>
+  </init-param>
+</filter>
+```
+and
+```xml
+<filter-mapping>
+  <filter-name>httpHeaderSecurity</filter-name>
+  <url-pattern>/*</url-pattern>
+  <dispatcher>REQUEST</dispatcher>
+</filter-mapping>
+```
+It appears easier for augtool to add then uncomment the present but commented nod.
 
 It looks that tomcat configuration `web.xml` is causing trouble to Puppet `augeas` resource 
 
