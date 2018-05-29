@@ -1,0 +1,27 @@
+set '/augeas/load/xml/lens' 'Xml.lns'
+set '/augeas/load/xml/incl' '<%= @tomcat_config_file -%>'
+load
+
+insert 'filter' before '/files<%= @tomcat_config_file -%>/web-app/session-config'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/filter-name/#text' 'httpHeaderSecurity'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/filter-class/#text' 'org.apache.catalina.filters.HttpHeaderSecurityFilter'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported/#text' 'true'
+save
+print '/files<%= @tomcat_config_file -%>/web-app/filter'
+
+insert 'filter-mapping' before '/files<%= @tomcat_config_file -%>/web-app/session-config'
+
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping/filter-name/#text' 'httpHeaderSecurity'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping/url-pattern/#text' '/*'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping/dispatcher/#text' 'REQUEST'
+save
+print '/files<%= @tomcat_config_file -%>/web-app/filter-mapping'
+
+insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param/param-name/#text' 'antiClickJackingEnabled'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param/param-value/#text' 'true'
+insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
+save
+print '/files<%= @tomcat_config_file -%>/web-app/filter-mapping'

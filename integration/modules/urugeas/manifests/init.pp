@@ -9,16 +9,16 @@
 # @param tomcat_security_part2 augeas resource to add `<filter-mapping>` DOM node for `httpHeaderSecurity`
 # It is convenient to break the long XML DOM management script into smaller node-specific chunks
 # It is easier for augtool to add a DOM node then uncomment a present but commented DOM node
-#  the class also loads the array of augtool commands from hiera entry `urugeas::augtool_command`. This is the only way we found augeas to work with Puppet and `tomcat wrb.xml`
+# the class also loads the of augtool commands from template. 
+# This is the only way we found augeas to work with Puppet and `web.xml`
 
 class urugeas(
 
-  Boolean $practice_augeas     = true,
-  Boolean $exercise_tomcat_security_change = false,
-  # suppressed running augool during augeas resource testing
-  Boolean $exercise_augtool    = false, 
+  Boolean $exercise_tomcat_security_change,
+  Boolean $exercise_augtool, 
   Array $tomcat_security_part1 = [],
   Array $tomcat_security_part2 = [],
+  Boolean $practice_augeas =false,
   Array $augeas_testing = lookup("${name}::augeas_testing",
                           Array[String],
                           first,
@@ -67,16 +67,16 @@ class urugeas(
       require => File[$config_file],
     }
   }
-  if $exercise_tomcat_security_change {
-    # NOTE: change to 'web.xml', 'session-config' to see the error
-    # Error: /Stage[main]/Urugeas/Augeas[tomcat security changes part1]: Could not evaluate: Error sending command 'insert' with params ["filter-mapping", "before", "/files/var/lib/jenkins/web.xml/session-config/securityRealm/authContext"]
 
-    # $tomcat_config_file = "${config_dir}/web.xml"
-    # $node = 'session-config'
+  if ($exercise_tomcat_security_change or $exercise_augtool ) {
+    # NOTE: change to 'web.xml', 'session-config' to see the error
+    # Could not evaluate: Error sending command 'insert' with params ["filter-mapping", "before", "/files/var/lib/jenkins/web.xml/session-config/securityRealm/authContext"]
+    $tomcat_config_file = "${config_dir}/web.xml"
+    $node = 'session-config'
 
     # change to 'config.xml','hudson' to see working
-    $tomcat_config_file = $config_file
-    $node = 'hudson'
+    # $tomcat_config_file = $config_file
+    # $node = 'hudson'
     if !defined(File[$tomcat_config_file ]){
        file { $tomcat_config_file:
          ensure => 'file',
@@ -84,11 +84,13 @@ class urugeas(
          require => File[$config_dir],
        }
     }
+  }
+  if $exercise_tomcat_security_change {
     $default_attributes = {
       incl    => $tomcat_config_file,
       context => "/files${tomcat_config_file}/${node}",
       lens    => 'Xml.lns',
-      require => File[$config_file],
+      require => File[$tomcat_config_file],
     }
     augeas{
       default:
@@ -112,20 +114,21 @@ class urugeas(
       # content => inline_template($augtool_command),
       #  NOTE: can not pass an Array
       # NOTE: Failed to parse inline template: undefined method `encoding' for #<Array:0x00000002cae958>
-      # - need splat
-      # content => inline_template($augtool_command),
-      content => inline_template(*(lookup("${name}::augtool_command").map |String $line| {
-        "${line}\n"
-      }))
+      # - needs the splat
+      #     
+      # content => inline_template(*(lookup("${name}::augtool_command").map |String $line| {
+      #  "${line}\n"
+      #}))
       # alternative:
       #
       # content => inline_template(lookup("${name}::augtool_command").join("\n")),
-
+      content  => template("${name}/script_au.erb"),
       # source => "puppet:///modules/${name}/augtool/script.au",
     }
     -> exec { "Run ${augtool_script}":
       command   => "augtool -f ${augtool_script}",
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
+      require => File[$tomcat_config_file],
       provider  => shell,
       logoutput => true,
     }
