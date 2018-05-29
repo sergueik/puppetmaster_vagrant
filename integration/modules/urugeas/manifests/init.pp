@@ -37,6 +37,15 @@ class urugeas(
 
   $config_dir = '/var/lib/jenkins'
   $config_file = "${config_dir}/config_xml"
+  # NOTE: change to 'web.xml', 'session-config' to see the error
+  # Could not evaluate: Error sending command 'insert' with params ["filter-mapping", "before", "/files/var/lib/jenkins/web.xml/session-config/securityRealm/authContext"]
+  $tomcat_config_file = "${config_dir}/web.xml"
+  $node = 'session-config'
+
+  # change to 'config.xml','hudson' to see working
+  # $tomcat_config_file = $config_file
+  # $node = 'hudson'
+  $xmllint_command =  "xmllint --xpath \"/*[local-name()='web-app']/*[local-name()='filter']/*[local-name()='filter-name']\" ${tomcat_config_file} | grep 'httpHeaderSecurity'"
 
   $config_template = @(END)
      <hudson>
@@ -69,14 +78,6 @@ class urugeas(
   }
 
   if ($exercise_tomcat_security_change or $exercise_augtool ) {
-    # NOTE: change to 'web.xml', 'session-config' to see the error
-    # Could not evaluate: Error sending command 'insert' with params ["filter-mapping", "before", "/files/var/lib/jenkins/web.xml/session-config/securityRealm/authContext"]
-    $tomcat_config_file = "${config_dir}/web.xml"
-    $node = 'session-config'
-
-    # change to 'config.xml','hudson' to see working
-    # $tomcat_config_file = $config_file
-    # $node = 'hudson'
     if !defined(File[$tomcat_config_file ]){
        file { $tomcat_config_file:
          ensure => 'file',
@@ -125,10 +126,22 @@ class urugeas(
       content  => template("${name}/script_au.erb"),
       # source => "puppet:///modules/${name}/augtool/script.au",
     }
+    -> notify { "Command to check if the ${augtool_script} needs to run": 
+      message => $xmllint_command,
+    }
+    -> exec { "Examnine if the ${augtool_script} needs to run":
+      command   => $xmllint_command,
+      path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
+      require   => File[$tomcat_config_file],
+      returns   => [0,1],
+      provider  => shell,
+      logoutput => true,
+    }
     -> exec { "Run ${augtool_script}":
       command   => "augtool -f ${augtool_script}",
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
-      require => File[$tomcat_config_file],
+      require   => File[$tomcat_config_file],
+      unless    => $xmllint_command,
       provider  => shell,
       logoutput => true,
     }
