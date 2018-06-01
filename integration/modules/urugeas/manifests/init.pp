@@ -9,13 +9,13 @@
 # @param tomcat_security_part2 augeas resource to add `<filter-mapping>` DOM node for `httpHeaderSecurity`
 # It is convenient to break the long XML DOM management script into smaller node-specific chunks
 # It is easier for augtool to add a DOM node then uncomment a present but commented DOM node
-# the class also loads the of augtool commands from template. 
+# the class also loads the of augtool commands from template.
 # This is the only way we found augeas to work with Puppet and `web.xml`
 
 class urugeas(
 
   Boolean $exercise_tomcat_security_change,
-  Boolean $exercise_augtool, 
+  Boolean $exercise_augtool,
   Array $tomcat_security_part1 = [],
   Array $tomcat_security_part2 = [],
   Boolean $practice_augeas =false,
@@ -110,13 +110,18 @@ class urugeas(
     # }
     $random = fqdn_rand(1000,$::uptime_seconds)
     $augtool_script = "/tmp/script_${random}.au"
+    # https://puppet.com/docs/puppet/5.3/lang_data_string.html#syntax
+    $command = @("END"/n$)
+      AUGTOOL_SCRIPT='${augtool_script}'
+      augtool -f \$AUGTOOL_SCRIPT
+     |-END
     file { $augtool_script:
       ensure  => 'file',
       # content => inline_template($augtool_command),
       #  NOTE: can not pass an Array
       # NOTE: Failed to parse inline template: undefined method `encoding' for #<Array:0x00000002cae958>
       # - needs the splat
-      #     
+      #
       # content => inline_template(*(lookup("${name}::augtool_command").map |String $line| {
       #  "${line}\n"
       #}))
@@ -126,7 +131,7 @@ class urugeas(
       content  => template("${name}/script_au.erb"),
       # source => "puppet:///modules/${name}/augtool/script.au",
     }
-    -> notify { "Command to check if the ${augtool_script} needs to run": 
+    -> notify { "Command to check if the ${augtool_script} needs to run":
       message => $xmllint_command,
     }
     -> exec { "Examnine if the ${augtool_script} needs to run":
@@ -138,7 +143,7 @@ class urugeas(
       logoutput => true,
     }
     -> exec { "Run ${augtool_script}":
-      command   => "augtool -f ${augtool_script}",
+      command   => $command,
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
       require   => File[$tomcat_config_file],
       unless    => $xmllint_command,
