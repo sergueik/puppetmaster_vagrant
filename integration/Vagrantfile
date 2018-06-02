@@ -106,7 +106,7 @@ if $DIRECT_INSTALL_PUPPET_MODULES ; then
 fi
 # for integration testing
 # default install for tomcat7
-# sudo yum install -y tomcat
+sudo yum install -y tomcat
       SHELL
 
       config.vm.synced_folder './' , '/vagrant'
