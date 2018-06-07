@@ -1,0 +1,65 @@
+{
+  "name": "ianoberst-xml_fragment",
+  "version": "1.0.2",
+  "author": "Ian Oberst <ian.oberst@gmail.com>",
+  "summary": "A native Puppet module that manages XML documents using REXML.",
+  "license": "MIT",
+  "source": "https://github.com/Areson/xml_fragment",
+  "dependencies": [],
+  "project_page": "https://github.com/Areson/xml_fragment",
+  "issues_url": "https://github.com/Areson/xml_fragment/issues",
+  "tags": [
+    "xml",
+    "xpath",
+    "config",
+    "rexml",    
+    "type",
+    "provider"
+  ],
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "RedHat"
+    },
+    {
+      "operatingsystem": "Centos"
+    },
+    {
+      "operatingsystem": "OracleLinux"
+    },
+    {
+      "operatingsystem": "Scientific"
+    },
+    {
+      "operatingsystem": "SLES"
+    },
+    {
+      "operatingsystem": "Debian"
+    },
+    {
+      "operatingsystem": "Ubuntu"
+    },
+    {
+      "operatingsystem": "Solaris"
+    },
+    {
+      "operatingsystem": "AIX"
+    },
+    {
+      "operatingsystem": "Windows",
+      "operatingsystemrelease": [
+        "Server 2012",
+        "Server 2012 R2"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "name": "pe",
+      "version_requirement": ">= 3.0.0"
+    },
+    {
+      "name": "puppet",
+      "version_requirement": ">= 3.0.0 < 5.0.0"
+    }
+  ]
+}
