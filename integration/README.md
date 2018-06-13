@@ -116,6 +116,8 @@ set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#tex
 save
 print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
 ```
+### See Also
+  * [REXML Tutorial](http://www.germane-software.com/software/rexml/docs/tutorial.html) for `insert_after` example.
 
 ### License
 This project is licensed under the terms of the MIT license.
