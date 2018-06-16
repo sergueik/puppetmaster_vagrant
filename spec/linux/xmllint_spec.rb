@@ -1,7 +1,14 @@
 require 'spec_helper'
+require 'rexml/document'
+include REXML
 
 context 'xmllint' do
 
+  # https://www.digitalocean.com/community/tutorials/how-to-install-apache-tomcat-7-on-centos-7-via-yum
+  catalina_home = '/usr/share/tomcat'
+  server_xml = "#{catalina_home}/conf/server.xml"
+  web_xml = "#{catalina_home}/conf/web.xml"
+  
   context 'availability' do
     describe command('which xmllint') do
       its(:exit_status) { should eq 0 }
@@ -9,10 +16,8 @@ context 'xmllint' do
       its(:stderr) { should be_empty }
     end
   end
-  context 'Tomcat web.xml configuration ' do
-    # XPaths with namespaces
-    catalina_home = '/apps/tomcat/current' 
-    web_xml = "#{catalina_home}/conf/web.xml"
+  context 'Tomcat web.xml configuration' do
+    # NOTE: namespaces in web.xml
     describe command(<<-EOF
       xmllint --xpath "//*[local-name()='servlet']/*[local-name()='servlet-class']/text()" #{web_xml}
     EOF
@@ -35,14 +40,14 @@ context 'xmllint' do
     ) do
       its(:exit_status) { should eq 0 }
       its(:stdout) { should match Regexp.new(servlet_class_name, Regexp::IGNORECASE) }
+      # RSpec 3.x syntax:
+      its(:stdout) { is_expected.to match Regexp.new(servlet_class_name, Regexp::IGNORECASE) }
       its(:stderr) { should be_empty }
     end
   end
 
   context 'Tomcat server.xml configuration' do
     # simple node attribute value validation
-    catalina_home = '/apps/tomcat/current'
-    server_xml = "#{catalina_home}/conf/server.xml"
     port = '8443'
     ciphers = [
       'TLS_RSA_WITH_AES_128_CBC_SHA',
@@ -83,10 +88,12 @@ context 'xmllint' do
     end
   end
   context 'HTML attribute validation' do
+    # https://www.vultr.com/docs/how-to-install-and-configure-graphite-on-centos-7
+    graphite_home = '/opt/graphite'
     describe command(<<-EOF
       xmllint --html --xpath \\
       '/html/body//form[@action="/account/login/"]//input[@type="password" or @type = "text"]'  \\
-      /opt/graphite/webapp/graphite/templates/login.html
+      #{graphite_home}/webapp/graphite/templates/login.html
     EOF
     ) do
       its(:exit_status) { should eq 0 }
@@ -96,3 +103,4 @@ context 'xmllint' do
     end
   end
 end
+
