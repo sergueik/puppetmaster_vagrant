@@ -1,76 +1,90 @@
 require_relative '../windows_spec_helper'
 
 context 'Version check' do
+
+	{
+    'Microsoft .NET Framework 4.5.1' => '4.5.50938',
+    'Puppet Agent'                   => '1.10.0',
+	}.each do |app_name, app_version|
+    describe package(app_name) do
+      it { should be_installed.with_version(app_version) }
+      # RSpec 3.x syntax
+      it { expect(subject).to be_installed.with_version(app_version) }
+      # it { expect(subject).to be_installed.with_caption(app_name) }
+    end
+  end
   # uses fixed version of specinfra backend command
   # https://github.com/sergueik/specinfra/blob/master/lib/specinfra/backend/powershell/support/find_installed_application.ps1
   context 'Installed Application' do
-	{
-	 'Java 8 Update 101' => '8.0.1010.13',
-	}.each do |appName, appVersion|
-	describe command(<<-EOF
-	  function FindInstalledApplication {
-		param(
-		  [string]$appName,
-		  [string]$appVersion
-		)
-		$DebugPreference = 'Continue'
-		write-debug ('appName = "{0}", appVersion={1}' -f $appName,$appVersion)
-		# fix to allow special character in the application names like 'Foo [Bar]'
-		$appNameRegex = New-Object Regex (($appName -replace '\\[','\\[' -replace '\\]','\\]'))
+    {
+      'Microsoft .NET Framework 4.5.1' => '4.5.50938',
+      'Puppet Agent'                   => '1.10.0',
+    }.each do |app_name, app_version|
+    describe command(<<-EOF
+      function FindInstalledApplication {
+        param(
+          [string]$appName,
+          [string]$appVersion
+        )
+        $DebugPreference = 'Continue'
+        write-debug ('appName = "{0}", appVersion={1}' -f $appName,$appVersion)
+        # fix to allow special character in the application names like 'Foo [Bar]'
+        $appNameRegex = new-object Regex(($appName -replace '\\[','\\[' -replace '\\]','\\]'))
 
-		if ((Get-WmiObject win32_operatingsystem).OSArchitecture -notmatch '64')
-		{
-		  $keys = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
-		  $possible_path = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
-		  if (Test-Path $possible_path)
-		  {
-			$keys += (Get-ItemProperty $possible_path)
-		  }
-		}
-		else
-		{
-		  $keys = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
-		  $possible_path = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
-		  if (Test-Path $possible_path)
-		  {
-			$keys += (Get-ItemProperty $possible_path)
-		  }
-		  $possible_path = 'HKCU:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
-		  if (Test-Path $possible_path)
-		  {
-			$keys += (Get-ItemProperty $possible_path)
-		  }
-		}
+        if ((get-wmiobject win32_operatingsystem).OSArchitecture -notmatch '64')
+        {
+          $keys = (get-itemproperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
+          $possible_path = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+          if (test-path $possible_path)
+          {
+          $keys += (get-itemproperty $possible_path)
+          }
+        }
+        else
+        {
+          $keys = (get-itemproperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*','HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')
+          $possible_path = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+          if (test-path $possible_path)
+          {
+          $keys += (get-itemproperty $possible_path)
+          }
+          $possible_path = 'HKCU:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+          if (test-path $possible_path)
+          {
+          $keys += (get-itemproperty $possible_path)
+          }
+        }
 
-		if ($appVersion -eq $null) {
-		  $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) })
-		  write-debug ('applications found:' + $result)
-		  write-output ([boolean]($result.Length -gt 0))
-		}
-		else {
-		  $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) } | Where-Object { $_.DisplayVersion -eq $appVersion })
-		  write-debug ('applications found:' + $result)
-		  write-output ([boolean]($result.Length -gt 0))
-		}
-	  }
+        if ($appVersion -eq $null) {
+          $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) })
+          write-debug ('applications found:' + $result)
+          write-output ([boolean]($result.Length -gt 0))
+        }
+        else {
+          $result = @( $keys | Where-Object { $appNameRegex.ismatch($_.DisplayName) -or $appNameRegex.ismatch($_.PSChildName) } | Where-Object { $_.DisplayVersion -eq $appVersion })
+          write-debug ('applications found:' + $result)
+          write-output ([boolean]($result.Length -gt 0))
+        }
+      }
 
-	  $exitCode = 1
-	  $ProgressPreference = 'SilentlyContinue'
-	  try {
-		$success = ((FindInstalledApplication -appName '#{appName}' -appVersion '#{appVersion}') -eq $true)
-		if ($success -is [boolean] -and $success) {
-		  $exitCode = 0 }
-	  } catch {
-		write-output $_.Exception.Message
-	  }
-	  write-output "Exiting with code: ${exitCode}"
-	EOF
-	) do
-		its(:stdout) do
-		  should match /Exiting with code: 0/
-		end
-	  end
-	end
+      $exitCode = 1
+      $ProgressPreference = 'SilentlyContinue'
+      try {
+        $success = ((FindInstalledApplication -appName '#{app_name}' -appVersion '#{app_version}') -eq $true)
+        if ($success -is [boolean] -and $success) {
+          $exitCode = 0 
+        }
+      } catch [Exception] {
+        write-output $_.Exception.Message
+      }
+      write-output "Exiting with code: ${exitCode}"
+    EOF
+    ) do
+        its(:stdout) do
+          should match /Exiting with code: 0/
+        end
+      end
+    end
   end
   context 'PInvoke msi.dll MsiEnumProducts, MsiGetProductInfo' do
 	# see also:
@@ -84,14 +98,15 @@ context 'Version check' do
 	# Product GUID: {6FC3B79F-47C6-38AF-B9A9-67DE3C639598}
 	# Product Version: 11.0.50727
 	# Product Name: Microsoft Visual Studio Premium 2012 - ENU
-  # 
+  #
   # Product Name: Java 7 Update 79 (64-bit)
   # Product GUID: {E966DBE4-5075-465E-BA81-BC9A3A3204B3}
   # Product Version: 1.6.32.00
-  
+
   {
-	 'Java 8 Update 101' => '8.0.1010.13',
-	}.each do |appName, appVersion|
+    'Microsoft .NET Framework 4.5.1' => '4.5.50938',
+    'Puppet Agent'                   => '1.10.0',
+	}.each do |app_name, app_version|
 	  describe command(<<-EOF
 		# installed product information through MsiEnumProducts, MsiGetProductInfo
 
@@ -212,13 +227,11 @@ public static class Program {
 	 static MSI_ERROR GetProperty(string productGuid, string propertyName, StringBuilder resultBuffer) {
 			int bufferSize = resultBuffer.Capacity;
 			resultBuffer.Length = 0;
-			MSI_ERROR status = (MSI_ERROR) MsiGetProductInfo (productGuid,
-														  propertyName,
-														  resultBuffer, ref bufferSize);
+			MSI_ERROR status = (MSI_ERROR) MsiGetProductInfo( productGuid, propertyName, resultBuffer, ref bufferSize);
 			if (status == MSI_ERROR.ERROR_MORE_DATA) {
 				bufferSize++;
 				resultBuffer.EnsureCapacity (bufferSize);
-				status = (MSI_ERROR) MsiGetProductInfo (productGuid, propertyName, resultBuffer, ref bufferSize);
+				status = (MSI_ERROR) MsiGetProductInfo(productGuid, propertyName, resultBuffer, ref bufferSize);
 			}
 
 			if ((status == MSI_ERROR.ERROR_UNKNOWN_PRODUCT ||
@@ -236,10 +249,10 @@ public static class Program {
 				}
         // Unrecognized escape sequence_x000D__x000A_
 				registryKeyname.Append ("\\\\InstallProperties");
-				RegistryKey key = Registry.LocalMachine.OpenSubKey (registryKeyname.ToString ());
+				RegistryKey key = Registry.LocalMachine.OpenSubKey(registryKeyname.ToString ());
 				if (key != null) {
 					string valueName = "DisplayName";
-					if (String.Compare (propertyName, "ProductVersion", StringComparison.Ordinal) == 0)
+					if (String.Compare(propertyName, "ProductVersion", StringComparison.Ordinal) == 0)
 						valueName = "DisplayVersion";
 					string val = key.GetValue (valueName) as string;
 					if (!String.IsNullOrEmpty (val)) {
@@ -253,21 +266,21 @@ public static class Program {
 		}
 }
 '@ -ReferencedAssemblies 'System.Runtime.InteropServices.dll'
-      # NOTE: `Console.Error.WriteLine` or `Console.WriteLine`, when called directly from C# code do not play well with redirection
-      $result =  [Program]::Perform()
-      $result | where-object {-not ($_ -contains 'GUID') } | foreach-object { write-output $_ }
-	  EOF
-	  ) do
-		[
-		  'Product GUID: ',
-		  "Product Name: #{appName}",
-		  "Product Version: #{appVersion}",
-		].each do |line|
-		  its(:stdout) do
-			should match line
-		  end
-		end
-	  end
-	end
+        # NOTE: `Console.Error.WriteLine` or `Console.WriteLine`, when called directly from C# code do not play well with redirection
+        $result = [Program]::Perform()
+        $result | where-object {-not ($_ -contains 'GUID') } | foreach-object { write-output $_ }
+      EOF
+      ) do
+        [
+          'Product GUID: ',
+          "Product Name: #{app_name}",
+          "Product Version: #{app_version}",
+        ].each do |line|
+          its(:stdout) do
+            should match line
+          end
+        end
+      end
+    end
   end
 end
