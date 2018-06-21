@@ -4,6 +4,8 @@ else
   require 'spec_helper'
 end
 
+require 'socket'
+
 context 'Tomcat Shutdown Test' do
   before(:all) do
     Specinfra::Runner::run_command('systemctl start tomcat; sleep 10')
@@ -13,7 +15,24 @@ context 'Tomcat Shutdown Test' do
   application = 'Tomcat Application Name'
   server_file_path = "#{catalina_home}/conf/server.xml"
   context 'Basic' do
-    #
+    describe 'Ruby Call' do
+      it 'should not get exception' do
+        # NOTE: can not access instance #subject or #let methods without a block
+        # NOTE: can not nest `describe` within `it`
+        $stderr.puts subject
+        begin
+          TCPSocket.open('localhost', 8005) do |socket|
+            socket.write('SHUTDOWN_CHECK')
+              # status = 0
+            end
+          rescue => e
+            $stderr.puts 'Exception ' + e.to_s
+            # status = 1
+            throw
+          end
+        end
+      end
+    end
     class_name = 'ShutdownTest'
     sourcfile = "#{class_name}.java"
     source = <<-EOF
