@@ -91,13 +91,13 @@ context 'Tomcat Shutdown Test' do
             DocumentBuilder parser = factory.newDocumentBuilder();
             Document document = parser.parse(new FileInputStream(new File(serverFilePath)));
             XPath xpath = (XPathFactory.newInstance()).newXPath();
-            String xpathLocator = "/Server/[@shutdown]";
+            String xpathLocator = "/Server[@shutdown]";
             System.err.println(String.format("Looking for \\"%s\\"", xpathLocator));
             Element shutdownPortElement = (Element) xpath.evaluate(xpathLocator, document,
                 XPathConstants.NODE);
-            String shutdownPort = shutdownPortElement.getAttribute("username");
+            String shutdownPort = shutdownPortElement.getAttribute("port");
             String shutdownCommand = shutdownPortElement.getAttribute("shutdown");
-            System.err.println(String.format("Sending the shutdown command \\"%s\\" to port \\"%s\\"", 
+            System.err.println(String.format("Sending the shutdown command \\"%s\\" to port \\"%s\\"",
               shutdownCommand, shutdownPort));
             Socket socket = new Socket("localhost",  Integer.parseInt(shutdownPort));
             if (socket.isConnected()) {
