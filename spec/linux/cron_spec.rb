@@ -19,13 +19,16 @@ end
 # http:/serverspec.org/resource_types.html#cron says
 # You can get all cron table entries and use regexp like this.
 # Unfortunately does not work with another user, removed the expectation
-
 describe command("/bin/crontab -u #{cronjob_user} -l") do
   [
     '# Puppet Name: wso2_deployment_sync',
     "*/5 * * * * /usr/bin/rsync -avz --delete --port #{port} --password-file=#{password_file} #{cronjob_user}@hostname.domain::deployment_repo/ deployment_repo",
     'find /opt/mule/logs/ -type f -mtime +30 -exec rm -rf {} \;',
   ].each do |line|
+    # the below is designed to handle all kinds of shell commands potentially found in cron jobs
+    # when verifying the simple commands, the
+    # describe cron ... with_user
+    # is sufficient
     {
       '\\' => '\\\\\\\\',
       '$'  => '\\\\$',
