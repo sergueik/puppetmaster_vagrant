@@ -17,24 +17,29 @@ context 'Mule Enterprise Log files' do
   ].each do |log_file|
     file_mask = log_path + '/' + log_file
     Dir.glob(file_mask).each do |filepath|
-      describe file(fielpath) do
+      describe file(filepath) do
         it { should be_file }
       end
-      File.readlines(filepath).each do |line|
-        if line =~ Regexp.new(Regexp.escape(log_line))
-          $stderr.puts line
-          file_count = file_count + 1
-        end
+      File.readlines(filepath).select { |line| line =~ Regexp.new(Regexp.escape(log_line)) }.each do |line|
+        $stderr.puts line
+        file_count = file_count + 1
       end
     end
   end
-  describ(file_count) do
-    it {should be > 0 }
+  describe file_count do
+    it { expect(subject).to be > 0 }
+    it { should be > 0 }
   end
 
   # alternatively one can use grep command to find license information.
-  # in one of the logs contain
-  describe command("grep -il #{log_line} mule_ee.log mule_ee.log.*") do
-    its(:exit_status) {should eq 0}
+  # in one of the logs contain the log_line.
+  # NOTE: the test will fail when there is no mule_ee.log.*  
+  describe command(<<-EOF
+    cd '#{log_path}'
+    touch mule_ee.log.1
+    grep -il '#{log_line}' mule_ee.log mule_ee.log.*
+  EOF
+  ) do
+    its(:exit_status) { should eq 0 }
   end
 end
