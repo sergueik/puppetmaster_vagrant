@@ -22,16 +22,25 @@ context 'License Status' do
     #                   where PartialProductKey |
     #                   select LicenseStatus
 
-
-    # Longer form - presumably will work with Powershell 2.0
-    $license_status = Get-CimInstance -ClassName SoftwareLicensingProduct |
-                      Where-Object { $_.PartialProductKey -match '\\S' } |
-                      Select-Object -ExpandProperty LicenseStatus
-
-    write-output $license_status_codes[$license_status.tostring()]
+    $license_status = get-ciminstance -ClassName SoftwareLicensingProduct |
+                      where-object { $_.PartialProductKey -match '\\S' } |
+                      select-object -expandproperty LicenseStatus
+    write-output ('License status: {0}' -f $license_status )
+    write-output ('License status: {0}' -f $license_status_codes[($license_status.tostring())] )
+    $license_status_human = switch ($license_status)
+    {
+      0 { 'Unlicensed' }
+      1 { 'Licensed' }
+      2 { 'Out-of-Box Grace Period' }
+      3 { 'Out-of-Tolerance Grace Period' }
+      4 { 'Non-Genuine Grace Period' }
+      5 { 'Notification' }
+      6 { 'ExtendedGrace' }
+    }
+    write-output ('License status: {0}' -f $license_status_human )
   EOF
   ) do
-    its(:stdout) { should contain 'Licensed' }
+    its(:stdout) { should contain Regexp.new('License status: (?:Licensed|Notification)') }
 
   end
 end
