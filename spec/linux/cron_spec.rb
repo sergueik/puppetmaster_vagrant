@@ -26,6 +26,9 @@ describe command("/bin/crontab -u #{cronjob_user} -l") do
     'find /opt/mule/logs/ -type f -mtime +30 -exec rm -rf {} \;',
   ].each do |line|
     # the below is designed to handle all kinds of shell commands potentially found in cron jobs
+    # home brewed log rotation is an example of a cron jopb with heavy inline syntax which requires tweaking to create a working expectation:
+    # find /apps/logs -type f \( -name \*-json-log.xz -o -name splunk_aggregated-\*.log.xz \) -mtime +7 -exec rm {} \; 2> /dev/null
+    # it { should have_entry("find /apps/logs -type f \\( -name \\\*-json-log.xz -o -name splunk_aggregated-\\\*.log.xz \\) -mtime +7 -exec rm {} \\; 2> /dev/null").with_user('splunk') }
     # when verifying the simple commands, the
     # describe cron ... with_user
     # is sufficient
