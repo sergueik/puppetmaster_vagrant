@@ -8,7 +8,7 @@ context 'xmllint' do
   catalina_home = '/usr/share/tomcat'
   server_xml = "#{catalina_home}/conf/server.xml"
   web_xml = "#{catalina_home}/conf/web.xml"
-  
+
   context 'availability' do
     describe command('which xmllint') do
       its(:exit_status) { should eq 0 }
@@ -100,6 +100,24 @@ context 'xmllint' do
       its(:stdout) { should match Regexp.new('autocomplete="false"' )}
       its(:stdout) { should_not match 'HTML parser error' }
       its(:stderr) { should be_empty }
+    end
+  end
+  context 'Missing Node Validation' do
+    # some Java application are re-condifured by commenting whole nodes in XML configuration e.g.
+    # https://docs.oracle.com/javadb/10.10.1.2/adminguide/radminjmxenabledisable.html
+    # https://docs.wso2.com/display/ESB470/Default+Ports+of+WSO2+Products
+    jmx_config = '/usr/share/wso2/apim/application/repository/conf/etc/jmx.xml'
+    {
+      'RMIRegistry' => 11111,
+      'RMIServer' => 9999,
+    }.each do |service, port|
+      describe command("xmllint --xpath '/#{service}' '#jmx_config'") do
+        # the node will be disabled in the configuration
+        its(:stderr) { should match /XPath set is empty/ }
+      end
+      describe port(port) do
+        it { should_not be_listenind }
+      end
     end
   end
 end
