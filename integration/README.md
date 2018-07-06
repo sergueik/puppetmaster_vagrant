@@ -118,6 +118,7 @@ print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
 ```
 ### See Also
   * [REXML Tutorial](http://www.germane-software.com/software/rexml/docs/tutorial.html) for `insert_after` example.
+  * [example Puppet enc.sh](https://github.com/T-Systems-MMS/puppet-example-enc)
 
 ### License
 This project is licensed under the terms of the MIT license.

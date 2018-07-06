@@ -1,7 +1,7 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
 node 'default' {
-  # include urugeas
+  include urugeas
   # https://puppet.com/docs/puppet/5.3/style_guide.html
   xml_fragment {
     default:
@@ -15,7 +15,6 @@ node 'default' {
       before  => Xml_fragment['/web-app/filter/filter-name','/web-app/filter/filter-class','/web-app/filter/async-supported'];
     '/web-app/filter/filter-name':
       xpath   => '/web-app/filter/filter-name',
-      # require => Xml_fragment['/web-app/filter'],
       content => {
         value => 'httpHeaderSecurity',
       },;
@@ -27,7 +26,6 @@ node 'default' {
       },;
     '/web-app/filter/async-supported':
       xpath   => '/web-app/filter/async-supported',
-      # require => Xml_fragment['/web-app/filter'],
       content => {
         value =>'true',
       },;
