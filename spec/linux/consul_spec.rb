@@ -37,11 +37,11 @@ context 'consul checks' do
     [
       'web',
     ].each do |service|
-      describe command("curl http://localhost:8500/v1/catalog/service/#{service} | jq .") do
+      describe command("curl http://localhost:8500/v1/catalog/service/#{service} | jq -M '.'") do
         let(:path) { '/bin:/usr/bin:/usr/local/bin'}
         its(:stdout) { should match( Regexp.new(Regexp.escape("\"ServiceID\": \"#{service}\""))) }
       end
-      describe command("jq '.' /etc/consul.d/#{service}.json") do
+      describe command("jq -M '.' /etc/consul.d/#{service}.json") do
         let(:path) { '/bin:/usr/bin:/usr/local/bin'}
         its(:stdout) { should match( Regexp.new(Regexp.escape("\"name\": \"#{service}\""))) }
       end

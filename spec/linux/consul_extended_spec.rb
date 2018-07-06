@@ -39,7 +39,7 @@ END
       # mock
       consul_service_config_file = "/etc/consul.d/service_#{monitored_service_name}.json"
       # mock
-      api_command = "/usr/bin/jq '.' #{datafile}"
+      api_command = "/usr/bin/jq -M '.' #{datafile}"
       api_command = "cat #{datafile}"
       $stderr.puts "api_command: " + api_command if $DEBUG
 
@@ -47,7 +47,7 @@ END
       $stderr.puts 'Running the command' if $DEBUG
       begin
         service_object_data = command(api_command).stdout
-        $stderr.puts "raw service_object_data: " + service_object_data if $DEBUG
+        $stderr.puts 'raw service_object_data: ' + service_object_data if $DEBUG
       rescue => e
         # Exception `IO::EAGAINWaitReadable in specinfra <internal:prelude>:76
         $stderr.puts 'Exception from running the command : ' + e.to_s
@@ -66,10 +66,10 @@ END
         $stderr.puts 'Trying YAML load' if $DEBUG
         service_object = YAML.load(service_object_data)
       rescue Exception => e
-        $stderr.puts 'Exception from YAML: ' + e.to_s
+        $stderr.puts 'Exception from YAML load: ' + e.to_s
       end
       if ! service_object.nil?
-        $stderr.puts "service_object: " + service_object.class.name if $DEBUG
+        $stderr.puts 'Service_object: ' + service_object.class.name if $DEBUG
         describe 'Test' do
           subject { OpenStruct.new service_object['service'] }
           its(:port) { should eq tcp_port }
