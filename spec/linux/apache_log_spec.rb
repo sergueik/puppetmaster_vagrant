@@ -55,9 +55,9 @@ context 'Splunk Logging' do
       end
     end
 
-    # this will break with numerous 
-    # Exception `IO::EAGAINWaitReadable' at /root/.gem/ruby/2.1.0/gems/specinfra-2.73.0/lib/specinfra/backend/exec.rb:102 - 
-    # Resource temporarily unavailable - 
+    # this will break with numerous
+    # Exception `IO::EAGAINWaitReadable' at /root/.gem/ruby/2.1.0/gems/specinfra-2.73.0/lib/specinfra/backend/exec.rb:102 -
+    # Resource temporarily unavailable -
     # read would block
     # need to test under uru/Ruby 2.33
     context 'Processing with Ruby JSON module' do
@@ -87,6 +87,6 @@ context 'Splunk Logging' do
           its(:protocol) { should be '%H' }
         end
       end
-    end  
+    end
   end
 end

@@ -7,8 +7,12 @@ end
 require 'socket'
 
 context 'Tomcat Shutdown Test' do
-  before(:all) do
-    Specinfra::Runner::run_command('systemctl start tomcat; sleep 10')
+  before(:each) do
+    Specinfra::Runner::run_command(<<-EOF
+      systemctl start tomcat
+      sleep 10
+    EOF
+    )
   end
   catalina_home = '/usr/share/tomcat'
   path_separator = ':'
@@ -22,14 +26,13 @@ context 'Tomcat Shutdown Test' do
         $stderr.puts subject
         begin
           TCPSocket.open('localhost', 8005) do |socket|
-            socket.write('SHUTDOWN_CHECK')
+            socket.write('SHUTDOWN')
               # status = 0
-            end
-          rescue => e
-            $stderr.puts 'Exception ' + e.to_s
-            # status = 1
-            throw
           end
+        rescue => e
+          $stderr.puts 'Exception ' + e.to_s
+          # status = 1
+          throw
         end
       end
     end

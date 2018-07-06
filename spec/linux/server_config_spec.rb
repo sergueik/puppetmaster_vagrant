@@ -35,4 +35,3 @@ context 'Server Round Robin Config files' do
     its(:stdout) {should match /server\d+.domain.net/ }
   end
 end
-
