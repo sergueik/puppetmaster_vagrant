@@ -25,7 +25,7 @@ context 'Apache configuration' do
         # double negative, see below
         its(:stdout) { should_not match( Regexp.new("Server: Apache(?!/[0-9.]+)(?!/\([a-zA-Z.]+\)).*$")) }
         # explicit match of the
-        its(:stdout) { should match /Server: Apache\/\d\.\d+\.\d+ *\((?:Unix|CentOS)\)/i }
+        its(:stdout) { should match /Server: Apache\/\d\.\d+\.\d+ *\((:?Unix|CentOS)\)/i }
       end
     end
     context 'Rectified'  do
@@ -42,7 +42,7 @@ context 'Apache configuration' do
         # negative lookahead 
         its(:stdout) { should match( Regexp.new("Server: Apache(?!/[0-9.]+)(?!/\([a-zA-Z.]+\)).*$")) }
         # explicit negative match via RSpec DSL
-        its(:stdout) { should_not match /Server: Apache\/\d\.\d+\.\d+ *\((?:Unix|CentOS)\)/i }
+        its(:stdout) { should_not match /Server: Apache\/\d\.\d+\.\d+ *\((:?Unix|CentOS)\)/i }
       end
     end
   end

@@ -110,7 +110,7 @@ context 'Jenkins' do
         EOF
         ) do
           let(:path) { '/bin:/usr/bin:/usr/local/bin'}
-          its(:stdout) { should match /(?:project|flow)/ }
+          its(:stdout) { should match /(:?project|flow)/ }
         end
       else
         puts 'Skipped using xmlsimple gem for XML test'
@@ -129,7 +129,7 @@ context 'Jenkins' do
       EOF
       ) do
         let(:path) { '/bin:/usr/bin:/usr/local/bin' }
-        its(:stdout) { should match /(?:#{class_name})/ }
+        its(:stdout) { should match /(:?#{class_name})/ }
         its(:stderr) { should be_empty }
         its(:exit_status) {should eq 0 }
       end
