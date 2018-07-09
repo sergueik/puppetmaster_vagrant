@@ -34,7 +34,6 @@ class urugeas(
   ]),
 ){
   require 'stdlib'
-  # validate_hash_deep({'foo' => 'bar' })
   validate_hash_deep({
     'first' =>
       {
@@ -44,10 +43,16 @@ class urugeas(
     'second' =>
       {
         'foo' => 1,
-        'bar' => 1,
+        'bar' => 'trailing_white_space ', # trailing white space' value
       },
-      'bad' => 'string',
-    })
+    'third' =>
+      {
+        'foo' => 1,
+        'bad' => 1, # no 'bar' key
+      },
+    'fourth' => 'string', # not a hash in val
+  })
+
   $config_dir = '/var/lib/jenkins'
   $config_file = "${config_dir}/config_xml"
   # NOTE: change to 'web.xml', 'session-config' to see the error
