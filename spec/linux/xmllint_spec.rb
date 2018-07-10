@@ -111,8 +111,9 @@ context 'xmllint' do
       'RMIRegistry' => 11111,
       'RMIServer' => 9999,
     }.each do |service, port|
-      describe command("xmllint --xpath '/#{service}' '#jmx_config'") do
-        # the node will be disabled in the configuration
+      describe command("xmllint --xpath '//*[local-name()=\"#{service}\"]' '#jmx_config'") do
+        # the ports will be disabled in the sut configuration. Node made invisble.
+        # the alterantive way (not shown here) is to set RMIStartService text to false
         its(:stderr) { should match /XPath set is empty/ }
       end
       describe port(port) do
