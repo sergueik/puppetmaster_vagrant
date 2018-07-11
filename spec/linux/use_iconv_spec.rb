@@ -23,6 +23,8 @@ context 'Sysctl tests' do
       'LoadState'   => 'loaded',
       'ActiveState' => 'active', # 'inactive'  or 'failed' when stopped,
       'After'       => 'system.slice remote-fs.target tmp.mount network.target basic.target -.mount nss-lookup.target systemd-journald.socket',
+      # 'Environment' =>   not in default systemctl configuration of Apache httpd
+      'EnvironmentFile' => '/etc/sysconfig/httpd (ignore_errors=no)',
       # NOTE: the actual sysctl output will contain pid and start_time making the include? fail
       # 'ExecStart'   => '{ path=/usr/sbin/httpd ; argv[]=/usr/sbin/httpd $OPTIONS -DFOREGROUND ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }',
       'ExecReload'  => '{ path=/usr/sbin/httpd ; argv[]=/usr/sbin/httpd $OPTIONS -k graceful ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }',
