@@ -1,10 +1,8 @@
 # name of the custom fact
 fact_name = 'powershell_version'
 
-$DEBUG = false
-
 # code of the fact
-
+$DEBUG = false
 if Facter.value(:kernel) == 'windows'
   def powershell_xml_get_version
 
@@ -13,8 +11,10 @@ if Facter.value(:kernel) == 'windows'
     if File.exists?(file_path)
       begin
         script = "([xml](get-content -path '#{file_path}')).Info.Product.version"
+        powershell_exec = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+        powershell_flags = '-executionpolicy remotesigned'
         $stderr.puts "script: #{script}" if $DEBUG
-        command = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -executionpolicy remotesigned -command \" & { #{script} }\""
+        command = "#{powershell_exec} #{powershell_flags} -command \" & { #{script} }\""
         $stderr.puts "command: #{command}" if $DEBUG
         result = Facter::Util::Resolution.exec(command)
       rescue => ex

@@ -4,14 +4,18 @@ if Facter.value(:kernel) == 'windows'
 
   Facter.add(fact_name) do
     prefix = 'answer'
+    script_filepath = 'c:/windows/temp/test.ps1'
+
     setcode do
-      File.write('c:/windows/temp/test.ps1', <<-EOF
+      File.write(script_filepath, <<-EOF
         # Powershell script
         write-output '#{prefix} 42'
       EOF
       )
       data = nil
-      command =  'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned -file "c:/windows/temp/test.ps1"'
+      powershell_exec = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+      powershell_flags = '-executionpolicy remotesigned'
+      command =  "#{powershell_exec} #{powershell_flags} -file \"#{script_filepath}\""
       # puts "command=#{command}"
       if output = Facter::Util::Resolution.exec(command)
       	# puts "output=#{output}"

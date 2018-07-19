@@ -16,7 +16,6 @@ if Facter.value(:kernel) == 'windows'
   def versioninfo_ffi_version(filepath)
 
     # contains two alternative code snippets, one unfinished, equally cryptic
-
     file_version = nil
     size_in_bytes = Test.version_resource_size_bytes(filepath, nil)
     if size_in_bytes != 0
@@ -88,8 +87,8 @@ if Facter.value(:kernel) == 'windows'
       script = <<-EOF
         $filepath = '#{filepath}'
         $info = get-item -path $filepath
-        $raw_info  = $info.Versioninfo.ProductVersion
-        $fact =  $raw_info  -replace '(\\d+\\.\\d+\\.\\d+)\\s+\\(Build\\s+(.+)\\)\\s*$' , '$1-$2'
+        $raw_info = $info.Versioninfo.ProductVersion
+        $fact = $raw_info -replace '(\\d+\\.\\d+\\.\\d+)\\s+\\(Build\\s+(.+)\\)\\s*$', '$1-$2'
         write-output $fact
       EOF
       # Convert to a single-line snippet
@@ -106,7 +105,7 @@ if Facter.value(:kernel) == 'windows'
       # versioninfo_ffi_version(filepath) # vboxcontrol_version = '4.3.8.92456'
       powershell_get_version(filepath)  # vboxcontrol_version = '4.3.8.r92456'
       registry_uninstall_version('A26152DC-07BA-4ACE-A86C-F8385DC55097')
-     # Puppet 'A26152DC-07BA-4ACE-A86C-F8385DC55097'
+      # Puppet 'A26152DC-07BA-4ACE-A86C-F8385DC55097'
     end
   end
 end

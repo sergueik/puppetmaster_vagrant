@@ -16,9 +16,9 @@ if Facter.value(:kernel) == 'windows'
     auth_key = 'auth_key'
     auth_value = 'auth_value'
     url = 'https://api.github.com/user'
-
+    script_filepath = 'c:/windows/temp/test.ps1'
     setcode do
-      File.write('c:/windows/temp/test.ps1', <<-EOF
+      File.write(script_filepath, <<-EOF
         param(
           [string]$username = '#{username}',
           [string]$password = '#{password}',
@@ -77,7 +77,9 @@ if Facter.value(:kernel) == 'windows'
       )
       data_prefix = 'Content'
       data = nil
-      if output = Facter::Util::Resolution.exec('C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned -file "c:/windows/temp/test.ps1"')
+      powershell_exec = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+      powershell_flags = '-executionpolicy remotesigned'
+      if output = Facter::Util::Resolution.exec("#{powershell_exec} #{powershell_flags} -file \"#{script_filepath}\"")
       	# puts "output=#{output}"
         data_line = output.split("\n").grep(/#{data_prefix}/).first
         data = data_line.scan(/"[^"]+"/).first

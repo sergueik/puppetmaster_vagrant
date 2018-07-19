@@ -1,13 +1,11 @@
-require 'rexml/document'
-include REXML
-
 # name of the custom fact
 fact_name = 'rexml_version'
 
-$DEBUG = false
-
 # code of the fact
+require 'rexml/document'
+include REXML
 
+$DEBUG = false
 def rexml_get_version
   result = nil
   file_path = 'version.xml'
@@ -20,7 +18,7 @@ def rexml_get_version
     end
     doc = Document.new(file)
     # TODO: assert
-    # puts doc.version if $DEBUG
+    # STDERR.puts doc.version if $DEBUG
     result = doc.root.elements['Product'].attributes['version']
   end
 end

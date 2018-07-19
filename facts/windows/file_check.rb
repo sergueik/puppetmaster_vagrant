@@ -1,4 +1,4 @@
-# checks for the file using Powershell 
+# checks for the file using Powershell
 # This skeleton script allows generalization to many other providers that Powershell represents as directory-like interface:
 # certificates, registry, firewall.
 
@@ -12,7 +12,7 @@ if Facter.value(:kernel) == 'windows'
     Facter.add(fact_name) do
       setcode do
       	status = nil
-      	script = "$filename = '#{filename}'; $status = (test-path -path $filename -ErrorAction SilentlyContinue ); write-output $status.toString()" 
+      	script = "$filename = '#{filename}'; $status = (test-path -path $filename -ErrorAction SilentlyContinue ); write-output $status.toString()"
         # extract vendor application version from the help screen.
         if output = Facter::Util::Resolution.exec("#{exe} #{script}")
           status = output.split("\n").first

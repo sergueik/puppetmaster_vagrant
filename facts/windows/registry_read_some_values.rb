@@ -28,7 +28,9 @@ if kernel == 'windows'
     end
     return data
   end
-
+  # a practical example is when there are related value sets in two registry keys belonging e.g. to snmp service
+  # and one wants to substract them
+  # result = (result1.slit(',') - result2.split(',')).join(',')
   result = hklm_read_some_values('SYSTEM\CurrentControlSet\services\mcollective', '^D' ) # DisplayName, Description
   if result != ''
     Facter.add(fact_name) do

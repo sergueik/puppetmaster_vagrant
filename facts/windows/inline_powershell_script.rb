@@ -1,6 +1,6 @@
-# This skeleton script demonstrates 
+# This skeleton script demonstrates
 # perform Registry scan using Powershell inline
-$ This may be useful for Powershell directory-like providers other than registry:
+# This may be useful for Powershell directory-like providers other than registry:
 # certificates, registry, firewall
 # NOTE: this fact is quite fragile
 # the inline script may work correctly in Powershell and cmd console, but return no result to Ruby

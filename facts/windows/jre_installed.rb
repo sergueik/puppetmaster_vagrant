@@ -9,15 +9,15 @@ if Facter.value(:kernel) == 'windows'
     if output = Facter::Util::Resolution.exec("#{tool} #{argument}")
       output.split("\n").grep(/#{data_prefix}/).each do |version|
         version.gsub!(/^.*REG_SZ\s+/,'')
-        if version        
+        if version
           versions.push( version)
         end
       end
     end
-    if versions.length > 0 
-      setcode { versions.join(',') }
-    else 
-      setcode { '' }    
+    if versions.length > 0
+      setcode { versions.join ',' }
+    else
+      setcode { '' }
     end
   end
 end

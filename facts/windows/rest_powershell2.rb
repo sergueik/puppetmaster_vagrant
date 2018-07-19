@@ -5,6 +5,7 @@
 # https://blogs.technet.microsoft.com/bshukla/2010/04/12/ignoring-ssl-trust-in-powershell-system-net-webclient/
 # see also
 # https://github.com/voxpupuli/puppet-download_file/blob/master/templates/download.ps1.erb
+# https://www.datacore.com/RESTSupport-Webhelp/using_windows_powershell_as_a_rest_client.htm
 
 fact_name = 'rest_powershell2_test'
 
@@ -22,9 +23,11 @@ if Facter.value(:kernel) == 'windows'
     is_password_secure = false
     cookie_string = ''
     url = 'https://api.github.com/user'
+    script_filepath = 'c:/windows/temp/test.ps1'
 
     setcode do
-      File.write('c:/windows/temp/test.ps1', <<-EOF
+      File.write(script_filepath, <<-EOF
+
         param(
           [string]$username = '#{username}',
           [string]$password = '#{password}',
@@ -105,7 +108,9 @@ if Facter.value(:kernel) == 'windows'
       )
       data_prefix = 'Content'
       data = nil
-      if output = Facter::Util::Resolution.exec('C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy remotesigned -file "c:/windows/temp/test.ps1"')
+      powershell_exec = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+      powershell_flags = '-executionpolicy remotesigned'
+      if output = Facter::Util::Resolution.exec("#{powershell_exec} #{powershell_flags} -file \"#{script_filepath}\"")
       	# puts "output=#{output}"
         data_line = output.split("\n").grep(/#{data_prefix}/).first
         data = data_line.scan(/"[^"]+"/).first
