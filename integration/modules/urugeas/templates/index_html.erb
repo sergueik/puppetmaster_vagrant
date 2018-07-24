@@ -2,12 +2,10 @@
 <html>
 <body>
 <pre>
-# the varying parameter is loaded from string array hiera parameter
 ERROR_PATTERNS_STR='<%= @error_patterns_str -%>'
+LOG_FILE='/tmp/process.log'
 # the shell retry logic follows.
-# the shell script is loaded from inline newline-preserving string hiera parameter
 <%= @cdata -%>
 </pre>
 </body>
 </html>
-

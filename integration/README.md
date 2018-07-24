@@ -29,7 +29,7 @@ and
 ```
 It appears easier for augtool to add then uncomment the present but commented nod.
 
-It looks that tomcat configuration `web.xml` is causing trouble to Puppet `augeas` resource 
+It looks that tomcat configuration `web.xml` is causing trouble to Puppet `augeas` resource
 
 shown below will mysteriously fail without any explanation even in debug run.
 
@@ -76,7 +76,7 @@ shown below will mysteriously fail without any explanation even in debug run.
    changes => $augeas_security_part3_changes,
  }
 ```
-while manageable by an equivalent `augtool` script. 
+while manageable by an equivalent `augtool` script.
 ```shell
 set /augeas/load/xml/lens 'Xml.lns'
 set /augeas/load/xml/incl  '/var/lib/jenkins/web.xml'
@@ -87,7 +87,7 @@ load
 # save
 # print /files//var/lib/jenkins/web.xml/web-app/dummy
 
-# part 1 
+# part 1
 insert "filter-mapping" before /files/var/lib/jenkins/web.xml/web-app/session-config
 save
 set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/filter-name/#text "httpHeaderSecurity"
@@ -114,7 +114,7 @@ set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-name/#text
 set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#text "SAMEORIGIN"
 
 save
-print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
+t print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
 ```
 ### See Also
   * [REXML Tutorial](http://www.germane-software.com/software/rexml/docs/tutorial.html) for `insert_after` example.
@@ -122,6 +122,30 @@ print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
 
 ### License
 This project is licensed under the terms of the MIT license.
+### Sample Jenkins command
+```xml
+<![CDATA[
+# the shell retry logic follows.
+ERROR_PATTERNS_STR='(?end of file reached|failed to generate additional resource|encountered end of file|feiled to list packages|retrieving certificate failed)'
+LOG_FILE='/tmp/process.log'
+MAX_RETRY=
+TRY=$MAX_RETRY
+while [[ $TRY != 0 ]] ; do
+  &lt;some REST / curl command&gt;
+  grep -qiE $ERROR_PATTERNS_STR $LOG_FILE &gt; /dev/null
+  if [[ $? -eq 0 ]]
+  then
+    TRY=$(expr $TRY - 1)
+    TRY_COUNT=$(expr $MAX_RETRY - $TRY)
+    echo &quotERROR: RETRY $TRY_COUNT&quot
+  else
+    TRY=0
+  fi
+done
+]]>
+</command>
+<!-- The shell script is loaded from inline newline-preserving string hiera parameter -->
 
+```
 ### Author
 [Serguei Kouzmine](kouzmine_serguei@yahoo.com)

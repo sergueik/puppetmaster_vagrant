@@ -7,14 +7,20 @@ urugeas::exercise_augtool: true
 # so the ampersand, quotes, greater and less would be escaped
 urugeas::shell_build_command: '<some REST / curl command>'
 urugeas::shell_command:  |
-  if true ; then
-  %{hiera('urugeas::shell_build_command')} 
-  grep -qiE '(?filename not matched|cannot find zipfile directory)' $LOG_FILE > /dev/null
-  if [[ $? -eq 0 ]]
-  then
-    echo "ERROR: RETRY 1"
-  fi
-  end
+  MAX_RETRY= %{hiera('urugeas::max_retry')}
+  TRY=$MAX_RETRY
+  while [[ $TRY != 0 ]] ; do
+    %{hiera('urugeas::shell_build_command')}
+    grep -qiE $ERROR_PATTERNS_STR $LOG_FILE > /dev/null
+    if [[ $? -eq 0 ]]
+    then
+      TRY=$(expr $TRY - 1)
+      TRY_COUNT=$(expr $MAX_RETRY - $TRY)
+      echo "ERROR: RETRY $TRY_COUNT"
+    else
+      TRY=0
+    fi
+  done
 
 urugeas::error_patterns:
   - 'end of file reached'
