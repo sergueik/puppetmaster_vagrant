@@ -33,25 +33,27 @@ class urugeas(
     # 'rm securityRealm/authContext', # this will work
   ]),
 ){
+
   require 'stdlib'
-  validate_hash_deep({
-    'first' =>
-      {
-        'foo' => 1,
-        'bar' => 1,
-      },
-    'second' =>
-      {
-        'foo' => 1,
-        'bar' => 'trailing_white_space ', # trailing white space' value
-      },
-    'third' =>
-      {
-        'foo' => 1,
-        'bad' => 1, # no 'bar' key
-      },
-    'fourth' => 'string', # not a hash in val
-  })
+  # suppress to prevent validation errors from stopping provision
+  #   validate_hash_deep({
+  #     'first' =>
+  #       {
+  #         'foo' => 1,
+  #         'bar' => 1,
+  #       },
+  #     'second' =>
+  #       {
+  #         'foo' => 1,
+  #         'bar' => 'trailing_white_space ', # trailing white space' value
+  #       },
+  #     'third' =>
+  #       {
+  #         'foo' => 1,
+  #         'bad' => 1, # no 'bar' key
+  #       },
+  #     'fourth' => 'string', # not a hash in val
+  #   })
 
   $config_dir = '/var/lib/jenkins'
   $config_file = "${config_dir}/config_xml"

@@ -1,0 +1,10 @@
+<!-- the varying parameter is loaded from string array hiera parameter -->
+<command>
+<![CDATA[
+# the shell retry logic follows.
+ERROR_PATTERNS_STR='<%= @error_patterns_str -%>'
+LOG_FILE='/tmp/process.log'
+<%= @cdata -%>
+]]>
+</command>
+<!-- The shell script is loaded from inline newline-preserving string hiera parameter -->

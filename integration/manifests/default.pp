@@ -29,5 +29,8 @@ node 'default' {
       content => {
         value =>'true',
       },;
+ }
+  urugeas::jenkins_job_builder { 'test':
   }
 }
+

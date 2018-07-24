@@ -3,6 +3,33 @@ urugeas::version: '0.2.0'
 # suppress running augool during augeas resource testing and vice versa
 urugeas::exercise_tomcat_security_change: false
 urugeas::exercise_augtool: true
+# the shell command will be eventually embedded in a Jenkins job config.xml as CDATA section but here is it just a plain shell script
+# so the ampersand, quotes, greater and less would be escaped
+urugeas::shell_build_command: '<some REST / curl command>'
+urugeas::shell_command:  |
+  if true ; then
+  %{hiera('urugeas::shell_build_command')} 
+  grep -qiE '(?filename not matched|cannot find zipfile directory)' $LOG_FILE > /dev/null
+  if [[ $? -eq 0 ]]
+  then
+    echo "ERROR: RETRY 1"
+  fi
+  end
+
+urugeas::error_patterns:
+  - 'end of file reached'
+  - 'failed to generate additional resource'
+  - 'encountered end of file'
+  - 'feiled to list packages'
+  - 'retrieving certificate failed'
+
+urugeas::fatal_error_patterns:
+  - 'end of file reached'
+  - 'failed to generate additional resource'
+  - 'encountered end of file'
+  - 'feiled to list packages'
+  - 'retrieving certificate failed'
+
 urugeas::augeas_testing:
   - set 'useSecurity/#text' 'false'
   - set 'port/#text' '8000'
