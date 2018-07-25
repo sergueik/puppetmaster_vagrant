@@ -26,7 +26,7 @@ define urugeas::jenkins_job_builder (
   notify { "${name} error patterns(processed)":
     message => $error_patterns_str,
   }
-  $cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot', 'G'), "'", '&apos;', 'G')
+  $cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
   notify { "${name} shell script (cdata)":
     message => $cdata,
   }
