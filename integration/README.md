@@ -147,5 +147,22 @@ done
 <!-- The shell script is loaded from inline newline-preserving string hiera parameter -->
 
 ```
+The error detection wrapper script can be easily made more complex. It is deoupled from the actual 'build'  script:
+the two are merged vi Pupper 
+`%{hiera('class_name::parameter_name')}` [lookup function](https://puppet.com/docs/hiera/3.3/variables.html).
+
+The array of patterns used for the log scan (both test positive and test negative are possible) is constructed through Puppet 'code':
+
+```puppet
+  $error_patterns_str = regsubst(regsubst($error_patterns.join('|'),'^' ,'(?' ,'' ),'$' ,')' ,'')
+```
+The above converts an array `['a','b','c']` into a non-capturing Regex inline constructor argument `(?:|b|c)`.
+
+The HTML encodeded data is also produced by Puppet, the hiera parameter `urugeas::shell_command` is a *raw* bash code:
+```puppet
+  String $shell_command = lookup('urugeas::shell_command'),
+  $cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
+```
+
 ### Author
 [Serguei Kouzmine](kouzmine_serguei@yahoo.com)
