@@ -1,5 +1,5 @@
 ---
-urugeas::version: '0.2.0'
+urugeas::version: '0.3.0'
 # suppress running augool during augeas resource testing and vice versa
 urugeas::exercise_tomcat_security_change: false
 urugeas::exercise_augtool: true
@@ -11,8 +11,13 @@ urugeas::shell_command:  |
   TRY=$MAX_RETRY
   while [[ $TRY != 0 ]] ; do
     %{hiera('urugeas::shell_build_command')}
-    grep -qiE $ERROR_PATTERNS_STR $LOG_FILE > /dev/null
+    grep -qiE "$ERROR_PATTERNS_STR" $LOG_FILE > /dev/null
+    ERROR_DETECTED=false
     if [[ $? -eq 0 ]]
+    then
+      ERROR_DETECTED=true
+    fi
+    if $ERROR_DETECTED
     then
       TRY=$(expr $TRY - 1)
       TRY_COUNT=$(expr $MAX_RETRY - $TRY)
