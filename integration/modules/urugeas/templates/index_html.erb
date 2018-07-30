@@ -2,10 +2,10 @@
 <html>
 <body>
 <pre>
-ERROR_PATTERNS_STR='<%= @error_patterns_str -%>'
-LOG_FILE='/tmp/process.log'
+ERROR_PATTERNS_REGEXP=&apos;<%= @error_patterns_regexp_cdata -%>&apos;
+LOG_FILE=&apos;/tmp/process.log&apos;
 # the shell retry logic follows.
-<%= @cdata -%>
+<%= @shell_command_cdata -%>
 </pre>
 </body>
 </html>

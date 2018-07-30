@@ -20,13 +20,14 @@ define urugeas::jenkins_job_builder (
   }
   # NOT:  can not combine expressions due to
   # Error: illegal comma separated argument list
-  $error_patterns_str = regsubst(regsubst($error_patterns.join('|'),'^' ,'(?' ,'' ),'$' ,')' ,'')
+  $error_patterns_regexp_string = regsubst(regsubst($error_patterns.join('|'),'^' ,'(?' ,'' ),'$' ,')' ,'')
   # $error_patterns_tmp = $error_patterns.join('|')
-  # $error_patterns_str = regsubst(regsubst($error_patterns_tmp,'^' ,'\(\?' ,''),'$' ,'\)' ,'')
+  # $error_patterns_regexp_string = regsubst(regsubst($error_patterns_tmp,'^' ,'\(\?' ,''),'$' ,'\)' ,'')
   notify { "${name} error patterns(processed)":
-    message => $error_patterns_str,
+    message => $error_patterns_regexp_string,
   }
-  $cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
+  $shell_command_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
+  $error_patterns_regexp_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($error_patterns_regexp_string, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
   notify { "${name} shell script (cdata)":
     message => $cdata,
   }

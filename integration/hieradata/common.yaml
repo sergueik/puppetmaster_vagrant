@@ -1,17 +1,17 @@
 ---
-urugeas::version: '0.3.0'
+urugeas::version: '0.2.2'
 # suppress running augool during augeas resource testing and vice versa
 urugeas::exercise_tomcat_security_change: false
 urugeas::exercise_augtool: true
 # the shell command will be eventually embedded in a Jenkins job config.xml as CDATA section but here is it just a plain shell script
 # so the ampersand, quotes, greater and less would be escaped
-urugeas::shell_build_command: '<some REST / curl command>'
+urugeas::shell_build_command: '# some curl command with output captured to $LOG_FILE'
 urugeas::shell_command:  |
   MAX_RETRY= %{hiera('urugeas::max_retry')}
   TRY=$MAX_RETRY
   while [[ $TRY != 0 ]] ; do
     %{hiera('urugeas::shell_build_command')}
-    grep -qiE "$ERROR_PATTERNS_STR" $LOG_FILE > /dev/null
+    grep -qiE "$ERROR_PATTERNS_REGEXP" $LOG_FILE > /dev/null
     ERROR_DETECTED=false
     if [[ $? -eq 0 ]]
     then
@@ -31,7 +31,7 @@ urugeas::error_patterns:
   - 'end of file reached'
   - 'failed to generate additional resource'
   - 'encountered end of file'
-  - 'feiled to list packages'
+  - 'failed to list packages'
   - 'retrieving certificate failed'
 
 urugeas::fatal_error_patterns:
