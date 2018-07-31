@@ -2,10 +2,12 @@
 <html>
 <body>
 <pre>
+<%#  Error pattern regexp parameter is compiled from string array hiera parameter by Puppet code %>
 ERROR_PATTERNS_REGEXP=&apos;<%= @error_patterns_regexp_cdata -%>&apos;
 LOG_FILE=&apos;/tmp/process.log&apos;
-# the shell retry logic follows.
+<%# Shell retry logic follows.%>
 <%= @shell_command_cdata -%>
+<%# Shell script is loaded from inline newline-preserving string hiera parameter %>
 </pre>
 </body>
 </html>

@@ -1,10 +1,10 @@
-<!-- the varying parameter is loaded from string array hiera parameter -->
 <command>
 <![CDATA[
-# the shell retry logic follows.
+<%#  Error pattern regexp parameter is compiled from string array hiera parameter by Puppet code %>
 ERROR_PATTERNS_REGEXP=&apos;<%= @error_patterns_regexp_cdata -%>&apos;
 LOG_FILE=&apos;/tmp/process.log&apos;
+<%# Shell retry logic follows. %>
 <%= @shell_command_cdata -%>
 ]]>
 </command>
-<!-- The shell script is loaded from inline newline-preserving string hiera parameter -->
+<%# Shell script is loaded from inline newline-preserving string hiera parameter %>
