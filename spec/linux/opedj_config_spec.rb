@@ -41,7 +41,16 @@ END
       HOSTNAME=$(hostname -s)
       # real opendj configuration command
       # DATA=$(/opt/opendj/bin/dsconfig --X --hostname $HOSTNAME --port 4444 -D $USER -w $PASSWORD --handler-name $HANDLER | grep -E '($PORT|$STATE)')
-      # mock it
+      # TODO: mock it
+      # format:
+      #
+      # Property         : Value(s)
+      # -----------------:--------------------
+      # db-cache-precent : 42
+      # base-dn          : "dc=company,dc=com"
+      # db-cache-size    : 0 b
+      # enabled          : true
+      #
       DATAFILE='#{datafile}'
       CONFIG_RESULT=$(cat $DATAFILE | grep -Ei '($PORT|enabled)')
       if $DEBUG ; then
