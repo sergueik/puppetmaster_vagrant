@@ -35,7 +35,7 @@ END
       'web' => 8080,
     }.each do |monitored_service_name, tcp_port|
 
-      api_command = "curl http://localhost:8500/v1/catalog/service/#{monitored_service_name} | /usr/bin/jq '.'"
+      api_command = "curl http://localhost:8500/v1/catalog/service/#{monitored_service_name} | /usr/bin/jq '.' - "
       # mock
       consul_service_config_file = "/etc/consul.d/service_#{monitored_service_name}.json"
       # mock

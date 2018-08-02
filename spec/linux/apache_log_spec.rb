@@ -37,6 +37,14 @@ context 'Splunk Logging' do
         its(:exit_status) { should eq 0 }
         # include as many domain-specific fields from jq output as needed
         its(:stdout) { should match Regexp.new('"protocol": "%H"', Regexp::IGNORECASE) }
+        {
+          '@message'  => '%h %l %u %t \"%r\" %>s %b',
+          'timestamp' =>  '%{%Y-%m-%dT%H:%M:%S%z}t',
+          'clientip'  => '%a',
+          'duration'  =>  '%D',
+        }.each do |key, val|
+          its(:stdout) { should match Regexp.new("\"#{key}\"": \"" + Regexp.escape(val) + '"', Regexp::IGNORECASE) }
+        end
         its(:stderr) { should be_empty }
       end
     end
@@ -44,7 +52,7 @@ context 'Splunk Logging' do
       describe command(<<-EOF
         RAWDATA=$(sed -n 's/^ *LogFormat \\(.*\\) #{log_format}$/\\1/p' '/etc/httpd/conf/httpd.conf')
         eval RESULT=$RAWDATA
-        echo $RESULT | jq -M '.'
+        echo $RESULT | jq -M '.' -
       EOF
       ) do
         let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
