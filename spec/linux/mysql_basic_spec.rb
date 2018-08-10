@@ -63,7 +63,7 @@ context 'MySQL' do
       GROUP BY TABLE_NAME
       ORDER BY COUNT(1) DESC;
     EOF
-    query1.gsub!(/$/, ' ')
+    query1.gsub!(/$/, ' ').gsub!(/  +/, ' ')
     {
     # the example lists the expected indexes and tables together
     'mysql' =>
@@ -93,7 +93,7 @@ context 'MySQL' do
       AND t.CONSTRAINT_NAME IS NULL
       ) x;
     EOF
-    query2.gsub!(/$/, ' ')
+    query2.gsub!(/$/, ' ').gsub!(/  +/, ' ')
     {
     # the example lists the expected indexes and tables together
     'mysql' =>
@@ -105,17 +105,16 @@ context 'MySQL' do
         |,
     }.each do |db,database_or_index_columns|
       describe command(<<-EOF
-        mysql -D '#{db}' -e "#{query2}" | tee '/tmp/query_result.txt'
+        mysql -D '#{db}' -e "#{query2}"
       EOF
       ) do
         database_or_index_columns.each do |database_or_index_name|
           its(:stdout) { should contain database_or_index_name }
         end
+        report_line = 'TABLE_NAME TABLE_SCHEMA INDEX_NAME'
+        its(:stdout) { should contain Regexp.new('^\s*' + report_line.strip.gsub!(/ +/, '\s+') + '\s*$', Regexp::IGNORECASE) }
       end
     end
-
-
-    query2.gsub!(/$/, ' ')
     # In a real world scenario one get the following output
     #   TABLE_NAME TABLE_SCHEMA INDEX_NAME
     #   API        WSO2_API     API_ID
@@ -124,22 +123,24 @@ context 'MySQL' do
     #   ...
     # with the indexes often named same for different tables
     {
-    'mysql' =>
+    'WSO2_API' =>
       %w|
           TABLE_NAME TABLE_SCHEMA INDEX_NAME
           API        WSO2_API     API_ID
           API_SCOPES WSO2_API     API_ID
           API_SCOPES WSO2_API     SCOPE_ID
         |,
-    }.each do |db,report_line|
-      user = 'databse_user'
+    }.each do |db,report_lines|
+      user = 'database_user'
       password = 'database_user_password'
       describe command(<<-EOF
         mysql -u #{user} -p'#{password}' -D '#{db}' -e "#{query2}" | tee '/tmp/query_result.txt'
       EOF
       ) do
-        database_or_index_columns.each do |database_or_index_name|
-          its(:stdout) { should contain Regexp.new(report_line.strip.gsub!(/  +/, '\\s+'), Regexp::IGNORECASE) }
+        report_lines.each do |report_line|
+          # including leading / trailing whitespace in match pattern is optional
+          # uncomment after providing reasonable inputs to database user identity
+          # its(:stdout) { should contain Regexp.new('^\s*' + report_line.strip.gsub!(/ +/, '\s+') + '\s*$', Regexp::IGNORECASE) }
         end
       end
     end
