@@ -105,11 +105,41 @@ context 'MySQL' do
         |,
     }.each do |db,database_or_index_columns|
       describe command(<<-EOF
-        mysql -D '#{db}' -e "#{query2}"
+        mysql -D '#{db}' -e "#{query2}" | tee '/tmp/query_result.txt'
       EOF
       ) do
         database_or_index_columns.each do |database_or_index_name|
           its(:stdout) { should contain database_or_index_name }
+        end
+      end
+    end
+
+
+    query2.gsub!(/$/, ' ')
+    # In a real world scenario one get the following output
+    #   TABLE_NAME TABLE_SCHEMA INDEX_NAME
+    #   API        WSO2_API     API_ID
+    #   API_SCOPES WSO2_API     API_ID
+    #   API_SCOPES WSO2_API     SCOPE_ID
+    #   ...
+    # with the indexes often named same for different tables
+    {
+    'mysql' =>
+      %w|
+          TABLE_NAME TABLE_SCHEMA INDEX_NAME
+          API        WSO2_API     API_ID
+          API_SCOPES WSO2_API     API_ID
+          API_SCOPES WSO2_API     SCOPE_ID
+        |,
+    }.each do |db,report_line|
+      user = 'databse_user'
+      password = 'database_user_password'
+      describe command(<<-EOF
+        mysql -u #{user} -p'#{password}' -D '#{db}' -e "#{query2}" | tee '/tmp/query_result.txt'
+      EOF
+      ) do
+        database_or_index_columns.each do |database_or_index_name|
+          its(:stdout) { should contain Regexp.new(report_line.strip.gsub!(/  +/, '\\s+'), Regexp::IGNORECASE) }
         end
       end
     end
