@@ -1,10 +1,28 @@
 require_relative '../windows_spec_helper'
 
 context 'File version' do # example of handling the convertto_json format
+  # based on:  http://forum.oszone.net/thread-336138.html (* russian)
   {
-   'c:\windows\system32\notepad.exe' => '6.1.7600.16385',
-   'c:/Program Files/Puppet Labs/Puppet/sys/ruby/bin/ruby.exe' =>  '2.1.9p490',
-   # 'c:/programdata/chocolatey/choco.exe' =>  '0.9.9.11',
+   'c:\windows\system32\notepad.exe'                           => '6.1.7600.16385',
+   'c:/Program Files/Puppet Labs/Puppet/sys/ruby/bin/ruby.exe' => '2.1.9.490',
+   # 'c:/programdata/chocolatey/choco.exe'                     => '0.9.9.11',
+  }.each do |file_path, file_version|
+    file_path = file_path.gsub(/\\/,'\\\\\\\\')
+    file_path = file_path.gsub(/\//,'\\\\\\\\')
+    $stderr.puts file_path
+    describe command(<<-EOF
+      wmic.exe datafile "#{file_path}" get Version /format:list
+    EOF
+    ) do
+      its(:stdout) do
+        should match /Version=#{file_version}/
+      end
+    end
+  end
+  {
+   'c:\windows\system32\notepad.exe'                           => '6.1.7600.16385',
+   'c:/Program Files/Puppet Labs/Puppet/sys/ruby/bin/ruby.exe' => '2.1.9p490',
+   # 'c:/programdata/chocolatey/choco.exe'                     => '0.9.9.11',
   }.each do |file_path, file_version|
     describe command(<<-EOF
       $file_path = '#{file_path}'
@@ -56,8 +74,8 @@ end
 
 context 'File version Powershell 2.0' do # Powershell 2.0 lacks convertto-json cmdlet
   {
-   # 'C:\Program Files (x86)\Columbo\Columbo.exe' =>  '1.1.1.0',
-   'c:\Program Files\Puppet Labs\Puppet\sys\ruby\bin\ruby.exe' =>  '2.1.9p490',
+   # 'C:\Program Files (x86)\Columbo\Columbo.exe'                => '1.1.1.0',
+   'c:\Program Files\Puppet Labs\Puppet\sys\ruby\bin\ruby.exe' => '2.1.9p490',
   }.each do |file_path, file_version|
     describe command(<<-EOF
     $file_path = '#{file_path}'
