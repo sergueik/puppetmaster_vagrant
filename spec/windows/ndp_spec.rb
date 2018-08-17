@@ -2,6 +2,12 @@ require_relative '../windows_spec_helper'
 
 context '.Net Versions' do
 
+  # NOTE: for extensive list of the the Net Framework version registry keys and values,
+  # with 4 field-granular (Major|Minor|Build|Revision) key release Version definition
+  # for .NET Framework 3.0, .NET Framework 3.4  and .NET Framework 4
+  # and single NetfxReleaseVersion for .NET Framework 4.5 ... 4.7.2
+  # see https://www.codeproject.com/Articles/1256260/NET-Framework-Checker
+  #
   context 'Powershell with Embedded C# code from MSDN' do
     # NOTE: only processes Full
     describe command(<<-'END_COMMAND'
@@ -51,14 +57,14 @@ public class GetCLRVersion {
     ) do
       its(:stdout) { should match /Version: 4.5 or later/i }
      # its(:stdout) { should match /Version: 4.5.2 or later/i }
-      its(:exit_status) { should be 0 } 
+      its(:exit_status) { should be 0 }
     end
   end
   context 'Powershell Stackoverflow example' do
-    
+
     describe command(<<-END_COMMAND
 # http://stackoverflow.com/questions/3487265/powershell-script-to-return-versions-of-net-framework-on-a-machine
-$versions = 
+$versions =
 Get-ChildItem 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP' -Recurse |
 Get-ItemProperty -Name Version,Release -ErrorAction SilentlyContinue |
 # Where { $_.PSChildName -match '^(?!S)\p{L}'} |
@@ -82,7 +88,7 @@ Select PSChildName, Version, Release, @{
 } | convertto-json
   write-output $versions
     # added for rspec convenience
-    
+
     END_COMMAND
     ) do
       [
@@ -95,10 +101,10 @@ Select PSChildName, Version, Release, @{
       '"Minor":  5',
       # '"Build":  2',
       '"Build":  -1',
-      ].each do |line|      
+      ].each do |line|
         its(:stdout) { should match line }
       end
-      its(:exit_status) { should be 0 } 
+      its(:exit_status) { should be 0 }
     end
   end
 end
