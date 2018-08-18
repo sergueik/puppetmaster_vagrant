@@ -35,6 +35,51 @@ class urugeas(
 ){
 
   require 'stdlib'
+  $ssl_command_data = {
+     # the keys are stores certificates to sign or something similar
+     # with a traditionally cryptic and long ssl command(s)
+     # used for actual 'command' and 'unless|onlyif' of the Pupper exec
+     # resource set
+     # assume that for some reason the set is to be ordered.
+     # in this eample values are all uniform.
+     # In the real life the values are usually not uniform:
+     # one can not reduce them to a smaller number
+    'admin' => {
+      'name'    => 'Execrise admin',
+      'src'     => 'admin-store',
+      'tmpfile' => 'admin',
+      'alias'   => 'admin-cert',
+      'next'    => 'Exercise user',
+      # can not store Exec here:
+      # Evaluation Error: 
+      # Error while evaluating a Method call, block parameter 'value' entry 'next' expects a Data value got Type
+    },
+    'user' => {
+      'name'    => 'Execrise user',
+      'src'     => 'user-store',
+      'tmpfile' => 'user',
+      'alias'   => 'user-cert',
+      'next'    => ''
+    },
+
+  }
+  $ssl_command_data.each |String $store_key, Hash $value| {
+    $name    = $value['name']
+    $src     = $value['src']
+    $tmpfile = $value['tmpfile']
+    $alias   = $value['alias']
+    $next    = $value['next']
+    if $next != '' {
+      $next_resource = [Notify[$next]]
+    } else {
+      $next_resource = []
+    }
+    notify { $name:
+      message => "Actual \"command\" or \"unless\" or \"onlyif\" attribute of the exec resource, with ${tmpfile} ${alias} ${src} placeholders",
+    }
+  }
+
+  notify {'dummy': }
   # suppress to prevent validation errors from stopping provision
   #   validate_hash_deep({
   #     'first' =>
