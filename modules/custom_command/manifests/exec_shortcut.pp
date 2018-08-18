@@ -42,6 +42,15 @@ define custom_command::exec_shortcut  (
     provider  => 'powershell',
   } 
   if $debug {
+    # see: https://www.tek-tips.com/viewthread.cfm?qid=850335
+    # one should "re-create" an existing link again to get to the preperties
+    # e.g.
+    # $o = new-object -ComObject 'WScript.Shell'
+    # $s = $o.CreateShortcut("C:\Users\Serguei\Desktop\Downloads - Shortcut.lnk")
+    # re-create an existing link again to get to the properties.
+    # write-output $s.TargetPath
+    # gives
+    # C:\Users\Serguei\Downloads
     exec { "${tasl_title_tag}_confirm_shortcut_created":
       command    => $path_check,
       cwd       => 'c:\windows\temp',
