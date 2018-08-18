@@ -29,7 +29,7 @@ define urugeas::jenkins_job_builder (
   $shell_command_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
   $error_patterns_regexp_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($error_patterns_regexp_string, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
   notify { "${name} shell script (cdata)":
-    message => $cdata,
+    message => $shell_command_cdata,
   }
   $job_xml_template = 'job_xml'
   $job_xml = 'job.xml'
@@ -45,10 +45,17 @@ define urugeas::jenkins_job_builder (
   # the replica of the above, but intentionally kept away from the loop
   $index_html_template = 'index_html'
   $index_html = 'index.html'
+  ['/var/www', '/var/www/html'].each |String $path| {
+    file {$path:
+      ensure => directory,
+      mode   => '0775',
+    }
+  }
   file { $index_html:
     ensure  => file,
     path    => "${webroot_path}/${index_html}",
     content => template("${module_name}/${index_html_template}.erb"),
+    require => File['/var/www/html'],
     mode    => '0755',
   }
   notify { "Generating dummy page with the jenkins command ${index_html} in the ${webroot_path}":

@@ -45,21 +45,25 @@ class urugeas(
      # In the real life the values are usually not uniform:
      # one can not reduce them to a smaller number
     'admin' => {
-      'name'    => 'Execrise admin',
-      'src'     => 'admin-store',
-      'tmpfile' => 'admin',
-      'alias'   => 'admin-cert',
-      'next'    => 'Exercise user',
-      # can not store Exec here:
+      'name'          => 'Execrise admin',
+      'src'           => 'admin-store',
+      'tmpfile'       => 'admin',
+      'alias'         => 'admin-cert',
+      'next'          => 'Exercise user',
+      # NOTE: cannot store plain Puppet reource type e.g. Notify, here:
+      # 'next_resource' => Notify['Exercise user'],
       # Evaluation Error: 
       # Error while evaluating a Method call, block parameter 'value' entry 'next' expects a Data value got Type
+      # 'next_resource' => [Notify['Exercise user']],
+      # Error while evaluating a Method call, block parameter 'value' entry 'next_resource' expects a Data value, got Tuple
     },
     'user' => {
-      'name'    => 'Execrise user',
-      'src'     => 'user-store',
-      'tmpfile' => 'user',
-      'alias'   => 'user-cert',
-      'next'    => ''
+      'name'          => 'Exercise user',
+      'src'           => 'user-store',
+      'tmpfile'       => 'user',
+      'alias'         => 'user-cert',
+      'next'          => '',
+      # 'next_resource' => [],
     },
 
   }
@@ -68,6 +72,7 @@ class urugeas(
     $src     = $value['src']
     $tmpfile = $value['tmpfile']
     $alias   = $value['alias']
+    # $next_resource    = $value['next_resource']
     $next    = $value['next']
     if $next != '' {
       $next_resource = [Notify[$next]]
@@ -76,6 +81,7 @@ class urugeas(
     }
     notify { $name:
       message => "Actual \"command\" or \"unless\" or \"onlyif\" attribute of the exec resource, with ${tmpfile} ${alias} ${src} placeholders",
+      before => $next_resource,
     }
   }
 

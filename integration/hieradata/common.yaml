@@ -28,8 +28,7 @@ urugeas::shell_command:  |
   done
 
 
-uruseas::apache_log_formats:
-  json:  |
+uruseas::apache_log:  |
   {
     "@vips": [
       "%v"
