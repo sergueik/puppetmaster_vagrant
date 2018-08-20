@@ -52,10 +52,12 @@ class urugeas(
       'next'          => 'Exercise user',
       # NOTE: cannot store plain Puppet reource type e.g. Notify, here:
       # 'next_resource' => Notify['Exercise user'],
-      # Evaluation Error: 
+      # Evaluation Error:
       # Error while evaluating a Method call, block parameter 'value' entry 'next' expects a Data value got Type
       # 'next_resource' => [Notify['Exercise user']],
       # Error while evaluating a Method call, block parameter 'value' entry 'next_resource' expects a Data value, got Tuple
+      # Convertting the rest of the values to arrays like $src => ['user_store']
+      # does not get rid of this error
     },
     'user' => {
       'name'          => 'Exercise user',
@@ -86,6 +88,33 @@ class urugeas(
   }
 
   notify {'dummy': }
+
+  # alternative approach to define additional hash for resource ordering in parallel with the main one with the interpolate variables
+  # Mixig together different object types in the hash does not seem to work
+
+  $ssl_command_data_next_resource = {
+    'admin' => {
+      'next_resource' => [Notify['Exercise user']],
+    },
+    'user' => {
+      'next_resource' => [],
+    },
+  }
+
+  $ssl_command_data.each |String $store_key, Hash $value| {
+    $name    = $value['name']
+    $src     = $value['src']
+    $tmpfile = $value['tmpfile']
+    $alias   = $value['alias']
+    # $resource = flatten($ssl_command_data_arrays['admin']['next_resource'])
+    $next_resource    = $ssl_command_data_next_resource[$store_key]['next_resource']
+    notify { "${name} (alternative)" :
+      message => "Actual \"command\" or \"unless\" or \"onlyif\" attribute of the exec resource, with ${tmpfile} ${alias} ${src} placeholders",
+      before => $next_resource,
+    }
+  }
+
+
   # suppress to prevent validation errors from stopping provision
   #   validate_hash_deep({
   #     'first' =>
