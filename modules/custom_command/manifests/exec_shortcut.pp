@@ -26,7 +26,7 @@ define custom_command::exec_shortcut  (
     $link_pathname = '$HOME\Desktop'
   }
   $expression = "test-path -path ('{0}\\{1}.lnk' -f \"${link_pathname}\", '${link_basename}')"
-  # convert Powershell (True, False) to shess exit codes (0,1) 
+  # convert Powershell (True, False) to shess exit codes (0,1)
   $path_check = "exit [int]( -not (${expression}))"
   if ($run_as_admin ) {
     $template = 'create_admin_shortcut_ps1.erb'
@@ -40,7 +40,7 @@ define custom_command::exec_shortcut  (
     unless    => $path_check,
     path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
     provider  => 'powershell',
-  } 
+  }
   if $debug {
     # see: https://www.tek-tips.com/viewthread.cfm?qid=850335
     # one should "re-create" an existing link again to get to the preperties
@@ -51,8 +51,18 @@ define custom_command::exec_shortcut  (
     # write-output $s.TargetPath
     # gives
     # C:\Users\Serguei\Downloads
+    # https://docs.microsoft.com/en-us/windows/desktop/shell/shellfolderitem-extendedproperty
+    # (new-object -ComObject 'Shell.Application').NameSpace(0).ParseName("${env:userprofile}\Desktop\Downloads - Shortcut.lnk").ExtendedProperty('Link Target')
+    # Tosee all defined properties of ShellFolderItem, use snippet from
+    # https://jamesone111.wordpress.com/2008/12/09/borrowing-from-windows-explorer-in-powershell-part-2-extended-properties/
+    # $objShell = New-Object -ComObject Shell.Application
+    # $objFolder = $objShell.namespace("${env:userprofile}\Desktop")
+    # 0..266 | foreach {'{0,3}:{1}'-f $_,$objFolder.getDetailsOf($Null, $_)}
+    # will give:
+    # 194:Link target
+    # The returned value will be a path e.g. 'c:\windows\system32' or a shell namespace e.g. 'Desktop'
     exec { "${tasl_title_tag}_confirm_shortcut_created":
-      command    => $path_check,
+      command   => $path_check,
       cwd       => 'c:\windows\temp',
       logoutput => true,
       provider  => 'powershell',
@@ -62,6 +72,6 @@ define custom_command::exec_shortcut  (
       logoutput => true,
       path      => 'C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32',
       provider  => 'powershell',
-    } 
-  } 
+    }
+  }
 }
