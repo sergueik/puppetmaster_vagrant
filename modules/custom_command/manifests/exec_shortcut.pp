@@ -51,16 +51,6 @@ define custom_command::exec_shortcut  (
     # write-output $s.TargetPath
     # gives
     # C:\Users\Serguei\Downloads
-    # https://docs.microsoft.com/en-us/windows/desktop/shell/shellfolderitem-extendedproperty
-    # (new-object -ComObject 'Shell.Application').NameSpace(0).ParseName("${env:userprofile}\Desktop\Downloads - Shortcut.lnk").ExtendedProperty('Link Target')
-    # Tosee all defined properties of ShellFolderItem, use snippet from
-    # https://jamesone111.wordpress.com/2008/12/09/borrowing-from-windows-explorer-in-powershell-part-2-extended-properties/
-    # $objShell = New-Object -ComObject Shell.Application
-    # $objFolder = $objShell.namespace("${env:userprofile}\Desktop")
-    # 0..266 | foreach {'{0,3}:{1}'-f $_,$objFolder.getDetailsOf($Null, $_)}
-    # will give:
-    # 194:Link target
-    # The returned value will be a path e.g. 'c:\windows\system32' or a shell namespace e.g. 'Desktop'
     exec { "${tasl_title_tag}_confirm_shortcut_created":
       command   => $path_check,
       cwd       => 'c:\windows\temp',

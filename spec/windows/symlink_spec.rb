@@ -15,7 +15,37 @@ context 'Symbolic Links' do
 
   context 'Requires custom specinfra' do
     describe file('c:/temp/directory_link') do
-     it { should be_symlink }
+      it { should be_symlink }
+    end
+  end
+  context 'Powershell' do
+    symlink_path = 'C:/temp/directory_link'
+    symlink_parent_path = 'c:/temp'
+    describe command(<<-EOF
+      $symlink_parent_path = '#{symlink_parent_path}' -replace '/' , '\\'
+      (get-childitem $symlink_parent_path | where-object { $_.LinkType -eq 'SymbolicLink' }).Target
+    EOF
+    ) do
+      its(:stdout) { should match Regexp.new('directory_target') }
+    end
+  end
+  context 'Powershell' do
+    # https://docs.microsoft.com/en-us/windows/desktop/shell/shellfolderitem-extendedproperty
+    # To see all defined properties of ShellFolderItem, use snippet from
+    # https://jamesone111.wordpress.com/2008/12/09/borrowing-from-windows-explorer-in-powershell-part-2-extended-properties/
+    # $shell = new-object -ComObject Shell.Application
+    # $folder = $shell.namespace("${env:userprofile}\Desktop")
+    # 0..266 | foreach {'{0,3}:{1}' -f $_,$folder.getDetailsOf($null, $_)}
+    # will gives:
+    # 194:Link target
+    symlink_path = 'C:/temp/directory_link'
+    symlink_parent_path = 'c:/temp'
+    describe command(<<-EOF
+      $symlink_path = '#{symlink_path}'
+      (new-object -ComObject 'Shell.Application').NameSpace(0).ParseName($symlink_path).ExtendedProperty('LinkTarget')
+    EOF
+    ) do
+      its(:stdout) { should match Regexp.new('directory_target') }
     end
   end
   context 'CMD' do
