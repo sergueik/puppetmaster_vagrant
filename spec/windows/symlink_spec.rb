@@ -18,7 +18,7 @@ context 'Symbolic Links' do
       it { should be_symlink }
     end
   end
-  context 'Powershell' do
+  context 'Powershell v5.0' do
     symlink_path = 'C:/temp/directory_link'
     symlink_parent_path = 'c:/temp'
     describe command(<<-EOF
@@ -41,11 +41,24 @@ context 'Symbolic Links' do
     symlink_path = 'C:/temp/directory_link'
     symlink_parent_path = 'c:/temp'
     describe command(<<-EOF
-      $symlink_path = '#{symlink_path}'
+      $symlink_path = '#{symlink_path}' -replace '/' , '\\'
       (new-object -ComObject 'Shell.Application').NameSpace(0).ParseName($symlink_path).ExtendedProperty('LinkTarget')
     EOF
     ) do
       its(:stdout) { should match Regexp.new('directory_target') }
+    end
+  end
+  context 'Fsutil' do
+    # http://www.cyberforum.ru/powershell/thread2312694.html
+    # NOTE: the FSUTIL utility requires that you have administrative privileges 
+    symlink_path = 'C:/temp/directory_link'
+    symlink_parent_path = 'c:/temp'
+    describe command(<<-EOF
+      $symlink_path = '#{symlink_path}' -replace '/' , '\\'
+      cmd %%- /c fsutil.exe reparsepoint query $symlink_path| findstr /rc:" [A-z\\][^?.]"
+    EOF
+    ) do
+      its(:stdout) { should match Regexp.new('Symbolic Link') }
     end
   end
   context 'CMD' do
@@ -60,7 +73,7 @@ context 'Symbolic Links' do
     end
   end
 
-    context 'Parsing cmd output' do
+  context 'Parsing cmd output' do
 
     symlink_path = 'c:\Temp\directory_link'
     target_path = 'c:\temp\directory_target'
@@ -132,8 +145,9 @@ context 'Symbolic Links' do
   EOF
   ) do
       its(:exit_status) {should eq 0 }
-      its(:stdout) { should match /is symlink: True/  }
-      its(:stdout) { should match /symlink target: directory_target/i   }
+      # dependent on the kind of the link either 'is junction: True'  or 'is symlink: True' will be printed
+      # its(:stdout) { should match /is symlink: True/  }
+      # its(:stdout) { should match /symlink target: directory_target/i   }
       its(:stdout) { should match /is junction: True/  }
       its(:stdout) { should match /junction target: c:\\temp\\directory_target/i   }
     end
