@@ -72,7 +72,27 @@ context 'Symbolic Links' do
       its(:stdout) { should match Regexp.new('directory_target') }
     end
   end
+  context 'Parsing cmd output with cmd' do
 
+    # http://www.cyberforum.ru/powershell/thread2312694.html
+    symlink_path = 'c:\Temp\directory_link'
+    symlink_parent_path = 'c:/temp'
+    target_path = 'c:\temp\directory_target'
+    describe command( <<-EOF
+      $symlink_parent_path = '#{symlink_parent_path}' -replace '/' , '\\'
+      # the original command has errors, kept for the author's style example
+      # cmd /c echo off`&for /f "tokens=2 delims=[]" %# in `(`'dir $symlink_parent_path /al^`|findstr /ric:`"`<[C-Y]*`> *link \[`"`'`) do echo %#
+      cmd %%- /c for /f "tokens=2 delims=[]" %_ in ('dir $symlink_parent_path /al ^|findstr /ric:"<[C-Y].*> [^ ]* "') do echo %_      
+    EOF
+    ) do
+      its(:exit_status) {should eq 0 }
+      # dependent on the kind of the link either 'is junction: True'  or 'is symlink: True' will be printed
+      # its(:stdout) { should match /is symlink: True/  }
+      # its(:stdout) { should match /symlink target: directory_target/i   }
+      its(:stdout) { should match /is junction: True/  }
+      its(:stdout) { should match /junction target: c:\\temp\\directory_target/i   }
+    end
+  end
   context 'Parsing cmd output' do
 
     symlink_path = 'c:\Temp\directory_link'
