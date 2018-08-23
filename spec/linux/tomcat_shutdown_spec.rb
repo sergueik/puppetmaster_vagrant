@@ -7,17 +7,20 @@ end
 require 'socket'
 
 context 'Tomcat Shutdown Test' do
+  catalina_home = '/usr/share/tomcat'
+  path_separator = ':'
+  application = 'Tomcat Application Name'
+  server_file_path = "#{catalina_home}/conf/server.xml"
   before(:each) do
     Specinfra::Runner::run_command(<<-EOF
+      systemctl stop tomcat
+      # configtest fails to initialize connector, ajp and shutdown ports with app s running
+      #{catalina_home}/bin/configtest.sh
       systemctl start tomcat
       sleep 10
     EOF
     )
   end
-  catalina_home = '/usr/share/tomcat'
-  path_separator = ':'
-  application = 'Tomcat Application Name'
-  server_file_path = "#{catalina_home}/conf/server.xml"
   context 'Basic' do
     describe 'Ruby Call' do
       it 'should not get exception' do
@@ -50,7 +53,7 @@ context 'Tomcat Shutdown Test' do
             Socket socket = new Socket("localhost", 8005);
             if (socket.isConnected()) {
               PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-              pw.println("SHUTDOWN");//send shut down command
+              pw.println("SHUTDOWN"); //send shutdown command
               pw.close();
               socket.close();
             }
@@ -148,3 +151,56 @@ context 'Tomcat Shutdown Test' do
     end
   end
 end
+# tomcat comes packaged into several rpm packages:
+#
+#  tomcat-admin-webapps.noarch
+#  tomcat-docs-webapp.noarch
+#  tomcat-javadoc.noarch
+#  tomcat-jsp-2.2-api.noarch
+#  tomcat-jsvc.noarch
+#  tomcat-lib.noarch
+#  tomcat-servlet-3.0-api.noarch
+#  tomcat-webapps.noarch
+#  tomcatjss.noarch
+#  
+# - it is possible to find oneself on centos system with tomcat installed and functional but some of the admin script absent
+#
+# To install tomcat 8.5.x i from archive on centos 7.x follow the
+# https://www.vultr.com/docs/how-to-install-apache-tomcat-8-on-centos-7
+
+# wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.33/bin/apache-tomcat-8.5.33.tar.gz
+# sudo tar -zxvf apache-tomcat-8.5.33.tar.gz -C /usr/share/tomcat --strip-components=1
+# sudo -s
+# cd /usr/share/tomcat
+# chgrp -R tomcat conf
+# chmod g+rwx conf
+# chmod g+r conf/*
+# chown -R tomcat logs/ temp/ webapps/ work/
+# chgrp -R tomcat bin/ lib/ logs/
+# chmod g+rwx bin
+# chmod g+r bin/*
+# check readlink  `readlink \`which java\``
+# vi /etc/systemd/system/tomcat.service
+
+# [Unit]
+# Description=Apache Tomcat Web Application Container
+# After=syslog.target network.target
+#
+# [Service]
+# Type=forking
+#
+# Environment=JAVA_HOME=/usr/lib/jvm/jre
+# Environment=CATALINA_PID=/usr/share/tomcat/temp/tomcat.pid
+# Environment=CATALINA_HOME=/usr/share/tomcat
+# Environment=CATALINA_BASE=/usr/share/tomcat
+# Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+# Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+#
+# ExecStart=/usr/share/tomcat/bin/startup.sh
+# ExecStop=/bin/kill -15 $MAINPID
+#
+# User=tomcat
+# Group=tomcat
+#
+# [Install]
+# WantedBy=multi-user.target
