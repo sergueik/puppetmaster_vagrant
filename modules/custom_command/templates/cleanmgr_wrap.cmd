@@ -1,5 +1,5 @@
 @echo off
-// based on http://forum.oszone.net/thread-326226.html
+REM // based on http://forum.oszone.net/thread-326226.html
 set REGKEY=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches
 
 for %%. in  (
@@ -36,4 +36,6 @@ echo.
 set REGVALUE=%*
 set REGVALUE=%REGVALUE:"=%
 echo call reg.exe add "%REGKEY%\%REGVALUE%" /v StateFlags0001 /t REG_DWORD /d 2 /f 1^>NUL 2^>NUL
+REM see also http://www.ultimeta.ru/files/cryptopro_trusted_sites.cmd
+REM call reg.exe add "HKCU\Software\Crypto Pro\CAdESplugin" /v TrustedSites /t REG_MULTI_SZ /s " " /d "!TRUSTED_SITES!" /f
 goto :EOF
