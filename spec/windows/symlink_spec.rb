@@ -48,9 +48,29 @@ context 'Symbolic Links' do
       its(:stdout) { should match Regexp.new('directory_target') }
     end
   end
+  # http://www.cyberforum.ru/powershell/thread2312694-page2.html#post12861008
+  context 'Powershell' do
+    symlink_path = 'C:/temp/directory_link'
+    symlink_parent_path = 'c:/temp'
+    describe command(<<-EOF
+      $symlink_parent_path = '#{symlink_parent_path}'
+      $symlink_path = '#{symlink_path}'
+      # PS 3.0 +
+      # directory links
+      (dir $symlink_parent_path | where-object {$_.Mode -eq 'd----l'}).target
+      # file links
+      (dir $symlink_parent_path | where-object {$_.Mode -eq '-a---l'}).target
+      # PS 4.0 +
+      (get-item $symlink_path).target
+    EOF
+    ) do
+      its(:stdout) { should match Regexp.new(symlink_path.gsub(/\//,'\\\\')) }
+      its(:stdout) { should match Regexp.new(symlink_parent_path.gsub(/\//,'\\\\') + '\\' + file_target ) }
+    end
+  end
   context 'Fsutil' do
     # http://www.cyberforum.ru/powershell/thread2312694.html
-    # NOTE: the FSUTIL utility requires that you have administrative privileges 
+    # NOTE: the FSUTIL utility requires that you have administrative privileges
     symlink_path = 'C:/temp/directory_link'
     symlink_parent_path = 'c:/temp'
     describe command(<<-EOF
@@ -368,8 +388,8 @@ context 'Symbolic Links' do
       # the original command has errors, kept for the author's style example
       # cmd /c echo off`&for /f "tokens=2 delims=[]" %# in `(`'dir $symlink_parent_path /al^`|findstr /ric:`"`<[C-Y]*`> *link \[`"`'`) do echo %#
       cmd %%- /c echo off `& for /f "tokens=2 delims=[]" %_ in `(`'dir $symlink_parent_path /al^`|findstr /ric:`"`<[C-Y]*`> `"`'`) do echo %_
-      # can not use single quotes within the command line to protect whitspace in $symlink_parent path: get converted to single quotes and unrecognized by the cmd 
-      cmd %%- /c for /f "tokens=2 delims=[]" %_ in `(`'dir $symlink_parent_path /al^`|findstr /ric:`"`<[C-Y]*`> `" ^`| findstr /i link `'`) do echo %_    
+      # can not use single quotes within the command line to protect whitspace in $symlink_parent path: get converted to single quotes and unrecognized by the cmd
+      cmd %%- /c for /f "tokens=2 delims=[]" %_ in `(`'dir $symlink_parent_path /al^`|findstr /ric:`"`<[C-Y]*`> `" ^`| findstr /i link `'`) do echo %_
       EOF
     ) do
       # its(:exit_status) {should eq 0 }

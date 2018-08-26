@@ -20,7 +20,7 @@ context 'Tomcat in Java Proces List' do
   end
   context 'Logging' do
     # origin: https://github.com/T-Systems-MMS/tomcat-baseine/blob/master/controls/tomcat.rb
-    # conveted from 'inspec' syntax
+    # converted from 'inspec' syntax
     describe file("#{catalina_home}/conf/logging.properties") do
       [
         '.handlers = 1catalina.org.apache.juli.FileHandler, java.util.logging.ConsoleHandler',
