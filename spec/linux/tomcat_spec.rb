@@ -33,4 +33,21 @@ context 'Tomcat in Java Proces List' do
       end
     end
   end
+  context 'Log formats' do
+    describe command(<<-EOF
+      xmllint -xpath '//Engine[@name="Catalina"]//Valve[@className="org.apache.catalina.valves.AccessLogValve"]/@pattern' "#{catalina_home}/conf/server.xml"
+    EOF
+    ) do
+      # haturally only one of the patterns will pass the rest would fail, kept for the referecne
+      [
+        'combined', # the default configuration
+        '%h %l %u %t &quot;%r&quot; %s %b', # the tomcat 8.5.x default log format
+        '%h %l %u %t %r %s %b %{Referer}i #{User-Agent}i %D', # custom log format
+      ].each do |line|
+        its(:stdout) { is_expected.to match Regexp.escape(line) }
+        its(:stderr) { is_expected.to be_empty  }
+        its(:exit_status) { is_expected.to eq 0 }
+      end
+    end
+  end
 end
