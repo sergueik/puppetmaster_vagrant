@@ -56,7 +56,8 @@ uruseas::apache_log:  |
     }
   }
 
-
+urugeas::dbuser: 'dbuser'
+urugeas::command_template: "mysql -H ${HOST} -u %{hiera('urugeas::dbuser')} -D database -e \"query\""
 urugeas::error_patterns:
   - 'end of file reached'
   - 'failed to generate additional resource'
