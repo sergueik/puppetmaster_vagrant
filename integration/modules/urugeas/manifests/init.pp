@@ -256,7 +256,7 @@ class urugeas(
   # this creates a set of every 30 minite cron job but instead of */30 starts them with a random seed
   # scattering evenly
 
-  $suffixes =  ['db1', 'db2', 'db3']
+  $suffixes =  ['db1', 'db2', 'db3', 'db4', 'db5', 'db6', 'db7']
   $report_base_directory = '/tmp/report'
   file {'report base directory':
     ensure => directory,
@@ -279,29 +279,21 @@ class urugeas(
     file {"report script ${shell_script}":
       ensure  => file,
       path    => $shell_script,
-      before  => [Cron["${cron_job_name} ${minute_seed}"]],
       content => $report_command,
       mode    => '0755',
       owner   => 'root',
       require => File['report base directory'],
-     }
-    [$minute_seed, 30 + $minute_seed].each |Integer $minute|{
-
-      cron { "${cron_job_name} ${minute}":
-        hour    => '*',
-        minute  => $minute,
-        command => $shell_script,
-        user    => 'root',
-      }
     }
-    # will create  cron jobs
-    # Puppet Name: extract data ...
-    #  0 * * * * /var/run/extract_data_db1.sh
-    #  30 * * * * /var/run/extract_data_db1.sh
-    #  10 * * * * /var/run/extract_data_db2.sh
-    #  40 * * * * /var/run/extract_data_db2.sh
-    #  20 * * * * /var/run/extract_data_db3.sh
-    #  50 * * * * /var/run/extract_data_db3.sh
+    -> cron { $cron_job_name:
+      hour    => '*',
+      minute  => [$minute_seed, 30 + $minute_seed],
+      command => $shell_script,
+      user    => 'root',
+    }
+    # will create evenly scattered 30-min interval cron jobs
+    #  0,30 * * * * /var/run/extract_data_db1.sh
+    #  10,40 * * * * /var/run/extract_data_db2.sh
+    #  20,50 * * * * /var/run/extract_data_db3.sh
   }
 
 }
