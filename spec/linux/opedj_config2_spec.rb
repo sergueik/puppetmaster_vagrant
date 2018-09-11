@@ -8,18 +8,21 @@ context 'Opendj config' do
   entry_cache_level = 2
   entry_cache_enabled = false
   entry_exclude_filter = '{objectClass=groupOfUniqueNames}'
+  entry_include_filter = '-'
   debug = true
   # mock dsconfig command output
   entry_list_datafile = '/tmp/entry_list.txt'
   entry_prop_datafile = '/tmp/entry_prop.txt'
   before(:each) do
     Specinfra::Runner::run_command( <<-EOF
+    # mocking the dsconfig list-entry-caches command
       cat <<END>#{entry_list_datafile}
 Entry Cache    : Type           : cache-level : enabled
 ---------------:----------------:-------------:--------
 FIFO           : fifo           : 1           : false
 #{entry_cache_name} : #{entry_cache_type} : #{entry_cache_level}           : #{entry_cache_enabled}
 END
+      # mocking the dsconfig get-entry-cache-prop command
       cat <<END>#{entry_prop_datafile}
 Property      : Value(s)
 ---------------:----------------:-------------:--------
@@ -40,4 +43,24 @@ END
     # its(:stdout) { should match "Found #{port}" }
     its(:exit_status) { should eq 0 }
   end
+  describe command(<<-EOF
+    cat '#{entry_prop_datafile}' | awk -e 'BEGIN { STATUS = 0 } /(cache-level|enabled|include-filter|exclude-filter)/ {print $3 > "/dev/stderr" ; STATUS = STATUS + 1} END { print "Status: " STATUS }'
+  EOF
+  ) do
+    let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
+    its(:stdout) { should match /Status: 4/ }
+    its(:stderr) { should match /(soft-reference|Soft Reference|{objectClass=groupOfUniqueNames})/ }
+    its(:exit_status) { should eq 0 }
+  end
+
+  describe command(<<-EOF
+    cat '#{entry_prop_datafile}' | awk -e '/(cache-level|enabled|include-filter|exclude-filter)/ {if ($3 ~ /#{entry_exclude_filter}/ || $3 ~ /#{entry_include_filter}/ ||$3 ~ /#{entry_cache_level}/ || $3 ~ /#{entry_cache_enabled}/ ) found[$1] = $3;} END { for (key in found ) print found[key]  > "/dev/stderr"; print "Found: "  length(found);}'
+  EOF
+  ) do
+    let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
+    its(:stdout) { should match /Found: 4/ }
+    its(:stderr) { should match /(false|2|-|{objectClass=groupOfUniqueNames})/ }
+    its(:exit_status) { should eq 0 }
+  end
 end
+
