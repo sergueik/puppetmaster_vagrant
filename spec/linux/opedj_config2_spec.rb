@@ -53,6 +53,14 @@ END
   )
   end
   describe command(<<-EOF
+    cat '#{entry_list_datafile}' | grep -Eq '^#{entry_cache_name}\\b'
+  EOF
+  ) do
+    let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
+    its(:stdout) { should be_empty }
+    its(:exit_status) { should eq 0 }
+  end
+  describe command(<<-EOF
     cat '#{entry_list_datafile}' | awk -F: '/#{entry_cache_name}/ {if ($2 ~ /#{entry_cache_type}/ && $3 ~ /#{entry_cache_level}/ && $4 ~ /#{entry_cache_enabled}/ ) {print "Found \\"#{entry_cache_name}\\"" ; exit 0 } else {print "Different \\"#{entry_cache_name}\\"" ; exit 0 } }'
   EOF
   ) do
