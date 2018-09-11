@@ -60,32 +60,62 @@ END
     its(:stdout) { should be_empty }
     its(:exit_status) { should eq 0 }
   end
+  # NOTE: the exit status of 1 for "found exact match" to have
+  # with the same exit code for both
+  # "not found" and "found poor match"
   describe command(<<-EOF
-    cat '#{entry_list_datafile}' | awk -F: '/#{entry_cache_name}/ {if ($2 ~ /#{entry_cache_type}/ && $3 ~ /#{entry_cache_level}/ && $4 ~ /#{entry_cache_enabled}/ ) {print "Found \\"#{entry_cache_name}\\"" ; exit 0 } else {print "Different \\"#{entry_cache_name}\\"" ; exit 0 } }'
+    cat '#{entry_list_datafile}' | awk -F: '/#{entry_cache_name}/ {if ($2 ~ /#{entry_cache_type}/ && $3 ~ /#{entry_cache_level}/ && $4 ~ /#{entry_cache_enabled}/ ) {print "Found \\"#{entry_cache_name}\\"" ; exit 1 } else {print "The object \\"#{entry_cache_name}\\" is different" ; exit 0 } }'
   EOF
   ) do
     let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
     its(:stdout) { should match /Found "#{entry_cache_name}"/ }
-    # its(:stdout) { should match "Found #{port}" }
-    its(:exit_status) { should eq 0 }
+    its(:exit_status) { should eq 1 }
   end
+  property_names = [
+    'cache-level',
+    'enabled',
+    'include-filter',
+    'exclude-filter'
+  ]
+  property_values = [
+    false,
+    2,
+    '-',
+    '{objectClass=groupOfUniqueNames}'
+  ]
+  property_names_search = '(' + property_names.join('|') + ')'
+  property_values_search = '(' + property_values.join('|') + ')'
+  # NOTE this snippet would not be a good candidate for unless condition - does not verify much on its own
   describe command(<<-EOF
-    cat '#{entry_prop_datafile}' | awk -e 'BEGIN { STATUS = 0 } /(cache-level|enabled|include-filter|exclude-filter)/ {print $3 > "/dev/stderr" ; STATUS = STATUS + 1} END { print "Status: " STATUS }'
+    cat '#{entry_prop_datafile}' | awk -e 'BEGIN { status = 0 } /#{property_names_search}/ {print $3 > "/dev/stderr" ; status = status + 1} END { print "Status: " status }'
   EOF
   ) do
     let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
-    its(:stdout) { should match /Status: 4/ }
+    its(:stdout) { should match /Status: #{property_names.length}/ }
     its(:stderr) { should match /(soft-reference|Soft Reference|{objectClass=groupOfUniqueNames})/ }
-    its(:exit_status) { should eq 0 }
+    its(:exit_status) { should eq 0 } # NOTE exit status
   end
 
   describe command(<<-EOF
-    cat '#{entry_prop_datafile}' | awk -e '/(cache-level|enabled|include-filter|exclude-filter)/ {if ($3 ~ /#{entry_exclude_filter}/ || $3 ~ /#{entry_include_filter}/ ||$3 ~ /#{entry_cache_level}/ || $3 ~ /#{entry_cache_enabled}/ ) found[$1] = $3;} END { for (key in found ) print found[key]  > "/dev/stderr"; print "Found: "  length(found);}'
+    cat '#{entry_prop_datafile}' | awk -e '/#{property_names_search}/ {if ($3 ~ /#{entry_exclude_filter}/ || $3 ~ /#{entry_include_filter}/ ||$3 ~ /#{entry_cache_level}/ || $3 ~ /#{entry_cache_enabled}/ ) found[$1] = $3;} END { for (key in found ) print found[key] > "/dev/stderr"; print "Found: " length(found);}'
   EOF
   ) do
     let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
-    its(:stdout) { should match /Found: 4/ }
+    its(:stdout) { should match /Found: #{property_names.length}/ }
     its(:stderr) { should match /(false|2|-|{objectClass=groupOfUniqueNames})/ }
     its(:exit_status) { should eq 0 }
+  end
+
+  # NOTE: the exit status of 1 for "found exact match" to have
+  # with the same exit code for both
+  # "not found" and "found poor match"
+  describe command(<<-EOF
+    cat '#{entry_prop_datafile}' | awk -e 'BEGIN { matched_field_count = 0 } /#{property_names_search}/ {if ($3 ~ /#{entry_exclude_filter}/ || $3 ~ /#{entry_include_filter}/ ||$3 ~ /#{entry_cache_level}/ || $3 ~ /#{entry_cache_enabled}/ ) { print $3 > "/dev/stderr"; matched_field_count = matched_field_count + 1; }} END { if (matched_field_count == 4 ) {print "Found \\"#{entry_cache_name}\\"" ; exit 1 } else {print "The object \\"#{entry_cache_name}\\" is different" ; exit 0 } }'
+  EOF
+  ) do
+    let(:path) { '/bin:/usr/bin:/usr/local/bin:/opt/opedj/bin'}
+    its(:stdout) { should match /Found "#{entry_cache_name}"/ }
+    its(:stderr) { should match /(false|2|-|{objectClass=groupOfUniqueNames})/ }
+    its(:exit_status) { should eq 1 }
   end
 end
