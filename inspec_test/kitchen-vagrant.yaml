@@ -1,0 +1,3 @@
+# No such cookbook: test-inspec
+# need a different box images cached locally# box_url: "C:/Users/Serguei/Downloads/centos7-puppet-x86_64.box'
+# https://docs.chef.io/config_yml_kitchen.html
