@@ -25,6 +25,7 @@ This will create tempoarty files and directories
 ### See also
 
   * [original documentaion](https://learn.chef.io/modules/tdd-with-inspec/rhel/virtualbox#/)
+  * [core inspec usage documentation](https://www.diycode.cc/projects/chef/inspec)
   * [blog on scaffolding chef envionment in internet-disconnected machine](https://github.com/jeremymv2/chef-intranet-scaffolding) 
   * [configuting the chef kitchen](https://docs.chef.io/config_yml_kitchen.html)
   * [serverspe versus inspec](https://medium.com/@Joachim8675309/serverspec-vs-inspec-17272df2718f)

@@ -1,3 +1,25 @@
+require 'rexml/document'
+
+require 'yaml'
+require 'json'
+require 'csv'
+require 'pp'
+
+describe command('/usr/sbin/sestatus -v') do
+  its(:stdout) { should match('Current mode:\s.*?permissive') }
+end
+command_result = command('/usr/sbin/sestatus -v').stdout
+begin
+  @res = CSV.parse(command_result)
+  pp @res
+  @res
+rescue => e
+  $stderr.puts e.to_s
+  nil
+end
+describe String(command_result) do
+  it { should_not be_empty  }
+end
 describe file('/tmp/file') do
   it { should exist }
   it 'test file attributes' do  
