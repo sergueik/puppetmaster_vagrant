@@ -12,13 +12,27 @@ command_result = command('/usr/sbin/sestatus -v').stdout
 begin
   @res = CSV.parse(command_result)
   pp @res
-  @res
+rescue => e
+  $stderr.puts e.to_s
+end
+describe String(command_result) do
+  it { should_not be_empty  }
+end
+describe String(command_result) do
+  it { should_not be_empty  }
+end
+command_result = command('/bin/echo "{\\"answer\\":42}"').stdout
+answer = begin
+  @res = JSON.parse(command_result)
+  @res['answer']
 rescue => e
   $stderr.puts e.to_s
   nil
 end
-describe String(command_result) do
-  it { should_not be_empty  }
+pp answer
+
+describe String(answer) do
+  it { should eq '42' }
 end
 describe file('/tmp/file') do
   it { should exist }
