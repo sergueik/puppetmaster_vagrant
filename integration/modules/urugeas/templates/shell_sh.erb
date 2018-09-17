@@ -1,0 +1,12 @@
+JAVA_CMD='java'
+PACKAGE='com.github.sergueik.swet'
+CLASSNAME='SwetMain'
+$JAVA_CMD  \
+<% if @java_options -%>
+  <%= @java_options -%>
+<% end -%>
+  $PACKAGE.$CLASSNAME
+
+
+
+

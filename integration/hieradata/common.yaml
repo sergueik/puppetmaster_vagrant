@@ -99,3 +99,10 @@ urugeas::tomcat_security_part2:
   - insert 'init-param' after 'securityRealm/filter/async-supported'
   - set 'securityRealm/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
   - set 'securityRealm/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
+
+urugeas::source_encoding: 'UTF-8'
+urugeas::java_options:  |
+  -Dfile.encoding=%{hiera('urugeas::source_encoding')} \
+  -DAPP_LOG_ROOT=/var/log \
+
+# NOTE: need a blank line above

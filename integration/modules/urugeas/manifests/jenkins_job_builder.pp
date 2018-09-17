@@ -7,6 +7,7 @@ define urugeas::jenkins_job_builder (
   Optional[Array[String]] $fatal_error_patterns = lookup('urugeas::fatal_error_patterns'),
   Optional[String] $tools_path                  = '/tmp',
   Optional[String] $webroot_path                = '/var/www/html',
+  String $java_options                         = lookup('urugeas::java_options'),
   $version                                      = '0.1.0'
 ) {
 
@@ -58,7 +59,16 @@ define urugeas::jenkins_job_builder (
     require => File['/var/www/html'],
     mode    => '0755',
   }
+
   notify { "Generating dummy page with the jenkins command ${index_html} in the ${webroot_path}":
     before => File[$index_html],
+  }
+  $shell_script = 'shell.sh'
+  # $shell_script_template = 
+  file { $shell_script:
+    ensure  => file,
+    path    => "/tmp/${shell_script}",
+    content => template("${module_name}/${regsubst($shell_script, '\\.', '_', 'G')}.erb"),
+    mode    => '0755',
   }
 }
