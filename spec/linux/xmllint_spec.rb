@@ -3,7 +3,7 @@ require 'rexml/document'
 include REXML
 
 context 'xmllint' do
-
+  # this example uses stock tomcat configuration for some extraction
   # https://www.digitalocean.com/community/tutorials/how-to-install-apache-tomcat-7-on-centos-7-via-yum
   catalina_home = '/usr/share/tomcat'
   server_xml = "#{catalina_home}/conf/server.xml"
@@ -17,7 +17,7 @@ context 'xmllint' do
     end
   end
   context 'Tomcat web.xml configuration' do
-    # NOTE: namespaces in web.xml
+    # NOTE: the web.xml is using namespaces
     describe command(<<-EOF
       xmllint --xpath "//*[local-name()='servlet']/*[local-name()='servlet-class']/text()" #{web_xml}
     EOF
@@ -31,6 +31,7 @@ context 'xmllint' do
       end
       its(:stderr) { should be_empty }
     end
+    # sibling node locator, reading the XML from STDIN, like from another process output
     servlet_class_name = 'org.apache.catalina.servlets.DefaultServlet'
     describe command(<<-EOF
       SERVLET_CLASS_NAME='#{servlet_class_name}'
@@ -111,13 +112,13 @@ context 'xmllint' do
       'RMIRegistry' => 11111,
       'RMIServer' => 9999,
     }.each do |service, port|
-      describe command("xmllint --xpath '//*[local-name()=\"#{service}\"]' '#jmx_config'") do
-        # the ports will be disabled in the sut configuration. Node made invisble.
+      describe command("xmllint --xpath '//*[local-name()=\"#{service}\"]' '#{jmx_config}'") do
+        # the ports will be disabled in the sut configuration. Node made invisible.
         # the alterantive way (not shown here) is to set RMIStartService text to false
         its(:stderr) { should match /XPath set is empty/ }
       end
       describe port(port) do
-        it { should_not be_listenind }
+        it { should_not be_listening }
       end
     end
   end
