@@ -19,6 +19,21 @@ context 'Sysctl tests' do
 
   # alternatively command systemctl to format output in the list format
   context 'Structural output processing' do
+    # some settings e.g. Environment for java launchers typically have multiple tokens -Dkey=value in the rhs separated by a space
+    # systemctl show uses \x20 for those settings to indicate whitespaces in the output like e.g.
+    # Environment=JAVA_HOME=/usr/lib/jvm/java JAVA_OPTS=\x20Djava.utils.prefs.userRoot=/opt/app/.java\x20-Djava.utils.prefs.systemRoot=/opt/app/.java...
+    # where it won't be practical to match the whole line to evaluate specific settings in the applcation jvm configuration
+    # for clean expectation expression it is probably better to tokenize the output keeping one token per line
+
+    describe command("systemctl --no-page -o cat show '#{service_unit}' | sed 's|\\x20|\\n|g'") do
+      [
+        '-Djava.utils.prefs.systemRoot=/opt/app/.java',
+        '-Djava.utils.prefs.userRoot=/opt/app/.java',
+      ].each do |line|
+        its(:stdout) { should contain Regexp.new(line, Regexp::IGNORECASE ) }
+      end
+    end
+    # a longer example
     info = {
       'Description'     => 'The Apache HTTP Server',
       'LoadState'       => 'loaded',
@@ -33,9 +48,6 @@ context 'Sysctl tests' do
       'ExecStop'        => '{ path=/bin/kill ; argv[]=/bin/kill -WINCH ${MAINPID} ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }',
     }
     info_regexp = '(:?' + info.keys.join('|') + ')'
-    # some settings e.g. Environment for java launchers typically have multiple tokens -Dkey=value in the rhs separated by a space
-    # systemctl show uses \x20 for those settings to indicate whitespaces in the output
-    # for clean expectation expression it is probably better to tokenize the output keeping one token per line
     command = "systemctl --no-page -o cat show '#{service_unit}' | sed 's|\\x20|\\n|g' | grep -E '#{info_regexp}=' "
     context 'Exact Match Evaluation' do
       service_info = command(command).stdout
@@ -53,7 +65,7 @@ context 'Sysctl tests' do
         describe key do
         $stderr.puts "status = #{status}"
         subject { status }
-        it { should eq 0 }
+          it { should eq 0 }
         end
       end
     end
