@@ -9,7 +9,7 @@ context 'Bash tests for unless' do
   # http://tldp.org/LDP/abs/html/exitcodes.html
   {
   'www.google.com'    => 0,
-  '128.0.0.0  '       => 1,  # Destination Host Unreachable
+  '128.0.0.0'         => 1,  # Destination Host Unreachable
   'www.gaaaaagle.com' => 2, # ping: www.gaaaaagle.com: Name or service not known
   }.each do |hostname, exit_code|
     context 'Loading exit status into shell variable' do
@@ -17,7 +17,7 @@ context 'Bash tests for unless' do
         HOSTNAME='#{hostname}'
         EXITCODE=0
         ping -c 1 $HOSTNAME > /dev/null 2>&1; eval "EXITCODE=$?";
-        if [[ $EXITCODE -ne 130 ]] 
+        if [[ $EXITCODE -ne 130 ]]
         then
           printf 'Exit code is %d\\n' $EXITCODE
         fi
@@ -27,11 +27,13 @@ context 'Bash tests for unless' do
       end
     end
     context 'Loading exit status into shell variable via trap' do
+      # evaluate exit code in trap handler of the EXIT pseudo-signal
+      # https://mywiki.wooledge.org/SignalTrap
       describe command(<<-EOF
         HOSTNAME='#{hostname}'
-        for RESULT in $(trap 'eval "EXITCODE=$?"; echo $EXITCODE' 0; (ping -c 1 $HOSTNAME > /dev/null 2>&1))
-        do 
-          if [[ $RESULT -ne 130 ]] 
+        for RESULT in $(trap 'eval "EXITCODE=$?"; echo $EXITCODE' EXIT; (ping -c 1 $HOSTNAME > /dev/null 2>&1))
+        do
+          if [[ $RESULT -lt 130 ]]
           then
             printf 'Exit code is %d\\n' $RESULT
           fi
