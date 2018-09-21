@@ -79,5 +79,32 @@ context 'Misc content processing examples' do
       it { should eq '42' }
     end
   end
+  context 'querying JSON', :if => ENV.has_key?('URU_INVOKER') do
+    datafile = '/tmp/sample.yaml'
+    before(:each) do
+      Specinfra::Runner::run_command( <<-EOF
+        # indent matters
+        cat <<END>#{datafile}
+---
+answer: 42
+END
+      EOF
+      )
+      end
+    answer = begin
+      $stderr.puts 'YAML test'
+      @res = YAML.load_file(datafile)
+      pp @res
+      @res['answer']
+    rescue => e
+      $stderr.puts e.to_s
+      nil
+    end
+    pp answer
+
+    describe String(answer) do
+      it { should eq '42' }
+    end
+  end
 
 end
