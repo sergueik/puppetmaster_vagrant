@@ -1,0 +1,47 @@
+version: '3.4'
+services:
+  rabbit:
+    environment:
+    - TCP_PORTS=15672, 5672
+    - AUTOCLUSTER_TYPE=consul
+    - AUTOCLUSTER_DELAY=60
+    - CONSUL_HOST=consul
+    - CONSUL_SVC_ADDR_AUTO=true
+    - AUTOCLUSTER_CLEANUP=true
+    - CLEANUP_WARN_ONLY=false
+    - CONSUL_DEREGISTER_AFTER=60
+    networks:
+    - back
+    image: pivotalrabbitmq/rabbitmq-autocluster
+    tty: true
+    command:  sh -c 'sleep 20; rabbitmq-server;'
+  lb:
+    container_name: haproxy
+    image: dockercloud/haproxy
+    environment:
+    - MODE=tcp
+    links:
+    - rabbit
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+    - 15672:15672
+    - 5672:5672
+    networks:
+    - back
+  consul:
+    image: 'consul'
+    container_name: 'consul'
+    hostname: 'consul'
+    restart: always
+    extra_hosts:
+    - 'leek:169.254.1.1'
+    ports:
+    - "8400:8400"
+    - "8500:8500"
+    - "8600:53"
+    networks:
+    - back
+
+networks:
+  back:

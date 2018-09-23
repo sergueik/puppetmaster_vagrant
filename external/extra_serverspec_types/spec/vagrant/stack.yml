@@ -1,0 +1,20 @@
+version: '3.4'
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    user: jenkins
+    ports:
+    - 8080:8080
+    extra_hosts:
+      - 'leek:169.254.1.1'
+    volumes:
+      - "/tmp:/dir"
+    deploy:
+      placement:
+        constraints:
+        - 'node.role == manager'
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+        max_attempts: 3

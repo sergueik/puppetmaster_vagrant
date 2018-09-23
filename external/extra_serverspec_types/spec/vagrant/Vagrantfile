@@ -1,0 +1,20 @@
+# frozen_string_literal: true
+
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure('2') do |config|
+  config.vm.box = 'andrewwardrobe/fedora-kde'
+
+  config.vm.network 'forwarded_port', guest: 15_672, host: 15_672
+  config.vm.network 'forwarded_port', guest: 8500, host: 8500
+  config.vm.provision 'shell', inline: <<-SHELL
+    docker info | grep 'Swarm: active' > /dev/null
+    if [ $? -ne 0 ]; then
+      docker swarm init
+    fi
+    cd /vagrant
+    docker-compose up -d
+    docker stack deploy -c stack.yml jenkins
+  SHELL
+end

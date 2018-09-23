@@ -1,0 +1,6 @@
+AllCops:
+  Exclude:
+    - 'serverspec-extra-types.gemspec'
+
+Metric/LineLength:
+  Max: 120
