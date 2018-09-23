@@ -1,0 +1,53 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# based on: https://github.com/andrewwardrobe/PuppetIntegration/blob/master/Vagrantfile
+
+require 'getoptlong'
+
+opts = GetoptLong.new(
+    [ '--custom-option', GetoptLong::OPTIONAL_ARGUMENT ]
+)
+provision_puppet = ENV.fetch('PROVISION_PUPPET', '')
+basedir = ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')
+basedir = basedir.gsub('\\', '/')
+box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
+Vagrant.configure(2) do |config|
+  #speeds up subsequent provisions by creating an apt-cache on the host
+  if Vagrant.has_plugin?('vagrant-cachier')
+    config.cache.scope = :box
+  end
+  config_vm_box_name =  'ubuntu-xenial-v1.0.3'
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  config.vm.network :forwarded_port, guest:4444, host:4444
+  config.vm.network :private_network, ip: '192.168.33.10'
+  config.vm.boot_timeout = 600
+  # Configure common synced folder
+  config.vm.synced_folder './' , '/vagrant'
+  config.vm.define "web" do |web|
+    config.vm.provider :virtualbox do |v|
+      v.memory = 2048
+      v.cpus = 4
+    end
+    web.vm.box = 'ubuntu' # config_vm_box_name
+   
+    if provisio_puppet
+      web.vm.provision :puppet do |puppet|
+        puppet.module_path = 'modules'
+        puppet.manifests_path = 'manifests'
+        puppet.manifest_file = 'default.pp'
+      end
+    end
+    # NOTE: may also install InSpec https://github.com/inspec/inspec
+    web.vm.provision 'shell', inline: <<-EOF
+       apt-get -qqy install ruby2.0 ruby2.0-dev gcc make
+       update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby2.0 10
+       update-alternatives --install /usr/bin/gem gem /usr/bin/gem2.0 10
+       gem install rake
+       gem install serverspec
+       cd /vagrant/test
+       rake spec
+    EOF
+  end
+
+
+end

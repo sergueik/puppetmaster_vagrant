@@ -117,15 +117,35 @@ sudo yum install -y tomcat
       # NOTE: hiera arguments not set
       # config.vm.provision 'shell', inline: "puppet apply --modulepath=#{modulepath}:/vagrant/modules /vagrant/manifests/#{manifest}"
 
-       config.vm.provision :puppet do |puppet|
-         puppet.hiera_config_path = 'hiera.yaml'
-         puppet.module_path       = 'modules'
-         puppet.manifests_path    = 'manifests'
-         puppet.manifest_file     = manifest
-         puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules "
-         puppet.working_directory = '/tmp/vagrant-puppet'
-         config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
-       end
-    end
+      config.vm.provision :puppet do |puppet|
+        puppet.hiera_config_path = 'hiera.yaml'
+        puppet.module_path       = 'modules'
+        puppet.manifests_path    = 'manifests'
+        puppet.manifest_file     = manifest
+        puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules "
+        puppet.working_directory = '/tmp/vagrant-puppet'
+        config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
+      end
+# based on: https://github.com/andrewwardrobe/PuppetIntegration/blob/master/Vagrantfile
+      # NOTE: may also install InSpec https://github.com/inspec/inspec
+      config.vm.provision 'shell', inline: <<-EOF
+        yum install -q -y gcc-c++ patch readline readline-devel zlib zlib-devel \\
+    libyaml-devel libffi-devel openssl-devel make \\
+    bzip2 autoconf automake libtool bison iconv-devel sqlite-devel
+	# this will install Ruby 2.0
+        yum install -q -y ruby ruby-dev gcc make 
+        # https://tecadmin.net/install-ruby-previous-stable-centos/ 
+        # curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+	# curl -L get.rvm.io | bash -s stable
+	# source /etc/profile.d/rvm.sh
+	# rvm reload
+        # these will fail with Ruby 2.0     
+        # update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby2.0 10
+        # update-alternatives --install /usr/bin/gem gem /usr/bin/gem2.0 10
+        gem install --no-rdoc --no-ri rake serverspec
+        cd /vagrant/local_test
+        rake spec
+      EOF
+      end
   end
 end
