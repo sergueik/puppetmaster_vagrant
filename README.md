@@ -1,5 +1,4 @@
-Introduction
-------------
+### Introduction
 Vagrant and Puppet resources for setting up a box in Virtual Box with Chef and Puppet provisioner and experiement with Serverspec and Puppet Modules
 
 
@@ -158,3 +157,10 @@ Notes
 
 * branch puppet_43 contains file and directory changes required to provision the vm via Puppet 4.3
 * See also [basic demo of using Serverspec to test Puppet](https://github.com/woodie00101/example_puppet-serverspec), with hiera.
+* see also [another basic Puppet Vagrant Serverspec integration project](https://github.com/andrewwardrobe/PuppetIntegration)
+
+### License
+This project is licensed under the terms of the MIT license.
+
+### Author
+[Serguei Kouzmine](kouzmine_serguei@yahoo.com)
