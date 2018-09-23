@@ -126,23 +126,33 @@ sudo yum install -y tomcat
         puppet.working_directory = '/tmp/vagrant-puppet'
         config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
       end
-# based on: https://github.com/andrewwardrobe/PuppetIntegration/blob/master/Vagrantfile
-      # NOTE: may also install InSpec https://github.com/inspec/inspec
+      # based on: https://github.com/andrewwardrobe/PuppetIntegration/blob/master/Vagrantfile
+      # NOTE: may also will to install InSpec https://github.com/inspec/inspec
       config.vm.provision 'shell', inline: <<-EOF
-        yum install -q -y gcc-c++ patch readline readline-devel zlib zlib-devel \\
-    libyaml-devel libffi-devel openssl-devel make \\
-    bzip2 autoconf automake libtool bison iconv-devel sqlite-devel
-	# this will install Ruby 2.0
-        yum install -q -y ruby ruby-dev gcc make 
-        # https://tecadmin.net/install-ruby-previous-stable-centos/ 
-        # curl -sSL https://rvm.io/mpapis.asc | gpg --import -
-	# curl -L get.rvm.io | bash -s stable
-	# source /etc/profile.d/rvm.sh
-	# rvm reload
-        # these will fail with Ruby 2.0     
-        # update-alternatives --install /usr/bin/ruby ruby /usr/bin/ruby2.0 10
-        # update-alternatives --install /usr/bin/gem gem /usr/bin/gem2.0 10
-        gem install --no-rdoc --no-ri rake serverspec
+        # https://www.softwarecollections.org/en/scls/rhscl/rh-ruby23/
+        yum install -q -y centos-release-scl yum-utils
+        yum-config-manager --enable rhel-server-rhscl-7-rpms
+        yum install -q -y rh-ruby23
+        # usual culmination is with embarking in a new bash environment
+        which gem >/dev/null
+        if [ $? ] ; then
+          scl enable rh-ruby23 bash
+          # but this is undesired since it spins an extra shell
+          # for alternative solution see https://access.redhat.com/solutions/527703
+          # for local development may need to provision 2 times
+          SCL_BASE_PATH='/opt/rh/rh-ruby23/root'
+          # NOTE: To make visible to root user, install alternatives in /usr/bin
+          # do not iinstal alternarives in /usr/local/bin
+          update-alternatives --install /usr/bin/ruby ruby /opt/rh/rh-ruby23/root/usr/bin/ruby 10
+          update-alternatives --install /usr/bin/gem gem /opt/rh/rh-ruby23/root/usr/bin/gem 10
+          # usr/bin/ruby: error while loading shared libraries: libruby.so.2.3: cannot open shared object file: No such file or directory 
+        fi
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/rh/rh-ruby23/root/usr/lib64
+        gem install --no-ri --no-rdoc rake:12.3.1 serverspec
+        # TODO: how to make sure the /opt/rh/rh-ruby23/root/usr/bin/rake is present
+        update-alternatives --install /usr/bin/rake rake /opt/rh/rh-ruby23/root/usr/bin/rake 10        
+        update-alternatives --remove rake /opt/rh/rh-ruby23/root/usr/bin/rake
+        update-alternatives --install /usr/bin/rake rake /opt/rh/rh-ruby23/root/usr/local/share/gems/gems/rake-12.3.1/exe/rake 10
         cd /vagrant/local_test
         rake spec
       EOF
