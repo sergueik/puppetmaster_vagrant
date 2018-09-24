@@ -130,29 +130,21 @@ sudo yum install -y tomcat
       # NOTE: may also will to install InSpec https://github.com/inspec/inspec
       config.vm.provision 'shell', inline: <<-EOF
         # https://www.softwarecollections.org/en/scls/rhscl/rh-ruby23/
+        # https://access.redhat.com/solutions/527703
         yum install -q -y centos-release-scl yum-utils
         yum-config-manager --enable rhel-server-rhscl-7-rpms
         yum install -q -y rh-ruby23
         # usual culmination is with embarking in a new bash environment
-        which gem >/dev/null
-        if [ $? ] ; then
-          scl enable rh-ruby23 bash
-          # but this is undesired since it spins an extra shell
-          # for alternative solution see https://access.redhat.com/solutions/527703
-          # for local development may need to provision 2 times
-          SCL_BASE_PATH='/opt/rh/rh-ruby23/root'
-          # NOTE: To make visible to root user, install alternatives in /usr/bin
-          # do not iinstal alternarives in /usr/local/bin
-          update-alternatives --install /usr/bin/ruby ruby /opt/rh/rh-ruby23/root/usr/bin/ruby 10
-          update-alternatives --install /usr/bin/gem gem /opt/rh/rh-ruby23/root/usr/bin/gem 10
-          # usr/bin/ruby: error while loading shared libraries: libruby.so.2.3: cannot open shared object file: No such file or directory 
-        fi
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/rh/rh-ruby23/root/usr/lib64
-        gem install --no-ri --no-rdoc rake:12.3.1 serverspec
-        # TODO: how to make sure the /opt/rh/rh-ruby23/root/usr/bin/rake is present
-        update-alternatives --install /usr/bin/rake rake /opt/rh/rh-ruby23/root/usr/bin/rake 10        
-        update-alternatives --remove rake /opt/rh/rh-ruby23/root/usr/bin/rake
-        update-alternatives --install /usr/bin/rake rake /opt/rh/rh-ruby23/root/usr/local/share/gems/gems/rake-12.3.1/exe/rake 10
+        source scl enable rh-ruby23
+        SCL_BASE_PATH='/opt/rh/rh-ruby23/root'
+        # NOTE: To make visible to root user, install alternatives in /usr/bin
+        # not in /usr/local/bin
+        update-alternatives --install /usr/bin/ruby ruby ${SCL_BASE_PATH}/usr/bin/ruby 10
+          update-alternatives --install /usr/bin/gem gem ${SCL_BASE_PATH}/usr/bin/gem 10
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${SCL_BASE_PATH}/usr/lib64
+        RAKE_VERSION='12.3.1'
+        gem install --no-ri --no-rdoc rake:${RAKE_VERSION} specinfra:2.76.1 net-ssh:5.0.2 rspec:3.8.0 rspec-core:3.8.0 rspec-support:3.8.0 rspec-its:1.2.0 rspec-expectations:3.8.1 serverspec:2.41.3
+        update-alternatives --install /usr/bin/rake rake ${SCL_BASE_PATH}/usr/local/share/gems/gems/rake-${RAKE_VERSION}/exe/rake 10
         cd /vagrant/local_test
         rake spec
       EOF
