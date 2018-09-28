@@ -1,6 +1,6 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
-# class `urugease` manages the tomcat security features by updating the web.xml
+# class `urugeas` manages the tomcat security features by updating the web.xml
 # @param practice_augeas  exercise augeas resource
 # @param exercise_tomcat_security_change = false exercise augeas resource to manage tomcat security response headers
 # @param exercise_augtool exercise augtool command. Comment during augeas resource testing
@@ -32,18 +32,56 @@ class urugeas(
     # 'clear securityRealm/authContext', # this does not appear to work
     # 'rm securityRealm/authContext', # this will work
   ]),
+  Hash $package_add_01 = lookup("${name}::package_add_01",
+       Hash[String,String],
+       first, {
+         'patch11' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
+         'patch12' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6'
+       }),
+  Hash $package_add_02 = lookup("${name}::package_add_02",
+       Hash[String,String],
+       first, {
+         'patch21' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
+         'patch22' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6'
+       }),
+  Hash $package_remove_01 = lookup("${name}::package_remove_01",
+       Hash[String,Optional[String]],
+       first, {
+         'patch21' => undef,
+       }),
+  Hash $package_remove_02 = lookup("${name}::package_remove_02",
+       Hash[String,Optional[String]],
+       first, {
+         'patch21' => undef,
+       }),
+  Array[String] $package_remove_03 = lookup("${name}::package_remove_02",
+       Array[String],
+       first, [ 
+         'patch31',
+       ]),
 ){
 
   require 'stdlib'
+
+  $key_intersection = intersection(keys( deep_merge(
+    $package_add_01,
+    $package_add_02
+  )), keys(deep_merge(
+    $package_remove_01,
+    $package_remove_02
+  )))
+  if ( $key_intersection.size != 0 ) {
+    fail( "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection}")
+  }
   $ssl_command_data = {
-     # the keys are stores certificates to sign or something similar
-     # with a traditionally cryptic and long ssl command(s)
-     # used for actual 'command' and 'unless|onlyif' of the Pupper exec
-     # resource set
-     # assume that for some reason the set is to be ordered.
-     # in this eample values are all uniform.
-     # In the real life the values are usually not uniform:
-     # one can not reduce them to a smaller number
+    # the keys are stores certificates to sign or something similar
+    # with a traditionally cryptic and long ssl command(s)
+    # used for actual 'command' and 'unless|onlyif' of the Pupper exec
+    # resource set
+    # assume that for some reason the set is to be ordered.
+    # in this eample values are all uniform.
+    # In the real life the values are usually not uniform:
+    # one can not reduce them to a smaller number
     'admin' => {
       'name'          => 'Execrise admin',
       'src'           => 'admin-store',
