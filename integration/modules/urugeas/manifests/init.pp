@@ -44,34 +44,60 @@ class urugeas(
          'patch21' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
          'patch22' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6'
        }),
+  Hash $package_add_03 = lookup("${name}::package_add_03",
+       Hash[String,String],
+       first, {
+         'patch31' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
+         'patch32' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
+         'patch33' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
+         'patch34' => '0be0b7181969e08f35b583bd3fae195ce3b79ce6792f035761f0594ca6dcddc6',
+       }),
+  Hash $package_add_04 = lookup("${name}::package_add_04",
+       Hash[String,String],
+       first, {
+         'patch41' => '0be0b7181969e08f45b584bd4fae195ce4b79ce6792f045761f0594ca6dcddc6',
+         'patch42' => '0be0b7181969e08f45b584bd4fae195ce4b79ce6792f045761f0594ca6dcddc6',
+         'patch43' => '0be0b7181969e08f45b584bd4fae195ce4b79ce6792f045761f0594ca6dcddc6',
+         'patch44' => '0be0b7181969e08f45b584bd4fae195ce4b79ce6792f045761f0594ca6dcddc6'
+       }),
   Hash $package_remove_01 = lookup("${name}::package_remove_01",
        Hash[String,Optional[String]],
        first, {
-         'patch21' => undef,
+         'patch25' => undef,
        }),
   Hash $package_remove_02 = lookup("${name}::package_remove_02",
        Hash[String,Optional[String]],
        first, {
-         'patch21' => undef,
+         'patch26' => undef,
        }),
   Array[String] $package_remove_03 = lookup("${name}::package_remove_02",
        Array[String],
-       first, [ 
+       first, [
          'patch31',
        ]),
 ){
 
   require 'stdlib'
 
-  $key_intersection = intersection(keys( deep_merge(
+  $package_add_keys = keys( deep_merge(
     $package_add_01,
-    $package_add_02
-  )), keys(deep_merge(
+    $package_add_02,
+    $package_add_03,
+    $package_add_04
+  ))
+  # the package remove may be specified as a hash
+  $package_remove_keys = keys( deep_merge(
     $package_remove_01,
     $package_remove_02
-  )))
-  if ( $key_intersection.size != 0 ) {
-    fail( "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection}")
+  ))
+  $key_intersection1 = intersection($package_add_keys,$package_remove_keys )
+  if ( $key_intersection1.size != 0 ) {
+    fail( "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection1}")
+  }
+  # or as an array
+  $key_intersection2 = intersection($package_add_keys,$package_remove_03 )
+  if ( $key_intersection2.size != 0 ) {
+    fail( "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection2}")
   }
   $ssl_command_data = {
     # the keys are stores certificates to sign or something similar
