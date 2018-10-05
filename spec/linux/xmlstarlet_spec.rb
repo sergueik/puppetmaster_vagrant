@@ -21,19 +21,23 @@ END
       EOF
       )
     end
-    describe command(<<-EOF
-      # xmllint --xpath '/catalog/driver/@url' '#{datafile}'
-      xmlstarlet sel -t -v "/catalog/driver/@url" '#{datafile}'
-    EOF
-    ) do
-        its(:exit_status) { should eq 0 }
-        [
-          'jdbc:sqlite::memory:',
-          'jdbc:hdb::memory:',
-        ].each do |line|
-          its(:stdout) { should match Regexp.new(line, Regexp::IGNORECASE) }
-        end
-        its(:stderr) { should_not match 'Failed to compile' }
+    [
+      "xmllint --xpath '/catalog/driver/@url' '#{datafile}'",
+      "xmlstarlet sel -t -v '/catalog/driver/@url' '#{datafile}'",
+    ].each do |commandline|
+      describe command(<<-EOF
+        #{commandline}
+      EOF
+      ) do
+          its(:exit_status) { should eq 0 }
+          [
+            'jdbc:sqlite::memory:',
+            'jdbc:hdb::memory:',
+          ].each do |line|
+            its(:stdout) { should match Regexp.new(line, Regexp::IGNORECASE) }
+          end
+          its(:stderr) { should_not match 'Failed to compile' }
+      end
     end
   end
 
@@ -56,19 +60,41 @@ END
     EOF
     )
     end
-    describe command(<<-EOF
-      # xmllint --xpath '/catalog/driver/url/text()' '#{datafile}'
-      xmlstarlet sel -t -c '/catalog/driver/url' '#{datafile}'
-    EOF
-    ) do
-        its(:exit_status) { should eq 0 }
-        [
-          'jdbc:sqlite::memory:',
-          'jdbc:hdb::memory:',
-        ].each do |line|
-          its(:stdout) { should match Regexp.new(line, Regexp::IGNORECASE) }
-        end
-        its(:stderr) { should_not match 'Failed to compile' }
+    [
+      "xmllint --xpath '/catalog/driver/url/text()' '#{datafile}'",
+      "xmlstarlet sel -t -v '/catalog/driver/url' '#{datafile}'",
+    ].each do |commandline|
+      describe command(<<-EOF
+        #{commandline}
+      EOF
+      ) do
+          its(:exit_status) { should eq 0 }
+          [
+            'jdbc:sqlite::memory:',
+            'jdbc:hdb::memory:',
+          ].each do |line|
+            its(:stdout) { should match Regexp.new(line, Regexp::IGNORECASE) }
+          end
+          its(:stderr) { should_not match 'Failed to compile' }
+      end
+    end
+    [
+      "xmllint --xpath '/catalog/driver/url' '#{datafile}'",
+      "xmlstarlet sel -t -c '/catalog/driver/url' '#{datafile}'",
+    ].each do |commandline|
+      describe command(<<-EOF
+        #{commandline}
+      EOF
+      ) do
+          its(:exit_status) { should eq 0 }
+          [
+            '<url>jdbc:sqlite::memory:</url>',
+            '<url>jdbc:hdb::memory:</url>',
+          ].each do |line|
+            its(:stdout) { should match Regexp.new(line, Regexp::IGNORECASE) }
+          end
+          its(:stderr) { should_not match 'Failed to compile' }
+      end
     end
   end
 end
