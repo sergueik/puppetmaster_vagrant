@@ -75,6 +75,7 @@ class urugeas(
        first, [
          'patch31',
        ]),
+  String $rest_command_payload_fragment = lookup('urugeas::rest_command_payload_fragment'),
 ){
 
   require 'stdlib'
@@ -97,7 +98,10 @@ class urugeas(
   # or as an array
   $key_intersection2 = intersection($package_add_keys,$package_remove_03 )
   if ( $key_intersection2.size != 0 ) {
-    fail( "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection2}")
+    notify { "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection2}":
+      message => 'fail(...) is commented - this is demo',
+    }
+    # fail( "Expected no parameter intersecrion between the packages to install and uninstall, found  ${key_intersection2}")
   }
   $ssl_command_data = {
     # the keys are stores certificates to sign or something similar
@@ -152,6 +156,10 @@ class urugeas(
   }
 
   notify {'dummy': }
+  notify {'rest_command_payload_fragment':
+    message => $rest_command_payload_fragment,
+  }
+
 
   # alternative approach to define additional hash for resource ordering in parallel with the main one with the interpolate variables
   # Mixig together different object types in the hash does not seem to work

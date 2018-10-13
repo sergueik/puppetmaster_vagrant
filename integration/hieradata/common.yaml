@@ -6,6 +6,27 @@ urugeas::exercise_augtool: true
 # the shell command will be eventually embedded in a Jenkins job config.xml as CDATA section but here is it just a plain shell script
 # so the ampersand, quotes, greater and less would be escaped
 urugeas::shell_build_command: '# some curl command with output captured to $LOG_FILE'
+urugeas::rest_command_payload_fragment:  |
+  PAYLOAD=$(cat<<END|jq -c '.' | sed 's/"/\\"/g'
+  {
+    "repo": "${REPO}",
+    "app" : "${APP}",
+    "commands": [
+      {
+        "${SERVCE_NAME}": "stop",     
+      }
+    ],
+    "filter": {
+      "node": "${NODE}",
+      "datacenter": "${DATCENTER}",
+     }
+  }
+  echo "PAYLOAD=${PAYLOAD}" 
+  END
+  )
+
+# NOTE: preserve a blank line above
+
 urugeas::shell_command:  |
   MAX_RETRY= %{hiera('urugeas::max_retry')}
   TRY=$MAX_RETRY
@@ -27,6 +48,7 @@ urugeas::shell_command:  |
     fi
   done
 
+# NOTE: preserve a blank line above
 
 uruseas::apache_log:  |
   {
