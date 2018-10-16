@@ -1,18 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# https://app.vagrantup.com/bstoots/boxes/xubuntu-16.04-desktop-amd64//versions/1.0.2/providers/virtualbox.box
+
 # based on: https://github.com/hashicorp/consul/tree/master/demo/vagrant-cluster
 # https://www.consul.io/intro/getting-started/services.html
 # used to test
 # https://www.consul.io/api/agent/check.html
 # https://www.consul.io/api/catalog.html
-# -*- mode: ruby -*-
 
-# vi: set ft=ruby :
+# Override consul version
 
-consul_version = ENV['CONSUL_DEMO_VERSION']
-box_name = ENV['BOX_NAME'] ||'ubuntu/trusty64'
+consul_version = ENV.fetch('CONSUL_VERSION', '1.3.0') # nil
+box_name = ENV.fetch('BOX_NAME', 'ubuntu/trusty64')
 VAGRANTFILE_API_VERSION = '2'
-basedir = ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')
+basedir = (ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')).gsub('\\', '/')
 box_memory = ENV.fetch('BOX_MEMORY', '512').to_i
-basedir = basedir.gsub('\\', '/')
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box =  box_name
   # Localy cached vagrant box from https://app.vagrantup.com/envimation/boxes/ubuntu-xenial
@@ -24,7 +28,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     env: {'CONSUL_VERSION' => consul_version},
     inline: <<-SHELL
 # echo Clearing the proxy settings
-# this is only necessary for xenial-server-amd64-vagrant-selenium.box 
+# this is only necessary for base box xenial-server-amd64-vagrant-selenium.box 
 sed -i 's/^/# /' /etc/apt/apt.conf.d/01proxy
 sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
 rm -f /etc/profile.d/proxy.sh
@@ -44,7 +48,7 @@ fi
 #=========================================================
 echo "Fetching Consul version ${CONSUL_VERSION} ..."
 cd /tmp/
-curl -o consul.zip -s https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
+curl -# -o consul.zip -s https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
 
 #=========================================================
 echo "Installing Consul version ${CONSUL_VERSION} ..."
@@ -59,12 +63,17 @@ sudo chmod a+w /etc/consul.d
     SHELL
   config.vm.define 'node1' do |n|
     n.vm.hostname = 'node1'
-    n.vm.network 'private_network', ip: '172.20.20.10'
+    n.vm.network 'private_network', ip: '192.168.51.10'
   end
 
   config.vm.define 'node2' do |n|
     n.vm.hostname = 'node2'
-    n.vm.network 'private_network', ip: '172.20.20.11'
+    n.vm.network 'private_network', ip: '192.168.51.11'
+  end
+
+  config.vm.define 'node3' do |n|
+    n.vm.hostname = 'node3'
+    n.vm.network 'private_network', ip: '192.168.51.12'
   end
   # only required for 
   config.vm.boot_timeout = 600
