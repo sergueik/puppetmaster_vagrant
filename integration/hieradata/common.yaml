@@ -7,7 +7,7 @@ urugeas::exercise_augtool: true
 # so the ampersand, quotes, greater and less would be escaped
 urugeas::shell_build_command: '# some curl command with output captured to $LOG_FILE'
 urugeas::rest_command_payload_fragment:  |
-  PAYLOAD=$(cat<<END|jq -c '.' | sed 's/"/\\"/g'
+  PAYLOAD=$(cat<<END|jq -c '.'
   {
     "repo": "${REPO}",
     "app" : "${APP}",
@@ -24,6 +24,8 @@ urugeas::rest_command_payload_fragment:  |
   echo "PAYLOAD=${PAYLOAD}" 
   END
   )
+  # example usage:
+  # curl -# -X POST -H 'Content-Type: application/json' -d $PAYLOAD -k $URL
 
 # NOTE: preserve a blank line above
 
