@@ -24,8 +24,10 @@ urugeas::rest_command_payload_fragment:  |
   echo "PAYLOAD=${PAYLOAD}" 
   END
   )
+  # if there is a requirement to echo the command
+  PAYLOAD_DISPAY=$(echo $PAYLOAD | sed 's/"/\\' )
   # example usage:
-  # curl -# -X POST -H 'Content-Type: application/json' -d $PAYLOAD -k $URL
+  # curl -# -X POST -H 'Content-Type: application/json' -d "$PAYLOAD" -k $URL
 
 # NOTE: preserve a blank line above
 
