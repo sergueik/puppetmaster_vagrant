@@ -36,14 +36,29 @@ urugeas::shell_command:  |
   TRY=$MAX_RETRY
   while [[ $TRY != 0 ]] ; do
     %{hiera('urugeas::shell_build_command')}
-    grep -qiE "$ERROR_PATTERNS_REGEXP" $LOG_FILE > /dev/null
+    # fatal errors quit immediately
+    if [ ! -z "$FATAL_ERROR_PATTERNS_REGEXP" ]
+    then
+      grep -qiE "$FATAL_ERROR_PATTERNS_REGEXP" $LOG_FILE > /dev/null
+      if [[ $? -eq 0 ]]
+      then
+        echo 'There was a fatal error:' 
+        grep -iE "$FATAL_ERROR_PATTERNS_REGEXP" $LOG_FILE
+        echo 'Aborting'
+        exit 1
+      fi
+    fi
+    # non-fatal errors retry and do not set status toa failure
     ERROR_DETECTED=false
+    grep -qiE "$ERROR_PATTERNS_REGEXP" $LOG_FILE > /dev/null
     if [[ $? -eq 0 ]]
     then
       ERROR_DETECTED=true
     fi
     if $ERROR_DETECTED
     then
+      echo 'There was a non-fatal error:' 
+      grep -iE "$ERROR_PATTERNS_REGEXP" $LOG_FILE
       TRY=$(expr $TRY - 1)
       TRY_COUNT=$(expr $MAX_RETRY - $TRY)
       echo "ERROR: RETRY $TRY_COUNT"
@@ -92,11 +107,7 @@ urugeas::error_patterns:
   - 'retrieving certificate failed'
 
 urugeas::fatal_error_patterns:
-  - 'end of file reached'
-  - 'failed to generate additional resource'
-  - 'encountered end of file'
-  - 'feiled to list packages'
-  - 'retrieving certificate failed'
+  - 'fatal error'
 
 urugeas::augeas_testing:
   - set 'useSecurity/#text' 'false'

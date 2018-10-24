@@ -27,11 +27,22 @@ define urugeas::jenkins_job_builder (
   notify { "${name} error patterns(processed)":
     message => $error_patterns_regexp_string,
   }
+
+  $fatal_error_patterns_regexp_string = regsubst(regsubst($fatal_error_patterns.join('|'),'^' ,'(?' ,'' ),'$' ,')' ,'')
+  # $fatal_error_patterns_tmp = $fatal_error_patterns.join('|')
+  # $fatal_error_patterns_regexp_string = regsubst(regsubst($fatal_error_patterns_tmp,'^' ,'\(\?' ,''),'$' ,'\)' ,'')
+  notify { "${name} fatal error patterns(processed)":
+    message => $fatal_error_patterns_regexp_string,
+  }
+
   $shell_command_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($shell_command, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
   $error_patterns_regexp_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($error_patterns_regexp_string, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
+  $fatal_error_patterns_regexp_cdata = regsubst(regsubst(regsubst(regsubst(regsubst($fatal_error_patterns_regexp_string, '&', '&amp;', 'G'), '>', '&gt;', 'G'), '<', '&lt;', 'G'), '"', '&quot;', 'G'), "'", '&apos;', 'G')
+
   notify { "${name} shell script (cdata)":
     message => $shell_command_cdata,
   }
+  
   $job_xml_template = 'job_xml'
   $job_xml = 'job.xml'
   file { $job_xml:
@@ -64,7 +75,7 @@ define urugeas::jenkins_job_builder (
     before => File[$index_html],
   }
   $shell_script = 'shell.sh'
-  # $shell_script_template = 
+  # $shell_script_template =
   file { $shell_script:
     ensure  => file,
     path    => "/tmp/${shell_script}",
