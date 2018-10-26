@@ -1,0 +1,37 @@
+<%# based on: https://stackoverflow.com/questions/3009631/setting-http-headers-with-jetty  and
+on https://www.reddit.com/r/ruby/comments/4vwaqd/trying_to_increase_my_variable_as_the_loop/
+%>
+<% if @headers and @headers.keys.size > 0 -%>
+
+<New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+  <Set name="rules">
+    <Array type="org.eclipse.jetty.rewrite.handler.Rule">
+     <% index = 0 -%>
+     <%# increment index for each iteration the new item's id attribute to be unique %>
+     <% @headers.each do |key,val| -%>
+     <% index = index + 1 -%> 
+      <Item>
+      <New id="header<%= index -%>" class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+          <Set name="pattern">*</Set>
+	  <Set name="name"><%= key -%></Set>
+	  <Set name="value"><%= val -%></Set>
+        </New>
+      </Item>
+      <% end -%>
+
+    </Array>
+  </Set>
+</New>
+
+<Set name="handler">
+  <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+    <Set name="handlers">
+      <Array type="org.eclipse.jetty.server.Handler">
+        <Item>
+          <Ref id="RewriteHandler"/>
+        </Item>
+      </Array>
+    </Set>
+  </New>
+</Set>
+<% end -%>

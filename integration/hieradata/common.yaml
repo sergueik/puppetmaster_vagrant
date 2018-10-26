@@ -137,6 +137,9 @@ urugeas::tomcat_security_part2:
   - set 'securityRealm/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
   - set 'securityRealm/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
 
+urugeas::jetty_mod::headers:
+  'Content-Security-Policy': "frame-ancestors 'self' *.stackoverflow.com"
+  'X-Frame-Options': 'SAMEORIGIN'
 urugeas::source_encoding: 'UTF-8'
 urugeas::java_options:  |
   -Dfile.encoding=%{hiera('urugeas::source_encoding')} \
