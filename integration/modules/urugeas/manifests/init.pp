@@ -18,8 +18,8 @@ class urugeas(
   Boolean $exercise_augtool,
   Array $tomcat_security_part1 = [],
   Array $tomcat_security_part2 = [],
-  Boolean $practice_augeas =false,
-  Array $augeas_testing = lookup("${name}::augeas_testing",
+  Boolean $practice_augeas     = false,
+  Array $augeas_testing        = lookup("${name}::augeas_testing",
                           Array[String],
                           first,
                          [
@@ -79,6 +79,13 @@ class urugeas(
 ){
 
   require 'stdlib'
+
+  $param1 = hiera('urugeas::param1')
+  $param2 = hiera('urugeas::param2')
+  $param3 = hiera('urugeas::param3')
+  notify{"param1: ${param1}": }
+  notify{"param2: ${param2}": }
+  notify{"param3: ${param3}": }
 
   $package_add_keys = keys( deep_merge(
     $package_add_01,

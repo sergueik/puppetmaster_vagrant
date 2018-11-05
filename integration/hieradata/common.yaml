@@ -13,7 +13,7 @@ urugeas::rest_command_payload_fragment:  |
     "app" : "${APP}",
     "commands": [
       {
-        "${SERVCE_NAME}": "stop",     
+        "${SERVCE_NAME}": "stop",
       }
     ],
     "filter": {
@@ -21,7 +21,7 @@ urugeas::rest_command_payload_fragment:  |
       "datacenter": "${DATCENTER}",
      }
   }
-  echo "PAYLOAD=${PAYLOAD}" 
+  echo "PAYLOAD=${PAYLOAD}"
   END
   )
   # if there is a requirement to echo the command
@@ -42,7 +42,7 @@ urugeas::shell_command:  |
       grep -qiE "$FATAL_ERROR_PATTERNS_REGEXP" $LOG_FILE > /dev/null
       if [[ $? -eq 0 ]]
       then
-        echo 'There was a fatal error:' 
+        echo 'There was a fatal error:'
         grep -iE "$FATAL_ERROR_PATTERNS_REGEXP" $LOG_FILE
         echo 'Aborting'
         exit 1
@@ -57,7 +57,7 @@ urugeas::shell_command:  |
     fi
     if $ERROR_DETECTED
     then
-      echo 'There was a non-fatal error:' 
+      echo 'There was a non-fatal error:'
       grep -iE "$ERROR_PATTERNS_REGEXP" $LOG_FILE
       TRY=$(expr $TRY - 1)
       TRY_COUNT=$(expr $MAX_RETRY - $TRY)
@@ -137,6 +137,13 @@ urugeas::tomcat_security_part2:
   - set 'securityRealm/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
   - set 'securityRealm/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
 
+urugeas::param1:
+  - 'one'
+  - 'two'
+  - 'three'
+
+urugeas::param2: "%{alias('urugeas::param1')}"
+urugeas::param3: "%{hiera('urugeas::param1')}"
 urugeas::jetty_mod::headers:
   'Content-Security-Policy': "frame-ancestors 'self' *.stackoverflow.com"
   'X-Frame-Options': 'SAMEORIGIN'
