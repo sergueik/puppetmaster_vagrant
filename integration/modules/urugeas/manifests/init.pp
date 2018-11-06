@@ -326,6 +326,8 @@ class urugeas(
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
       require   => File[$tomcat_config_file],
       unless    => $xmllint_command,
+      # NOTE: temporary
+      returns   => [0,1],
       provider  => shell,
       logoutput => true,
     }

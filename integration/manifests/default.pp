@@ -32,5 +32,13 @@ node 'default' {
  }
   urugeas::jenkins_job_builder { 'test':
   }
+  urugeas::jenkins_job_part2_builder { 'test part 2':
+  }
+  notify {'all done':
+    require => [
+      Urugeas::Jenkins_job_builder['test'], 
+      Urugeas::Jenkins_job_part2_builder[ 'test part 2']
+    ],
+  }
 }
 

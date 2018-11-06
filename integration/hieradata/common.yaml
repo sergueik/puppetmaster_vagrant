@@ -153,3 +153,7 @@ urugeas::java_options:  |
   -DAPP_LOG_ROOT=/var/log \
 
 # NOTE: need a blank line above
+urugeas::job::debug: false
+urugeas::job::logdir_glob: 'log*'
+urugeas::job::current_logdir: 'log10'
+urugeas::job::number_logdirs_to_keep: 5
