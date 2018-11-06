@@ -2,9 +2,10 @@
 # vi: set ft=puppet :
 
 define urugeas::jenkins_job_part2_builder (
-  $debug = hiera('urugeas::job::debug', false),
-  $logdir_glob = hiera('urugeas::job::logdir_glob', 'undefined'),
-  $current_logdir = hiera('urugeas::job::current_logdir' , ''),
+  $build_user             = hiera('urugeas::job::build_user', 'vagrant'),
+  $debug                  = hiera('urugeas::job::debug', false),
+  $logdir_glob            = hiera('urugeas::job::logdir_glob', 'undefined'),
+  $current_logdir         = hiera('urugeas::job::current_logdir' , ''),
   $number_logdirs_to_keep = hiera('urugeas::job::number_logdirs_to_keep', 5),
   $version = '0.0.1',
 ) {

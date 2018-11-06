@@ -157,3 +157,4 @@ urugeas::job::debug: false
 urugeas::job::logdir_glob: 'log*'
 urugeas::job::current_logdir: 'log10'
 urugeas::job::number_logdirs_to_keep: 5
+urugeas::job::build_user: 'vagrant'

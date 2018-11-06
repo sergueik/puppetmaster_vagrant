@@ -16,21 +16,24 @@ if [ ! -z "${CURRENT_LOGDIR}" ] ; then
 else
   MARKER_FILE=$DUMMYFILE
 fi
-DEBUG=<%= @debug %>
+
+# allow debug be set in shell testing
 if [ -z "${DEBUG}" ] ; then
-  DEBUG=false
+  DEBUG=<%= @debug %>
 fi
 
 ADMIN_USER='root'
 BUILD_USER='jenkins'
 
-
 ARRAY_LOGDIRS=()
+
 if $DEBUG ; then
-echo "find . -maxdepth 1 -type d  -and \( ! -cnewer ${MARKER_FILE} \) -and -name '${LOGDIR_GLOB}' -and \\( -user ${BUILD_USER} -or -user ${ADMIN_USER} \\)"
+  echo "find . -maxdepth 1 -type d  -and \( ! -cnewer ${MARKER_FILE} \) -and -name \"${LOGDIR_GLOB}\" -and \\( -user ${BUILD_USER} -or -user ${ADMIN_USER} \\)"
+  echo 'Result:'
+  find . -maxdepth 1 -type d  -and \( ! -newer ${MARKER_FILE} \) -and -name "${LOGDIR_GLOB}" -and \( -user ${BUILD_USER} -or -user ${ADMIN_USER} \) 
 fi
 echo 'Collecting log dirs, pass 1'
-for LOGDIR in $(find . -maxdepth 1 -type d  -and \( ! -newer ${MARKER_FILE} \) -and -name '${LOGDIR_GLOB}' -and \( -user ${BUILD_USER} -or -user ${ADMIN_USER} \) ) ; do
+for LOGDIR in $(find . -maxdepth 1 -type d  -and \( ! -newer ${MARKER_FILE} \) -and -name "${LOGDIR_GLOB}" -and \( -user ${BUILD_USER} -or -user ${ADMIN_USER} \) ) ; do
   if [ ${LOGDIR} != '..' -a ${LOGDIR} != '.' ] ; then
     echo "Adding ${LOGDIR}"
     ARRAY_LOGDIRS+=($LOGDIR)
