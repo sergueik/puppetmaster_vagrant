@@ -18,7 +18,7 @@ define urugeas::jenkins_job_part2_builder (
   # validate_re($current_loggir, "^${logdir_glob}$')
 
   notify { "${name} shell script (plain) ${shell_script}":
-    message => $shell_command,
+    message => template("${module_name}/${regsubst($shell_script, '\\.', '_', 'G')}.erb"),
   }
   file { $shell_script:
     ensure  => file,
