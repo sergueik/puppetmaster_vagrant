@@ -1,6 +1,10 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
 node 'default' {
+  $home = env('HOME')
+  notify {"home=${home}":}
+  $path = env('PATH')
+  notify {"path=${path}":}
   include urugeas
   # https://puppet.com/docs/puppet/5.3/style_guide.html
   xml_fragment {
