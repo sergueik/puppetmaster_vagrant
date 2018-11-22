@@ -224,9 +224,26 @@ class urugeas(
   # change to 'config.xml','hudson' to see working
   # $tomcat_config_file = $config_file
   # $node = 'hudson'
-  # $xmllint_command =  "xmllint --xpath \"/*[local-name()='web-app']/*[local-name()='filter']/*[local-name()='filter-name']/text()\" ${tomcat_config_file} | grep 'httpHeaderSecurity'"
-  $xmllint_command =  "xmllint --xpath '//*[local-name()=\"filter-name\"]/text()' ${tomcat_config_file} | grep 'httpHeaderSecurity'"
-
+  $xmllint_command =  "xmllint --xpath \"/*[local-name()='web-app']/*[local-name()='filter']/*[local-name()='filter-name']/text()\" ${tomcat_config_file} | grep 'httpHeaderSecurity'"
+  # <session-config>^M
+  #        <session-timeout>30</session-timeout>^M
+  #    </session-config>^M
+  # augtool has its own XPath like syntax
+  # see also: https://github.com/hercules-team/augeas/wiki/Path-expressions#Axes
+  # augtool> print '/files/var/lib/jenkins/web.xml//*[#text="30"]'
+  # /files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout
+  # /files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout/#text = "30"
+  # notably it can't handle elaborated XPath expr. syntax web style
+  # augtool> print '/files/var/lib/jenkins/web.xml/web-app/session-config[./session-timeout/[#text="30"]]'
+  # error: Invalid path expression
+  # error: empty name
+  # /files/var/lib/jenkins/web.xml/web-app/session-config[./session-timeout/|=|[#text="30"]]
+  # but can do equivalent via axes 
+  # augtool> print '/files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout[#text="30"][parent::*]'
+  # /files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout
+  # /files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout/#text = "30"
+  # print '/files/var/lib/jenkins/web.xml/web-app/session-config[./session-timeout="30"]'
+  
   $config_template = @(END)
      <hudson>
        <useSecurity>true</useSecurity>
@@ -291,11 +308,19 @@ class urugeas(
     $random = fqdn_rand(1000,$::uptime_seconds)
     $augtool_script = "/tmp/script_${random}.au"
     # https://puppet.com/docs/puppet/5.3/lang_data_string.html#syntax
-    
+
     $command = @("END"/n$)
       AUGTOOL_SCRIPT='${augtool_script}'
-      augtool -f \$AUGTOOL_SCRIPT | tee '/tmp/a_${random}.log'
+      augtool -A -f \$AUGTOOL_SCRIPT | tee '/tmp/a_${random}.log'
     |-END
+    file { "/tmp/a_${random}.sh":
+      content => $xmllint_command,
+      mode    => '0775',
+      owner   => 'root',
+      group   => 'root',
+      before  => Exec["Examine if the ${augtool_script} needs to run"],
+    }
+
     file { $augtool_script:
       ensure  => 'file',
       # content => inline_template($augtool_command),
@@ -315,12 +340,15 @@ class urugeas(
     -> notify { "Command to check if the ${augtool_script} needs to run":
       message => $xmllint_command,
     }
+
     -> exec { "Examine if the ${augtool_script} needs to run":
       # Notice: /Stage[main]/Urugeas/Exec[Examine if the /tmp/script_192.au needs to run]/returns: XPath set is empty
-      command   => $xmllint_command,
+      # command   => $xmllint_command,
+      command   => "sh '/tmp/a_${random}.sh'",
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
       require   => File[$tomcat_config_file],
       returns   => [0,1],
+      # NOTE: will always trigger
       provider  => shell,
       logoutput => true,
     }
@@ -329,7 +357,8 @@ class urugeas(
       command   => regsubst($command, '\r', ''),
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
       require   => [File[$tomcat_config_file],File[$augtool_script]],
-      unless    => $xmllint_command,
+      # unless    => $xmllint_command,
+      unless    => "sh '/tmp/a_${random}.sh'",
       # NOTE: temporary
       returns   => [0,1],
       provider  => shell,

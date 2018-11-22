@@ -76,49 +76,49 @@ shown below will mysteriously fail without any explanation even in debug run.
    changes => $augeas_security_part3_changes,
  }
 ```
-while manageable by an equivalent `augtool` script.
+while manageable by an largely equivalent `augtool` script:
+
 ```shell
-set /augeas/load/xml/lens 'Xml.lns'
-set /augeas/load/xml/incl  '/var/lib/jenkins/web.xml'
+set '/augeas/load/xml/lens' 'Xml.lns'
+set '/augeas/load/xml/incl' '<%= @tomcat_config_file -%>'
 load
+# NOTE: assumes the <web-app><session-config><session-timeout>30</session-timeout><session-config></web-app>
+# is present
+insert 'filter' before '/files/<%= @tomcat_config_file -%>/web-app/session-config/session-timeout[#text="30"][parent::*]'
+# Specify position within the node set to protect against
+# "too many matches for path expression" augeas error when dublicate nodes are present in the XML
 
-# insert 'dummy' before /files/var/lib/jenkins/web.xml/web-app/session-config
-# set '/files/var/lib/jenkins/web.xml/web-app/dummy/#text' 'some puppt generated text'
-# save
-# print /files//var/lib/jenkins/web.xml/web-app/dummy
-
-# part 1
-insert "filter-mapping" before /files/var/lib/jenkins/web.xml/web-app/session-config
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/filter-name/#text' 'httpHeaderSecurity'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/filter-class/#text' 'org.apache.catalina.filters.HttpHeaderSecurityFilter'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/async-supported/#text' 'true'
 save
-set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/filter-name/#text "httpHeaderSecurity"
-set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/url-pattern/#text "/*"
-set /files/var/lib/jenkins/web.xml/web-app/filter-mapping/dispatcher/#text "REQUEST"
+print '/files<%= @tomcat_config_file -%>/web-app/filter[last()]'
 
+insert 'filter-mapping' before '/files<%= @tomcat_config_file -%>/web-app/session-config'
+
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[last()]/filter-name/#text' 'httpHeaderSecurity'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[last()]/url-pattern/#text' '/*'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[last()]/dispatcher/#text' 'REQUEST'
 save
-print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
+print '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[last()]'
 
-# part 2
-insert "filter" before /files/var/lib/jenkins/web.xml/web-app/session-config
-set /files/var/lib/jenkins/web.xml/web-app/filter/filter-name/#text "httpHeaderSecurity"
-set /files/var/lib/jenkins/web.xml/web-app/filter/filter-class/#text "org.apache.catalina.filters.HttpHeaderSecurityFilter"
-set /files/var/lib/jenkins/web.xml/web-app/filter/async-supported/#text "true"
+insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-name/#text' 'antiClickJackingEnabled'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-value/#text' 'true'
+insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-name/#text' 'antiClickJackingOption'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-value/#text' 'SAMEORIGIN'
 save
-print /files/var/lib/jenkins/web.xml/web-app/filter
-
-# part 3
-insert "init-param" after /files/var/lib/jenkins/web.xml/web-app/filter/async-supported
-set /files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-name/#text "antiClickJackingEnabled"
-set /files/var/lib/jenkins/web.xml/web-app/filter/init-param/param-value/#text "true"
-insert "init-param" after /files/var/lib/jenkins/web.xml/web-app/filter/async-supported
-set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-name/#text "antiClickJackingOption"
-set /files/var/lib/jenkins/web.xml/web-app/filter/init-param[1]/param-value/#text "SAMEORIGIN"
-
-save
-t print /files/var/lib/jenkins/web.xml/web-app/filter-mapping
+print '/files<%= @tomcat_config_file -%>/web-app/filter[last()]'
+# finally print errors
+print '/augeas//error'
 ```
+
 ### See Also
   * [REXML Tutorial](http://www.germane-software.com/software/rexml/docs/tutorial.html) for `insert_after` example.
   * [example Puppet enc.sh](https://github.com/T-Systems-MMS/puppet-example-enc)
+  * [penetration experts memo of apache tomcat 8.2 (link appears dead)](https://www.pentestingexperts.com/how-to-enable-secure-http-header-in-apache-tomcat-8-2)
+  * [How to Enable Secure HTTP Header in Apache Tomcat 8](https://geekflare.com/tomcat-http-security-header/)
 
 ### License
 This project is licensed under the terms of the MIT license.
@@ -148,7 +148,7 @@ done
 
 ```
 The error detection wrapper script can be easily made more complex. It is deoupled from the actual 'build'  script:
-the two are merged vi Pupper 
+the two are merged vi Pupper
 `%{hiera('class_name::parameter_name')}` [lookup function](https://puppet.com/docs/hiera/3.3/variables.html).
 
 The array of patterns used for the log scan (both test positive and test negative are possible) is constructed through Puppet 'code':
