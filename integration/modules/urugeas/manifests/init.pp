@@ -224,7 +224,8 @@ class urugeas(
   # change to 'config.xml','hudson' to see working
   # $tomcat_config_file = $config_file
   # $node = 'hudson'
-  $xmllint_command =  "xmllint --xpath \"/*[local-name()='web-app']/*[local-name()='filter']/*[local-name()='filter-name']\" ${tomcat_config_file} | grep 'httpHeaderSecurity'"
+  # $xmllint_command =  "xmllint --xpath \"/*[local-name()='web-app']/*[local-name()='filter']/*[local-name()='filter-name']/text()\" ${tomcat_config_file} | grep 'httpHeaderSecurity'"
+  $xmllint_command =  "xmllint --xpath '//*[local-name()=\"filter-name\"]/text()' ${tomcat_config_file} | grep 'httpHeaderSecurity'"
 
   $config_template = @(END)
      <hudson>
@@ -293,7 +294,7 @@ class urugeas(
     
     $command = @("END"/n$)
       AUGTOOL_SCRIPT='${augtool_script}'
-      augtool -f \$AUGTOOL_SCRIPT
+      augtool -f \$AUGTOOL_SCRIPT | tee '/tmp/a_${random}.log'
     |-END
     file { $augtool_script:
       ensure  => 'file',
@@ -315,6 +316,7 @@ class urugeas(
       message => $xmllint_command,
     }
     -> exec { "Examine if the ${augtool_script} needs to run":
+      # Notice: /Stage[main]/Urugeas/Exec[Examine if the /tmp/script_192.au needs to run]/returns: XPath set is empty
       command   => $xmllint_command,
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
       require   => File[$tomcat_config_file],

@@ -1,27 +1,30 @@
 set '/augeas/load/xml/lens' 'Xml.lns'
 set '/augeas/load/xml/incl' '<%= @tomcat_config_file -%>'
 load
-
+# NOTE: assumes the session-config is present
 insert 'filter' before '/files<%= @tomcat_config_file -%>/web-app/session-config'
-set '/files<%= @tomcat_config_file -%>/web-app/filter/filter-name/#text' 'httpHeaderSecurity'
-set '/files<%= @tomcat_config_file -%>/web-app/filter/filter-class/#text' 'org.apache.catalina.filters.HttpHeaderSecurityFilter'
-set '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported/#text' 'true'
+# NOTE: assumes there is only one "/web-app/filter" node.
+# # protect against "too many matches for path expression" augeas error when dulicate nodes are found in the XML
+set '/files<%= @tomcat_config_file -%>/web-app/filter[1]/filter-name/#text' 'httpHeaderSecurity'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[1]/filter-class/#text' 'org.apache.catalina.filters.HttpHeaderSecurityFilter'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[1]/async-supported/#text' 'true'
 save
-print '/files<%= @tomcat_config_file -%>/web-app/filter'
+print '/files<%= @tomcat_config_file -%>/web-app/filter[1]'
 
 insert 'filter-mapping' before '/files<%= @tomcat_config_file -%>/web-app/session-config'
 
-set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping/filter-name/#text' 'httpHeaderSecurity'
-set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping/url-pattern/#text' '/*'
-set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping/dispatcher/#text' 'REQUEST'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[1]/filter-name/#text' 'httpHeaderSecurity'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[1]/url-pattern/#text' '/*'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[1]/dispatcher/#text' 'REQUEST'
 save
-print '/files<%= @tomcat_config_file -%>/web-app/filter-mapping'
+print '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[1]'
 
 insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
-set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param/param-name/#text' 'antiClickJackingEnabled'
-set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param/param-value/#text' 'true'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param[1]/param-name/#text' 'antiClickJackingEnabled'
+set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param[1]/param-value/#text' 'true'
 insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
 set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param[1]/param-name/#text' 'antiClickJackingOption'
 set '/files<%= @tomcat_config_file -%>/web-app/filter/init-param[1]/param-value/#text' 'SAMEORIGIN'
 save
 print '/files<%= @tomcat_config_file -%>/web-app/filter-mapping'
+
