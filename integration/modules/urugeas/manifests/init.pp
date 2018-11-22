@@ -290,10 +290,11 @@ class urugeas(
     $random = fqdn_rand(1000,$::uptime_seconds)
     $augtool_script = "/tmp/script_${random}.au"
     # https://puppet.com/docs/puppet/5.3/lang_data_string.html#syntax
+    
     $command = @("END"/n$)
       AUGTOOL_SCRIPT='${augtool_script}'
       augtool -f \$AUGTOOL_SCRIPT
-     |-END
+    |-END
     file { $augtool_script:
       ensure  => 'file',
       # content => inline_template($augtool_command),
@@ -313,7 +314,7 @@ class urugeas(
     -> notify { "Command to check if the ${augtool_script} needs to run":
       message => $xmllint_command,
     }
-    -> exec { "Examnine if the ${augtool_script} needs to run":
+    -> exec { "Examine if the ${augtool_script} needs to run":
       command   => $xmllint_command,
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
       require   => File[$tomcat_config_file],
@@ -322,9 +323,10 @@ class urugeas(
       logoutput => true,
     }
     -> exec { "Run ${augtool_script}":
-      command   => $command,
+                   # NOTE Failed to open /tmp/script_305.au^M: No such file or directory
+      command   => regsubst($command, '\r', ''),
       path      => ['/bin/','/usr/bin','/opt/puppetlabs/puppet/bin'],
-      require   => File[$tomcat_config_file],
+      require   => [File[$tomcat_config_file],File[$augtool_script]],
       unless    => $xmllint_command,
       # NOTE: temporary
       returns   => [0,1],
