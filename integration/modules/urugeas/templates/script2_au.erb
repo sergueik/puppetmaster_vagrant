@@ -1,0 +1,27 @@
+
+set '/augeas/load/xml/lens' 'Xml.lns'
+set '/augeas/load/xml/incl' '<%= @tomcat_config_file -%>'
+load
+# NOTE: updates the existing  the session-config is present
+# ignoring presence of the node in web.xml would lead to runtime error:
+# SEVERE: java.lang.InvocationTargetException
+# ...
+# Caused by: java.lang.illegalArgumentException: Duplicate filter name [httpHeaderSecurity]
+insert 'dispatcher' after '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[last()]/url-pattern'
+set '/files<%= @tomcat_config_file -%>/web-app/filter-mapping[last()]/dispatcher/#text' 'REQUEST'
+
+
+insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
+
+# write the children of /web-app/filter/init-param'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-name/#text' 'antiClickJackingEnabled'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-value/#text' 'true'
+insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-name/#text' 'antiClickJackingOption'
+set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-value/#text' 'SAMEORIGIN'
+save
+print '/files<%= @tomcat_config_file -%>/web-app/filter[last()]'
+
+#  finally print errors
+print '/augeas//error'
+

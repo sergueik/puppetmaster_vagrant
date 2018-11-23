@@ -119,6 +119,7 @@ print '/augeas//error'
   * [example Puppet enc.sh](https://github.com/T-Systems-MMS/puppet-example-enc)
   * [penetration experts memo of apache tomcat 8.2 (link appears dead)](https://www.pentestingexperts.com/how-to-enable-secure-http-header-in-apache-tomcat-8-2)
   * [How to Enable Secure HTTP Header in Apache Tomcat 8](https://geekflare.com/tomcat-http-security-header/)
+  * [Augeas XPath-like grammar](https://github.com/hercules-team/augeas/wiki/Path-expressions#Axes)
 
 ### License
 This project is licensed under the terms of the MIT license.
