@@ -18,7 +18,9 @@ set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/para
 set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-value/#text' 'true'
 insert 'init-param' after '/files<%= @tomcat_config_file -%>/web-app/filter/async-supported'
 set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-name/#text' 'antiClickJackingOption'
-set '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]/param-value/#text' 'SAMEORIGIN'
+# https://stackoverflow.com/questions/31992891/augeas-how-to-shorten-tree-paths/31993676#31993676
+set /augeas/context '/files<%= @tomcat_config_file -%>/web-app/filter[last()]/init-param[1]'
+set 'param-value' 'SAMEORIGIN'
 save
 print '/files<%= @tomcat_config_file -%>/web-app/filter[last()]'
 
