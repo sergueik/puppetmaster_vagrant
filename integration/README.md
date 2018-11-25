@@ -113,13 +113,13 @@ print '/files<%= @tomcat_config_file -%>/web-app/filter[last()]'
 # finally print errors
 print '/augeas//error'
 ```
-
 ### See Also
+  * [augeas](http://augeas.net/docs/language.html)
+  * [Augeas XPath-like grammar](https://github.com/hercules-team/augeas/wiki/Path-expressions#Axes)
   * [REXML Tutorial](http://www.germane-software.com/software/rexml/docs/tutorial.html) for `insert_after` example.
   * [example Puppet enc.sh](https://github.com/T-Systems-MMS/puppet-example-enc)
   * [penetration experts memo of apache tomcat 8.2 (link appears dead)](https://www.pentestingexperts.com/how-to-enable-secure-http-header-in-apache-tomcat-8-2)
-  * [How to Enable Secure HTTP Header in Apache Tomcat 8](https://geekflare.com/tomcat-http-security-header/)
-  * [Augeas XPath-like grammar](https://github.com/hercules-team/augeas/wiki/Path-expressions#Axes)
+  * [How to Enable Secure HTTP Headers in Apache Tomcat 8](https://geekflare.com/tomcat-http-security-header/)
 
 ### License
 This project is licensed under the terms of the MIT license.

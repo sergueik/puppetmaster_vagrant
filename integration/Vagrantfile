@@ -129,23 +129,30 @@ sudo yum install -y tomcat
       # based on: https://github.com/andrewwardrobe/PuppetIntegration/blob/master/Vagrantfile
       # NOTE: may also will to install InSpec https://github.com/inspec/inspec
       config.vm.provision 'shell', inline: <<-EOF
-        echo Installing prerequisites for running spec
-        # https://www.softwarecollections.org/en/scls/rhscl/rh-ruby23/
-        # https://access.redhat.com/solutions/527703
-        yum install -q -y centos-release-scl yum-utils
-        yum-config-manager --enable rhel-server-rhscl-7-rpms
-        yum install -q -y rh-ruby23
-        # usual culmination is with embarking in a new bash environment
-        source scl enable rh-ruby23
+        echo Checking prerequisites for running rspec
         SCL_BASE_PATH='/opt/rh/rh-ruby23/root'
-        # NOTE: To make visible to root user, install alternatives in /usr/bin
-        # not in /usr/local/bin
-        update-alternatives --install /usr/bin/ruby ruby ${SCL_BASE_PATH}/usr/bin/ruby 10
-        update-alternatives --install /usr/bin/gem gem ${SCL_BASE_PATH}/usr/bin/gem 10
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${SCL_BASE_PATH}/usr/lib64
+        ruby --version | grep -q ' 2.3.'
+        if [ $? == 0 ] ; then 
+          echo 'Ruby 2.3.x is installed'; 
+        else
+          echo Installing prerequisites for running spec
+          # https://www.softwarecollections.org/en/scls/rhscl/rh-ruby23/
+          # https://access.redhat.com/solutions/527703
+          yum install -q -y centos-release-scl yum-utils
+          yum-config-manager --enable rhel-server-rhscl-7-rpms
+          yum install -q -y rh-ruby23
+          # usual culmination is with embarking in a new bash environment
+          source scl enable rh-ruby23
+          # NOTE: To make visible to root user, install alternatives in /usr/bin
+          # not in /usr/local/bin
+          update-alternatives --install /usr/bin/ruby ruby ${SCL_BASE_PATH}/usr/bin/ruby 10
+          update-alternatives --install /usr/bin/gem gem ${SCL_BASE_PATH}/usr/bin/gem 10
+        fi
         RAKE_VERSION='12.3.1'
         gem install --no-ri --no-rdoc rake:${RAKE_VERSION} specinfra:2.76.1 net-ssh:5.0.2 rspec:3.8.0 rspec-core:3.8.0 rspec-support:3.8.0 rspec-its:1.2.0 rspec-expectations:3.8.1 serverspec:2.41.3
         update-alternatives --install /usr/bin/rake rake ${SCL_BASE_PATH}/usr/local/share/gems/gems/rake-${RAKE_VERSION}/exe/rake 10
+        echo Done
         echo Running spec
         cd /vagrant/local_test
         rake spec
