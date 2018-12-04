@@ -3,8 +3,9 @@
 %else
 %define         _verstr      0.8.5
 %endif
-
+%define         _prefix     /usr/local      
 Name:           consul
+Prefix:         /usr/local
 Version:        %{_verstr}
 Release:        1%{?dist}
 Summary:        Consul is a tool for service discovery and configuration. Consul is distributed, highly available, and extremely scalable.

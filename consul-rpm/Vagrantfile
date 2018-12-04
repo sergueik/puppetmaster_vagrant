@@ -26,6 +26,9 @@ find $HOME/rpmbuild -type d -name "SRPMS" -exec cp -r {} /vagrant/ \\;
 
 EOF
 
+# https://websites.pmc.ucsc.edu/~dmk/notes/RPMs/Creating_RPMs.html  
+# https://www.redhat.com/archives/rpm-list/2005-May/msg00090.html
+
 tag = ENV.fetch('TAG', '')
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
@@ -36,7 +39,6 @@ agent_box_memory = ENV.fetch('AGENT_BOX_MEMORY', '512').to_i
 Vagrant.configure(2) do |config|
 
   config.vm.box = 'boxcutter/centos72'
-  box_name = 'centos7-generic-x86_64.box'
   config.vm.box_url = "file://#{basedir}/Downloads/#{box_name}"
   config.vm.hostname = 'config.example.com'
 
