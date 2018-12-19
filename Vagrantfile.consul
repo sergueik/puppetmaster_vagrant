@@ -16,7 +16,16 @@ consul_version = ENV.fetch('CONSUL_VERSION', '1.4.0') # nil
 # old releases are available in https://releases.hashicorp.com/consul/0.8.5/
 # the  instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
 box_name = ENV.fetch('BOX_NAME', 'ubuntu/trusty64')
+box_name = ENV.fetch('BOX_NAME', 'chavo1/xenial64base')
+
+# see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
+# NOTE: base box too big: 755 Mb really?
+box_name = ENV.fetch('BOX_NAME', 'envimation/ubuntu-xenial')
+
+# "ubuntu-xenial-v1.0.3"
+
 VAGRANTFILE_API_VERSION = '2'
+
 basedir = (ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')).gsub('\\', '/')
 box_memory = ENV.fetch('BOX_MEMORY', '512').to_i
 
@@ -27,20 +36,55 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config_vm_box_name = 'ubuntu-xenial-v1.0.3.box'
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
-  config.vm.provision 'shell',
-    env: {'CONSUL_VERSION' => consul_version},
-    inline: <<-SHELL
+  1.upto(2) do |n|
+    nodename = "node#{n}"
+    config.vm.define nodename do |box|
+      box.vm.hostname = nodename
+      box.vm.network "private_network", ip: "192.168.51.#{9+n}"
+
+      box.vm.provision 'shell',
+        env: {'CONSUL_VERSION' => consul_version},
+        inline: <<-SHELL
 # echo Clearing the proxy settings
-# this is only necessary for base box xenial-server-amd64-vagrant-selenium.box 
-sed -i 's/^/# /' /etc/apt/apt.conf.d/01proxy
-# sed I is GNU extension and only work with substitution operation
+# this step is only required for certain base box xenial-server-amd64-vagrant-selenium.box
+if [ -f '/etc/apt/apt.conf.d/01proxy' ] ;  then
+  sed -i 's/^/# /' '/etc/apt/apt.conf.d/01proxy'
+fi
+# NOTE: sed I is GNU extension and only work with substitution operation
 sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
 rm -f /etc/profile.d/proxy.sh
 unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
 #=========================================================
-cho 'Installing dependencies ...'
 sudo apt-get -qqy update
-sudo apt-get install -qqy unzip curl jq
+echo 'Installing dependencies ...'
+for B in vim curl jq unzip ; do
+  which $B  &>/dev/null || {
+    sudo apt-get install -qqy $B
+  }
+done
+# the base box has no ping, need to install one 
+which ping  &>/dev/null || {
+  sudo apt-get install -qqy inetutils-ping
+}
+
+# the base box has no dig, need to install one 
+which dig  &>/dev/null || {
+  sudo apt-get install -qqy dnsutils
+}
+#=========================================================
+# install web for consul to monitor
+#
+which nginx &>/dev/null || {
+  sudo apt-get update
+  sudo apt-get install -qqy nginx
+}
+
+# stop nginx service
+service nginx stop
+
+# start nginx service
+service nginx start
+
 #=========================================================
 
 echo 'Determining Consul version to install ...'
@@ -52,7 +96,7 @@ fi
 #=========================================================
 echo "Fetching Consul version ${CONSUL_VERSION} ..."
 cd /tmp/
-curl -# -o consul.zip -s https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
+curl -s -o consul.zip -s https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
 
 #=========================================================
 echo "Installing Consul version ${CONSUL_VERSION} ..."
@@ -61,29 +105,77 @@ sudo chmod +x consul
 sudo mv consul /usr/bin/consul
 
 #=========================================================
-sudo mkdir /etc/consul.d
+sudo mkdir -p /etc/consul.d
 sudo chmod a+w /etc/consul.d
+# origin: https://github.com/chavo1/consul-lab
+sudo cat <<EOF1 | jq -c "." - > '/etc/consul.d/web.json'
+{
+  "service": {
+    "name": "web",
+    "tags": [
+      "nginx"
+    ],
+    "port": 80,
+    "check": {
+      "args": [
+        "curl",
+        "localhost"
+      ],
+      "interval": "120s"
+    }
+  }
+}
 
-    SHELL
-  config.vm.define 'node1' do |n|
-    n.vm.hostname = 'node1'
-    n.vm.network 'private_network', ip: '192.168.51.10'
-  end
+EOF1
+sudo cat <<EOF2 | jq -c '.' - > '/etc/consul.d/ping.json'
+{
+  "check": {
+    "name": "ping",
+    "args": [
+      "ping",
+      "-c1",
+      "google.com"
+    ],
+    "interval": "30s"
+  }
+}
 
-  config.vm.define 'node2' do |n|
-    n.vm.hostname = 'node2'
-    n.vm.network 'private_network', ip: '192.168.51.11'
-  end
+EOF2
+mkdir -p /tmp/consul
+hostname | grep -q node1
+if [ $? -eq 0 ]; then
+  echo 'Starting server on ' $(hostname)
+  consul agent -server -bootstrap-expect=1 \
+    -data-dir=/tmp/consul -node=agent-one -bind=192.168.51.10 \
+    -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
+else
+  echo 'Starting agent on ' $(hostname)
+  consul agent -data-dir=/tmp/consul -node=agent-two \
+    -bind=192.168.51.11 -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
+fi
 
-  config.vm.define 'node3' do |n|
-    n.vm.hostname = 'node3'
-    n.vm.network 'private_network', ip: '192.168.51.12'
-  end
-  # only required for 
-  config.vm.boot_timeout = 600
-  config.vm.provider :virtualbox do |v|
-    v.customize ['modifyvm', :id, '--cableconnected1', 'on']
-    v.customize ['modifyvm', :id, '--memory', box_memory ]
+      SHELL
+    end
+    # only required for
+    config.vm.boot_timeout = 600
+    config.vm.provider :virtualbox do |v|
+      v.customize ['modifyvm', :id, '--cableconnected1', 'on']
+      v.customize ['modifyvm', :id, '--memory', box_memory ]
+     end
   end
 end
-
+## # Manual  cluster validation steps
+## # from https://github.com/chavo1/consul-lab
+## # see also: https://github.com/chavo1/consul-vagrant, https://github.com/chavo1/consul_labs
+## # all done on node1
+## # from node1 (192.168.51.10) join node2
+## consul join 192.168.51.11
+## Successfully joined cluster by contacting 1 nodes.
+## 
+## # dig node2
+## dig @127.0.0.1 -p 8600 agent-two.node.consul
+## 
+## # check cluster health (will be no output but the status)
+## curl -I -X GET http://localhost:8500/v1/health/state/critical
+## echo $?
+## 0
