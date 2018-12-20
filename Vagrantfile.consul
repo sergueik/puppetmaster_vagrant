@@ -12,11 +12,10 @@
 # Override consul version
 
 consul_version = ENV.fetch('CONSUL_VERSION', '1.4.0') # nil
+consul_init = ENV.fetch('CONSUL_INIT', nil)
 # Consul is packages as plain archive by hashicorp:
 # old releases are available in https://releases.hashicorp.com/consul/0.8.5/
 # the  instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
-box_name = ENV.fetch('BOX_NAME', 'ubuntu/trusty64')
-box_name = ENV.fetch('BOX_NAME', 'chavo1/xenial64base')
 
 # see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
 # NOTE: base box too big: 755 Mb really?
@@ -37,78 +36,74 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
   1.upto(2) do |n|
-    nodename = "node#{n}"
-    config.vm.define nodename do |box|
-      box.vm.hostname = nodename
-      box.vm.network "private_network", ip: "192.168.51.#{9+n}"
+    node_hostname = "node#{n}"
+    node_ip = "192.168.51.#{9+n}"
+    config.vm.define node_hostname do |box|
+      box.vm.hostname = node_hostname
+      box.vm.network "private_network", ip: node_ip 
 
       box.vm.provision 'shell',
-        env: {'CONSUL_VERSION' => consul_version},
+        env: {'CONSUL_VERSION' => consul_version,
+              'NODE_IP' => node_ip   },
         inline: <<-SHELL
 # echo Clearing the proxy settings
 # this step is only required for certain base box xenial-server-amd64-vagrant-selenium.box
-if [ -f '/etc/apt/apt.conf.d/01proxy' ] ;  then
+if [ -f '/etc/apt/apt.conf.d/01proxy' ] ; then
   sed -i 's/^/# /' '/etc/apt/apt.conf.d/01proxy'
 fi
-# NOTE: sed I is GNU extension and only work with substitution operation
+# NOTE: sed I is GNU extension and only work with sed substitution operation
 sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
 rm -f /etc/profile.d/proxy.sh
 unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
 #=========================================================
 sudo apt-get -qqy update
+
+# based on: https://github.com/chavo1/consul-lab
 echo 'Installing dependencies ...'
 for B in vim curl jq unzip ; do
-  which $B  &>/dev/null || {
+  which $B &>/dev/null || {
     sudo apt-get install -qqy $B
   }
 done
 # the base box has no ping, need to install one 
-which ping  &>/dev/null || {
+which ping &>/dev/null || {
   sudo apt-get install -qqy inetutils-ping
 }
 
 # the base box has no dig, need to install one 
-which dig  &>/dev/null || {
+which dig &>/dev/null || {
   sudo apt-get install -qqy dnsutils
 }
 #=========================================================
-# install web for consul to monitor
+# install web service for consul to discover and monitor
 #
 which nginx &>/dev/null || {
-  sudo apt-get update
   sudo apt-get install -qqy nginx
 }
 
-# stop nginx service
-service nginx stop
-
-# start nginx service
-service nginx start
+service nginx stop; service nginx start
 
 #=========================================================
-
-echo 'Determining Consul version to install ...'
-CHECKPOINT_URL='https://checkpoint-api.hashicorp.com/v1/check'
-if [ -z "$CONSUL_VERSION" ]; then
+if [ -z "${CONSUL_VERSION}" ] ; then
+  echo 'Determining latest Consul version.'
+  CHECKPOINT_URL='https://checkpoint-api.hashicorp.com/v1/check'
   CONSUL_VERSION=$(curl -s "${CHECKPOINT_URL}/consul" | jq '.current_version' | tr -d '"')
 fi
-
 #=========================================================
-echo "Fetching Consul version ${CONSUL_VERSION} ..."
+echo "Download Consul version ${CONSUL_VERSION}"
 cd /tmp/
 curl -s -o consul.zip -s https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip
 
 #=========================================================
-echo "Installing Consul version ${CONSUL_VERSION} ..."
+echo "Install Consul version ${CONSUL_VERSION}"
 unzip consul.zip
 sudo chmod +x consul
-sudo mv consul /usr/bin/consul
+sudo mv consul /usr/bin
 
 #=========================================================
 sudo mkdir -p /etc/consul.d
 sudo chmod a+w /etc/consul.d
-# origin: https://github.com/chavo1/consul-lab
-sudo cat <<EOF1 | jq -c "." - > '/etc/consul.d/web.json'
+sudo cat <<EOF | jq -c "." - > '/etc/consul.d/web.json'
 {
   "service": {
     "name": "web",
@@ -126,8 +121,8 @@ sudo cat <<EOF1 | jq -c "." - > '/etc/consul.d/web.json'
   }
 }
 
-EOF1
-sudo cat <<EOF2 | jq -c '.' - > '/etc/consul.d/ping.json'
+EOF
+sudo cat <<EOF | jq -c '.' - > '/etc/consul.d/ping.json'
 {
   "check": {
     "name": "ping",
@@ -140,20 +135,56 @@ sudo cat <<EOF2 | jq -c '.' - > '/etc/consul.d/ping.json'
   }
 }
 
-EOF2
+EOF
 mkdir -p /tmp/consul
 hostname | grep -q node1
 if [ $? -eq 0 ]; then
-  echo 'Starting server on ' $(hostname)
+  echo 'Starting consul agent as a server on ' $(hostname)
   consul agent -server -bootstrap-expect=1 \
     -data-dir=/tmp/consul -node=agent-one -bind=192.168.51.10 \
     -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
 else
-  echo 'Starting agent on ' $(hostname)
+  echo 'Starting consul agent on ' $(hostname)
   consul agent -data-dir=/tmp/consul -node=agent-two \
     -bind=192.168.51.11 -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
 fi
+# based on: https://github.com/chavo1/consul-vagrant
+# NOTE: service is not enabled atm
+sudo cat <<EOF | jq -c '.' - > '/etc/consul.d/consul.json'
+{
+  "bootstrap_expect": 2,
+  "client_addr": "0.0.0.0",
+  "data_dir": "/tmp/consul",
+  "server": true,
+  "retry_join": [
+    "192.168.51.10",
+    "192.168.51.11"
+  ],
+  "ui": true,
+  "verify_incoming": false,
+  "verify_outgoing": false
+}
+EOF
+sudo cat <<EOF | tee '/etc/init/consul.conf'
+description "consul"
 
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+respawn limit 10 5
+umask 022
+chdir /tmp/consul
+env GOMAXPROCS="2"
+env PATH="/usr/local/bin:/usr/bin:/bin"
+kill signal TERM
+reload signal HUP
+EOF
+
+echo "exec consul agent -config-file=/etc/consul.d/consul.json -advertise=${NODE_IP}"| tee -a /etc/init/consul.conf
+if [ ! -z "${CONSUL_INIT}" ] ; then
+  service consul start
+fi
       SHELL
     end
     # only required for
