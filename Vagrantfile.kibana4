@@ -1,0 +1,321 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+require 'pp'
+
+# based on: https://github.com/timroes/kibana4-vagrant
+# all provision scripts are made inline
+# the cache directory is not tracked by git, because of .gitignore
+# it is populated from the original projecy 'provisioning/files' directory
+# on the fly
+
+VAGRANTFILE_API_VERSION = '2'
+
+basedir           = ENV.fetch('USERPROFILE', '')
+basedir           = ENV.fetch('HOME', '') if basedir == ''
+basedir           = basedir.gsub('\\', '/')
+box_name          = ENV.fetch('BOX_NAME', '')
+
+debug             = ENV.fetch('DEBUG', 'false')
+debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
+
+kibana_init_script = <<-EOF
+
+#!/bin/sh
+#
+# /etc/init.d/kibana4 -- startup script for kibana4
+# bsmith@the408.com 2015-02-20; used elasticsearch init script as template
+# Based on:
+# https://github.com/akabdog/scripts/edit/master/kibana4_init
+#
+### BEGIN INIT INFO
+# Provides:          kibana4
+# Required-Start:    \\$network \\$remote_fs \\$named
+# Required-Stop:     \\$network \\$remote_fs \\$named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starts kibana4
+# Description:       Starts kibana4 using start-stop-daemon
+### END INIT INFO
+
+# configure this with wherever you unpacked kibana:
+KIBANA_BIN=/srv/kibana/bin
+
+NAME=kibana4
+DESC='Kibana4'
+PID_FILE=/var/run/\\$NAME.pid
+PATH=/bin:/usr/bin:/sbin:/usr/sbin:\\$KIBANA_BIN
+DAEMON=\\$KIBANA_BIN/kibana
+LOGFILE=/var/log/kibana4.log
+
+if [ `id -u` -ne 0 ]; then
+  echo "You need root privileges to run this script"
+  exit 1
+fi
+
+. /lib/lsb/init-functions
+
+if [ -r /etc/default/rcS ]; then
+  . /etc/default/rcS
+fi
+
+case "\\$1" in
+  start)
+    log_daemon_msg "Starting \\$DESC"
+
+    pid=`pidofproc -p \\$PID_FILE kibana`
+    if [ -n "\\$pid" ] ; then
+      log_begin_msg "Already running."
+      log_end_msg 0
+      exit 0
+    fi
+
+    # Start Daemon
+    start-stop-daemon --start --pidfile "\\$PID_FILE" --make-pidfile --background --exec /bin/bash -- -c "\\$DAEMON > \\$LOGFILE 2>&1"
+    log_end_msg \\$?
+    ;;
+  stop)
+    log_daemon_msg "Stopping \\$DESC"
+
+    if [ -f "\\$PID_FILE" ]; then
+      start-stop-daemon --stop --pidfile "\\$PID_FILE" \\
+        --retry=TERM/20/KILL/5 > \\$LOGFILE
+      if [ \\$? -eq 1 ]; then
+        log_progress_msg "\\$DESC is not running but pid file exists, cleaning up"
+      elif [ \\$? -eq 3 ]; then
+        PID="`cat \\$PID_FILE`"
+        log_failure_msg "Failed to stop \\$DESC (pid \\$PID)"
+        exit 1
+      fi
+      rm -f "\\$PID_FILE"
+    else
+      log_progress_msg "(not running)"
+    fi
+    log_end_msg 0
+    ;;
+  status)
+    status_of_proc -p \\$PID_FILE kibana kibana && exit 0 || exit \\$?
+      ;;
+    restart|force-reload)
+    if [ -f "\\$PID_FILE" ]; then
+      \\$0 stop
+      sleep 1
+    fi
+    \\$0 start
+    ;;
+    *)
+    log_success_msg "Usage: \\$0 {start|stop|restart|force-reload|status}"
+    exit 1
+    ;;
+esac
+
+exit 0
+EOF
+kibana_provision = <<-EOF
+#! /bin/bash
+
+# Set variables
+DEBUG='#{debug}'
+if [ -z "${DEBUG}" ] ; then
+  set -x
+fi
+CACHE=/vagrant/cache
+ARCH=${1:-32}
+KIBANA_VERSION='4.0.2'
+DOWNLOAD_URL='https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files'
+if [ "${ARCH}" == '64' ]; then
+  PACKAGE_ARCHIVE="kibana-${KIBANA_VERSION}-linux-x64.tar.gz"
+else
+  PACKAGE_ARCHIVE="kibana-${KIBANA_VERSION}-linux-x86.tar.gz"
+fi
+pushd $CACHE
+if [ ! -f $PACKAGE_ARCHIVE ]; then
+  if [ -z $DEBUG ] ; then
+    echo curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+  fi
+  curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+fi
+popd
+
+if [ ! -f /srv/kibana/bin/kibana ]; then
+  # Install kibana
+  echo "Installing Kibana from ${PACKAGE_ARCHIVE}..."
+  mkdir -p /srv/kibana
+  tar -C /srv/kibana -zxf ${CACHE}/${PACKAGE_ARCHIVE} --strip 1
+fi
+KIBANA4_INIT_SCRIPT='/etc/init.d/kibana4'
+if [ ! -f $KIBANA4_INIT_SCRIPT ]; then
+  cat <<SCRIPT | sudo tee $KIBANA4_INIT_SCRIPT
+#{kibana_init_script}
+SCRIPT
+
+  sed -i 's/\\r//g' $KIBANA4_INIT_SCRIPT
+  chmod +x $KIBANA4_INIT_SCRIPT
+  update-rc.d kibana4 defaults 99 10
+fi
+
+service kibana4 start
+EOF
+elasticsearch_provision = <<-EOF
+#! /bin/bash
+DEBUG='#{debug}'
+if [ -z "${DEBUG}" ] ; then
+  set -x
+fi
+
+ARCH=${1:-32}
+CACHE=/vagrant/cache
+
+# Install java 7 from cached archive
+if [ "${ARCH}" == '64' ]; then
+  PACKAGE_ARCHIVE="jre-7u79-linux-x64.tar.gz"
+else
+  PACKAGE_ARCHIVE="jre-7u79-linux-i586.tar.gz"
+fi
+
+pushd $CACHE
+if [ ! -f $PACKAGE_ARCHIVE ]; then
+  if [ -z $DEBUG ] ; then
+    echo curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+  fi
+  curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+fi
+tar -C /usr/local -zxf ${CACHE}/${PACKAGE_ARCHIVE}
+popd
+ln -snf /usr/local/jre1.7.0_79 /usr/local/java
+
+sudo useradd  elasticsearch
+
+# Check wether elasticsearch is already installed
+dpkg-query -W elasticsearch 1>/dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+  # Install elasticsearch from cached .deb package
+  DEB_PACKAGE='elasticsearch-1.5.2.deb'
+  pushd $CACHE
+  if [ ! -f $DEB_PACKAGE ]; then
+  if [ -z $DEBUG ] ; then
+    echo curl -Lkso $DEBIAN_PACKAGE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${DEBIAN_PACKAGE}
+  fi
+    curl -Lkso $DEB_PACKAGE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${DEB_PACKAGE}
+  fi
+  dpkg -i ${CACHE}/${DEB_PACKAGE}
+  popd
+
+  # write JAVA_HOME for elasticsearch
+  echo "export JAVA_HOME=/usr/local/java" |sudo tee -a /etc/default/elasticsearch
+
+  # Add elasticsearch to startupscripts and start it
+  sudo update-rc.d elasticsearch defaults 95 10
+
+  sudo service elasticsearch start
+
+  echo 'Waiting for elasticsearch to startup .'
+  # TODO: trap timeout
+  until curl -s --connect-timeout 1 localhost:9200; do
+    echo -n '.'
+    sleep 1
+  done
+  echo 'Done.'
+
+  # Import sample data
+  echo 'Importing sample data ...'
+  curl -s -XPUT 'localhost:9200/_snapshot/sampledata/' -d '{
+    "type": "fs",
+    "settings": {
+      "location": "/vagrant/cache/sampledata/",
+      "compress": true
+    }
+  }'
+  curl -s -XPOST 'localhost:9200/_snapshot/sampledata/v1/_restore'
+  echo 'Done'
+
+else
+  service elasticsearch start
+fi
+EOF
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  dir = File.expand_path(File.dirname(__FILE__))
+
+  node_config_yaml = "#{dir}/node_config.yaml"
+
+  node_pref = YAML.load_file(node_config_yaml)
+  if !node_pref.has_key?('is_32bit') or !node_pref.has_key?('memory')
+    abort("Critical settings absent from \"#{node_config_yaml}\".")
+  end
+
+  if node_pref['is_32bit']
+    config.vm.box = 'ubuntu/trusty32'
+    box_alias = 'trusty_32'
+  else
+    # TODO: support xenial 'envimation/ubuntu-xenial' base box
+    config.vm.box = 'ubuntu/trusty64'
+    box_alias = 'trusty64'
+  end
+  box_name = "ELK #{config.vm.box.gsub('/', ' ')}"
+  config_yaml = {}
+  vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
+  if !File.exists?(vagrantfile_yaml)
+    abort('Critical configuration file not found in current directory: ' +
+    ' "#{vagrantfile_yaml}".')
+  end
+  config_yaml = YAML::load_file( vagrantfile_yaml )
+
+  box_config = config_yaml[box_alias]
+  if debug
+    puts "Loaded '#{vagrantfile_yaml}'"
+    pp box_config
+  end
+
+  unless !defined?(box_name).nil? && box_name =~ /\S/
+    box_name = box_config[:box_name]
+  end
+  config_vm_box_name = box_config[:config_vm_box_name]
+  box_gui = box_config[:box_gui] != nil && box_config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
+  box_cpus = box_config[:box_cpus].to_i
+  # override memory setting with target node configuration
+  # box_memory = box_config[:box_memory].to_i
+  box_memory = node_pref[:memory].to_i
+  if debug
+    pp "#{{:box_name => box_name, :box_gui => box_gui, :box_cpus => box_cpus, :box_memory => box_memory, :config_vm_box_name  => config_vm_box_name }}"
+  end
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  # KIBANA web TCP port
+  config.vm.network :forwarded_port, guest: 5601, host: 5601
+  # Elasticsearch RESTAPI HTTP port
+  config.vm.network :forwarded_port, guest: 9200, host: 9200
+  # Elasticsearch JAVA API transport protocol port
+  config.vm.network :forwarded_port, guest: 9300, host: 9300
+  # TODO: do we also need a host-only network to exercise java to jsbc thru transport protocol?
+  # config.vm.network :private_network, ip: '192.168.33.10'
+  config.vm.boot_timeout = 300
+
+  config.vm.provider :virtualbox do |v|
+    v.gui = true
+    v.name = box_name
+    v.customize ['modifyvm', :id, '--memory', node_pref['memory']]
+    v.customize ['setextradata', 'global', 'GUI/MaxGuestResolution', 'any']
+    v.customize ['setextradata', :id, 'CustomVideoMode1', '1280x800x32']
+  end
+
+  config.vm.provision 'shell', inline: elasticsearch_provision, args: (node_pref['is_32bit'] ? '32': '64')
+  config.vm.provision 'shell', inline: kibana_provision, args: (node_pref['is_32bit'] ? '32' : '64')
+
+end
+
+# see also
+# https://www.timroes.de/2015/02/07/kibana-4-tutorial-part-1-introduction/
+# https://www.elastic.co/guide/en/elasticsearch/guide/current/_talking_to_elasticsearch.html
+# https://www.elastic.co/guide/en/kibana/current/access.html
+# For dumping APM perf metrics to Elasticseatch over JDBC, see:
+# https://github.com/jprante/elasticsearch-jdbc
+# https://www.programcreek.com/java-api-examples/index.php?source_dir=elasticsearch-jdbc-master/src/test/java/org/xbib/elasticsearch/jdbc/importer/JDBCImporterTest.java
+# https://medium.com/@erangadulshan.14/pushing-relational-data-to-elasticsearch-using-logstash-jdbc-input-plugin-48af81ed1000
+# https://dzone.com/articles/aggregate-and-index-data-into-elasticsearch-using
+# https://github.com/NLPchina/elasticsearch-sql
+# https://anchormen.nl/blog/big-data-services/sql4es-jdbc-driver-elasticsearch/
+# turned out commercialized: https://www.cdata.com/drivers/elasticsearch/jdbc/
+#
