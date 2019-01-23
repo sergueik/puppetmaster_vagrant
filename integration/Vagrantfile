@@ -1,4 +1,4 @@
-# -*- mode: ruby -*-
+﻿# -*- mode: ruby -*-
 # # vi: set ft=ruby :
 
 # origins:
@@ -15,6 +15,13 @@ debug = ( debug =~ (/^(true|yes|1)$/i))
 
 dir = File.expand_path(File.dirname(__FILE__))
 
+# NOTE: to solve trouble with NLS ACP like cyrillic, patch the bootstrap script
+# e.g. for Vagrant 2.0.2, the '/c/HashiCorp/Vagrant/embedded/gems/gems/vagrant-2.0.2/bin/vagrant'
+# with
+# Encoding.default_external = Encoding.find('Windows-1251')
+# Encoding.default_internal = Encoding.find('Windows-1251')
+#
+# further info see: http://qaru.site/questions/4642778/vagrant-windows-1251-encoding-error
 # Read nodes details
 nodes = {}
 nodes = YAML.load(<<-NODES)
@@ -78,6 +85,7 @@ Vagrant.configure('2') do |config|
       end
 
       config.vm.provision "shell", inline: <<-SHELL
+        sudo yum install -y vim
 	UPGRADE_PUPPET=false
         # optionally upgrade puppet to the latest version
 	if $UPGRADE_PUPPET ; then
@@ -133,8 +141,8 @@ sudo yum install -y tomcat
         SCL_BASE_PATH='/opt/rh/rh-ruby23/root'
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${SCL_BASE_PATH}/usr/lib64
         ruby --version | grep -q ' 2.3.'
-        if [ $? == 0 ] ; then 
-          echo 'Ruby 2.3.x is installed'; 
+        if [ $? == 0 ] ; then
+          echo 'Ruby 2.3.x is installed';
         else
           echo Installing prerequisites for running spec
           # https://www.softwarecollections.org/en/scls/rhscl/rh-ruby23/

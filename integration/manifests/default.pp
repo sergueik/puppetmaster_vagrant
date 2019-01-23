@@ -6,6 +6,33 @@ node 'default' {
   $path = env('PATH')
   notify {"path=${path}":}
   include urugeas
+  # include 'mysql::server'
+  # default options
+  $override_options = {
+    'mysqld' => {
+      'datadir' => '/opt/mysql/var/lib',
+      'socket'  => '/opt/mysql/var/lib/mysql.sock',
+      'port'    => 3306,
+    },
+    'client' => {
+      # should one update it 2 times
+      'socket'  => '/opt/mysql/var/lib/mysql.sock',
+      'port'    => 3306,
+
+      # NOTE: settings need to be reviwed, e.g.
+      # datadir is not applicable to client leading
+      # to a provision error arising acrually from ruby code in mysql/lib/...
+      # Execution of '/bin/mysql --defaults-extra-file=/root/.my.cnf -NBe SELECT CONCAT(User, '@',Host) AS User FROM mysql.user' returned 7:
+      # /bin/mysql: unknown variable 'datadir=/opt/mysql/var/lib'
+      # NOTE: ignorable? Error:
+      # Facter: error while resolving custom fact "mysql_version": undefined method `[]' for nil:NilClass
+    }
+  }
+  class { '::mysql::server':
+    root_password           => 'strongpassword',
+    remove_default_accounts => true,
+    override_options        => $override_options,
+  }
   # https://puppet.com/docs/puppet/5.3/style_guide.html
   xml_fragment {
     default:
@@ -40,7 +67,7 @@ node 'default' {
   }
   notify {'all done':
     require => [
-      Urugeas::Jenkins_job_builder['test'], 
+      Urugeas::Jenkins_job_builder['test'],
       Urugeas::Jenkins_job_part2_builder[ 'test part 2']
     ],
   }
