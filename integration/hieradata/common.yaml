@@ -158,5 +158,10 @@ urugeas::job::logdir_glob: 'log*'
 urugeas::job::current_logdir: 'log10'
 urugeas::job::number_logdirs_to_keep: 5
 urugeas::job::build_user: 'vagrant'
-mysql::params::datadir: '/opt/mysql/var/lib/mysql'
+# works fine in clean provision ?
+mysql::params::custom_datadir: '/opt/mysql/var/lib/mysql'
+mysql::params::default_datadir: '/var/lib/mysql'
+mysql::params::datadir: "%{hiera('mysql::params::default_datadir')}"
 mysql::params::socket:  "%{hiera('mysql::params::datadir')}/mysql.sock"
+mysql::params::user: 'mysql'
+urugeas::mysql::migrate_datadir: true

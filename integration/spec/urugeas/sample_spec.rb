@@ -49,4 +49,15 @@ context 'XML validation 2' do
     $stderr.puts result
     it { result.should be_truthy }
   end
+  # NOTE: there may be inconsistency between the actual datadir and contents of '/etc/my.cnf'
+  context 'Mysql Datadir' do
+    custom_datadir = '/opt/mysql/var/lib/mysql2/'
+    describe command(<<-EOF
+      mysql -sBEe 'select @@datadir;'
+    EOF
+    ) do
+      its(:exit_status) {should eq 0 }
+      its(:stdout) { should match /@@datadir: #{custom_datadir}/i }
+    end
+  end
 end
