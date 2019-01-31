@@ -31,6 +31,10 @@ opt.on('-nNAME', '--name=NAME', 'csv file name (unused)') do |val|
   options[:name] = val
 end
 
+opt.on('-lSLEEP', '--sleep=SLEEP', 'delay after every POST request fo prevent error 429') do |val|
+  options[:sleep] = val
+end
+
 opt.on('-aAPI_KEY', '--api_key=API_KEY', ' api_key') do |val|
   options[:api_key] = val
 end
@@ -58,6 +62,11 @@ opt.parse!
 $DEBUG = false
 if options[:debug]
   $DEBUG = options[:debug]	
+end
+
+$SLEEP = 10
+if options[:sleep]
+  $SLEEP = options[:sleep]	
 end
 
 $FULL_DUMP = false
@@ -217,9 +226,14 @@ zips.select { |item| item.length < 2 || item[1].nil? }.slice(0,$MAXCOUNT - 1).ea
     puts 'Ignoring RestClient exception: ' + ex.message
     # Exception `RestClient::TooManyRequests'
     # 400 Bad Request for e.g. zipcode: '33755-6314'
-    if ex.message =~ /429/
-      # mark ok to retry 
+    if ex.message =~ /429/ # Too Many Requests
+      # ok to retry 
+      # Clear the column to let it be found again 
       row[1] = ''
+      if $DEBUG
+        puts ('Sleep ' + $SLEEP.to_s + ' sec' )
+      end
+      sleep($SLEEP.to_i)
     end
   end
   unless o.nil?
