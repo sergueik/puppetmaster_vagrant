@@ -99,11 +99,12 @@ LANG=en_US.utf-8
 LC_ALL=en_US.utf-8
 EOF
 MODULE_PATH='#{modulepath}'
-DIRECT_INSTALL_PUPPET_MODULES=false
+# set to true - need stdlib 4.25+
+DIRECT_INSTALL_PUPPET_MODULES=true
 
 if $DIRECT_INSTALL_PUPPET_MODULES ; then
   if [ ! -d ${MODULE_PATH}/stdlib ]; then
-    puppet module install 'puppetlabs-stdlib' --version '4.22.0'
+    puppet module install 'puppetlabs-stdlib' --version '4.25.0'
   fi
   if [ ! -d ${MODULE_PATH}/java ]; then
     puppet module install 'puppetlabs-java' --version '1.3.0'

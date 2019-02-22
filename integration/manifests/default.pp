@@ -5,6 +5,10 @@ node 'default' {
   notify {"home=${home}":}
   $path = env('PATH')
   notify {"path=${path}":}
+  include stdlib
+  # for lib/puppet/functions/to_json.rb
+  # need version: 4.25 (exact version to be identified)
+  # found that /etc/puppetlabs/code/environments/production/modules/stdlib/lib/puppet/functions is not in the @INC path -
   include urugeas
   # include 'mysql::server'
   # default options
@@ -19,7 +23,7 @@ node 'default' {
       'socket'  => '/opt/mysql/var/lib/mysql.sock',
       'port'    => 3306,
 
-      # NOTE: settings need to be reviwed, e.g.
+      # NOTE: settings need to be reviewed, e.g.
       # datadir is not applicable to client section of  mysql my.cnf ini-file
       # leading to an  error arising actually in the ruby provider code of one of the custom types of puppetlabs-mysql
       # Execution of '/bin/mysql --defaults-extra-file=/root/.my.cnf -NBe SELECT CONCAT(User, '@',Host) AS User FROM mysql.user' returned 7:
@@ -101,5 +105,6 @@ node 'default' {
       Urugeas::Jenkins_job_part2_builder[ 'test part 2']
     ],
   }
+  urugeas::exec_data_parameter_json { 'test': }
 }
 
