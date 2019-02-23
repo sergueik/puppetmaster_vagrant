@@ -7,21 +7,22 @@
 # erb template and using jq
 
 define urugeas::exec_shell_parameters_json(
-
   Array[String] $params_array = lookup("${name}::params_array",
     Array[String],
     first,
     [
-      'a',
-      'b',
-      'c',
+      'A',
+      'B',
+      'C',
     ]
   ),
+
   Hash $params_hash  = lookup("${name}::params_hash",
     Hash[String,String],
     first, {
-      'a' => '1',
-      'b' => '2',
+      'A' => '1',
+      'B' => '2',
+      'C' => '3',
     }
   ),
   String $template = 'shell_parameters_json',
