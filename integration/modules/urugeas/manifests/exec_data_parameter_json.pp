@@ -40,11 +40,12 @@ define urugeas::exec_data_parameter_json(
     path      => '/bin:/usr/bin:/use/local/bin',
    # provider  => 'powershell',
     provider  => 'shell',
-    command    => template("urugeas/${template}_ps1.erb"),
+    command    => regsubst(template("urugeas/${template}_ps1.erb"),'\n', ';', 'G'),
   }
   if $debug {
     notify {"${title} generates json parameters": 
-      message => "params_array_as_json = \"${params_array_as_json}\"; params_hash_as_json = \"${params_hash_as_json}\"; ",
+    #  message => "params_array_as_json = \"${params_array_as_json}\"; params_hash_as_json = \"${params_hash_as_json}\"; ",
+      message   => regsubst(template("urugeas/${template}_ps1.erb"),'\n', ';', 'G'),
       before  => Exec["${title} generates inline script from ${template}"],
     }
   }

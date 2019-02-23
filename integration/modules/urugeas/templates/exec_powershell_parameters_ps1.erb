@@ -1,0 +1,27 @@
+<# template for parameter processing #>
+$params_array =  ('<%= @params_array_as_json -%>' -join '') | convertfrom-json
+$params_hash = ('<%= @params_hash_as_json -%>' -join '') | convertfrom-json
+write-host ('params array: {0}' -f $params_array)
+write-host ('params hash: {0}' -f $params_hash)
+$hash_keys = @($params_hash | get-member -membertype NoteProperty | select-object -expandproperty name)
+write-host 'params hash keys:'
+write-host $hash_keys
+write-host 'params hash keys and values:'
+$hash_keys | foreach-object { 
+  $hash_key=$_ 
+  write-host $hash_key
+  write-host $params_hash.$hash_key
+}
+
+$params_hash.keys | foreach-object { $key=$_; write-host $parames_hash.$key}
+<%# will output
+params array: C: D: E:
+params hash: @{C:=C:\Programdata\Jenkins; E:=d:\Jenkins}
+params hash keys:
+C: E:
+params hash keys and values:
+C:
+C:\Programdata\Jenkins
+E:
+d:\Jenkins
+%>
