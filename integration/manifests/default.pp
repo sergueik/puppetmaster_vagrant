@@ -7,9 +7,13 @@ node 'default' {
   notify {"path=${path}":}
   include stdlib
   # for lib/puppet/functions/to_json.rb
-  # need version: 4.25 (exact version to be identified)
-  # found that /etc/puppetlabs/code/environments/production/modules/stdlib/lib/puppet/functions is not in the @INC path -
+  # need 'stdlib' version: 4.25+
+  # found that '/etc/puppetlabs/code/environments/production/modules'
+  # is not in the module path - need to update module in the host 'modules'
   include urugeas
+  urugeas::exec_shell_parameters_json { 'exercise':
+    template => 'shell_parameters_json',
+  }
   # include 'mysql::server'
   # default options
   $override_options = {
@@ -105,6 +109,5 @@ node 'default' {
       Urugeas::Jenkins_job_part2_builder[ 'test part 2']
     ],
   }
-  urugeas::exec_data_parameter_json { 'test': }
 }
 

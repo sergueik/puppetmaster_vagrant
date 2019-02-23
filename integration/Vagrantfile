@@ -116,6 +116,8 @@ fi
 # for integration testing
 # default install for tomcat7
 sudo yum install -y tomcat
+# for puppet testing install jq
+sudo yum install -y jq
       SHELL
 
       config.vm.synced_folder './' , '/vagrant'

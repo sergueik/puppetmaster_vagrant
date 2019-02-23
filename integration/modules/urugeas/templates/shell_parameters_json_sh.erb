@@ -1,0 +1,11 @@
+#!/bin/bash
+<%# template for parameter processing. %> 
+
+TMPFILE="/tmp/param_array.$$.txt"
+cat <<PARAM_ARRAY|tee $TMPFILE
+<%= @params_array_as_json %>
+PARAM_ARRAY
+for PARAM in $(jq '.[]' $TMPFILE) ; do 
+  echo $PARAM
+done
+rm -f $TMPFILE

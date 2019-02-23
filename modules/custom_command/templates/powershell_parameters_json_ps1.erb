@@ -1,4 +1,5 @@
 <%# template for parameter processing. Boolean in Powershell need to be $true or $false - it is easier to let json do the serializarion #>
+
 $params_array =  ('<%= @params_array_as_json -%>' -join '') | convertfrom-json
 $params_hash = ('<%= @params_hash_as_json -%>' -join '') | convertfrom-json
 write-host ('params array: {0}' -f $params_array)
