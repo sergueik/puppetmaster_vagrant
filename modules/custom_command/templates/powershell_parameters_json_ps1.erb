@@ -1,4 +1,4 @@
-<%# template for parameter processing. Boolean in Powershell need to be $true or $false - it is easier to let json do the serializarion #>
+<%# template for parameter processing. Boolean in Powershell need to be $true or $false - it is easier to let json do the serializarion %>
 
 $params_array =  ('<%= @params_array_as_json -%>' -join '') | convertfrom-json
 $params_hash = ('<%= @params_hash_as_json -%>' -join '') | convertfrom-json
@@ -9,9 +9,12 @@ write-host 'params hash keys:'
 write-host $hash_keys
 write-host 'params hash keys and values:'
 $hash_keys | foreach-object { 
-  $hash_key=$_ 
-  write-host $hash_key
-  write-host $params_hash.$hash_key
+  $hash_key = $_ 
+  if (($params_hash.$hash_key -eq $null) -or ($params_hash.$hash_key -eq '')) {
+    write-host ('Skipping {0}' -f $hash_key )
+  } else {
+    write-host ('Using {0} => "{1}"' -f $hash_key, $params_hash.$hash_key )
+  }
 }
 
 $params_hash.keys | foreach-object { $key=$_; write-host $parames_hash.$key}
