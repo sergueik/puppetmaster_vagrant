@@ -9,9 +9,12 @@ Facter.add(fact_name) do
     require 'win32ole'
 
     wmi_namespace = 'winmgmts://./root/CIMV2'
-    # wmi_query = "select * from Win32_LogicalDisk"
-    # wmi_query = "select * from Win32_LogicalDisk where DeviceID=\"C:\""
-    wmi_query = "select * from Win32_LogicalDisk where DriveType=3"
+    # wmi_query = 'select DeviceID, Size, FreeSpace from Win32_LogicalDisk'
+    # wmi_query = 'select DeviceID, Size, FreeSpace from Win32_LogicalDisk where DeviceID="C:"'
+    wmi_query = 'select DeviceID, Size, FreeSpace from Win32_LogicalDisk where DriveType=3'
+    # compare with https://github.com/WhatsARanjit/puppet-diskspace/blob/master/lib/facter/diskspace.rb
+    # pack the value columns in single line and construct a multicapture regexp 
+    # Facter::Util::Resolution.exec('C:\Windows\System32\wbem\WMIC.exe logicaldisk get deviceid,freespace,size').split(/(\r?\n)+/)
     if @debug
       $stderr.puts ('WMI query: ' + wmi_query)
     end
