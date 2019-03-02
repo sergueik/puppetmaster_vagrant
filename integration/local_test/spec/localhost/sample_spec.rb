@@ -6,17 +6,22 @@ context 'Tomcat server xml Test' do
   catalina_home = '/usr/share/tomcat'
   server_xml = "#{catalina_home}/conf/server.xml"
   describe command(<<-EOF
-xmllint --xpath '//*[local-name()="Valve"][@className="org.apache.catalina.valves.AccessLogValve"]/@directory' '#{server_xml}'
+    xmllint --xpath '//*[local-name()="Valve"][@className="org.apache.catalina.valves.AccessLogValve"]/@directory' '#{server_xml}'
 EOF
 ) do
-    it 'should run without error' do
-      expect(subject.send(:exit_status)).to eq 0
-    end
     it 'should print log directory attribute' do
       expect(subject.send(:stdout)).to match /directory="logs"/
     end
-    # its(:exit_status) { should be 0 }
     # its(:stdout) { should contain 'directory="logs"' }
+  end
+  describe command(<<-EOF
+    xmllint --xpath '//*[local-name()="Valve"][@classname="org.apache.catalina.authenticator.SingleSignOn"]' '#{server_xml}'
+EOF
+) do
+    # it 'should run without error' do
+    #   expect(subject.send(:exit_status)).to eq 0
+    # end
+    its(:exit_status) { should eq 0 }
   end
   describe file(server_xml) do
     begin
