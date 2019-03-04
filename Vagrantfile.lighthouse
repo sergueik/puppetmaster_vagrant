@@ -1,0 +1,244 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+require 'pp'
+# based on
+# origin: https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
+# enterprise VPN only
+vagrant_use_proxy = ENV.fetch('VAGRANT_USE_PROXY', nil)
+http_proxy        = ENV.fetch('HTTP_PROXY', nil)
+box_name          = ENV.fetch('BOX_NAME', '')
+debug             = ENV.fetch('DEBUG', 'false')
+box_memory        = ENV.fetch('BOX_MEMORY', '')
+box_cpus          = ENV.fetch('BOX_CPUS', '')
+
+debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+# currently only base box supported is ubuntu
+config = {}
+vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
+vagrantfile_custom = "#{dir}/Vagrantfile.local"
+if File.exists?(vagrantfile_yaml)
+  puts "Loading '#{vagrantfile_yaml}'"
+  config_yaml = YAML::load_file( vagrantfile_yaml )
+
+  box_config = config_yaml[config_yaml[:boot]]
+  pp box_config
+elsif File.exist?(vagrantfile_custom)
+  puts "Loading '#{vagrantfile_custom}'"
+  config_legacy = {}
+  # config = Hash[File.read(File.expand_path(vagrantfile_custom)).scan(/(.+?) *= *(.+)/)]
+  File.read(File.expand_path(vagrantfile_custom)).split(/\n/).each do |line|
+    if line !~ /^#/
+      key_val = line.scan(/^ *(.+?) *= *(.+) */)
+      config_legacy.merge!(Hash[key_val])
+    end
+
+  # convert legacy config keys to symbols
+  box_config = config_legacy.inject({}) do
+    |data,(key,value)| data[key.to_sym] = value
+    data
+  end
+
+  end
+else
+    # TODO: throw an error
+end
+pp config
+unless box_name =~ /\S/
+  box_name = box_config[:box_name]
+  box_cpus = box_config[:box_cpus].to_i
+  box_memory = box_config[:box_memory].to_i
+end
+
+if debug
+  pp "#{{:box_name => box_name, :box_cpus => box_cpus , :box_memory => box_memory}}"
+end
+
+VAGRANTFILE_API_VERSION = '2'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # Configure Proxy authentication
+
+  if vagrant_use_proxy
+    if http_proxy
+
+      if Vagrant.has_plugin?('vagrant-proxyconf')
+        # Windows-specific case
+        # A proxy should be specified in the form of http://[user:pass@]host:port.
+        # without the domain part and with percent signs doubled - Vagrant and Ruby still use batch files on Windows
+        # https://github.com/tmatilai/vagrant-proxyconf
+        # https://github.com/WinRb/vagrant-windows
+        config.proxy.http     = http_proxy.gsub('%%','%')
+        config.proxy.https    = http_proxy.gsub('%%','%')
+        config.proxy.no_proxy = 'localhost,127.0.0.1'
+      end
+    end
+  end
+
+  # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
+  # described in Vagrantfile.yaml
+
+  config_vm_newbox = box_config[:config_vm_newbox]
+  config_vm_box = box_config[:config_vm_box]
+  config_vm_default = box_config[:config_vm_default]
+  config_vm_box_name = box_config[:config_vm_box_name]
+
+  config_vm_box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  config.vm.define config_vm_default do |config|
+    config.vm.box = config_vm_box
+    config.vm.box_url  = config_vm_box_url
+    puts "Configuring '#{config.vm.box}'"
+    config.vm.host_name = 'linux.example.com'
+    config.vm.hostname = 'linux.example.com'
+    # Configure common synced folder
+    config.vm.synced_folder './' , '/vagrant'
+    # Configure common port forwarding
+    config.vm.network 'forwarded_port', guest: 4444, host: 4444, id: 'selenium', auto_correct:true
+    config.vm.provider 'virtualbox' do |vb|
+      vb.customize ['modifyvm', :id, '--cpus', box_cpus ]
+      vb.customize ['modifyvm', :id, '--memory', box_memory ]
+      vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
+      vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
+      vb.customize ['modifyvm', :id, '--ioapic', 'on']
+      vb.customize ['modifyvm', :id, '--audio', 'none']
+      vb.customize ['modifyvm', :id, '--usb', 'off']
+    end
+
+    # Provision software
+    puts "Provision software for '#{config.vm.box}'"
+    case config_vm_box
+      # TODO: centos
+      when /ubuntu/
+          # Use shell provisioner to install latest node jq sqlite and chrome and use npm to install
+          config.vm.provision 'shell',  inline: <<-END_SCRIPT
+          # TODO clear HTTP_PROXY, HTTPS_PROXY references from
+          # '/etc/environment','/etc/profile.d/proxy.sh','/etc/apt/apt.conf.d/01proxy'
+          # echo Clearing the proxy settings
+          # this step is only required for certain base boxes like xenial-server-amd64-vagrant-selenium.box
+          if [ -f '/etc/apt/apt.conf.d/01proxy' ] ; then
+            sed -i 's/^/# /' '/etc/apt/apt.conf.d/01proxy'
+          fi
+          # NOTE: sed I is GNU extension and only work with sed substitution operation
+          sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
+          rm -f /etc/profile.d/proxy.sh
+          unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
+
+          sudo apt-get -q -y update
+
+          echo installing libnss3 jq
+          apt-get -qqy install --only-upgrade libnss3
+
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          apt-get install -qqy software-properties-common
+          # cannot add
+          # apt-add-repository http://dl.google.com/linux/chrome/deb/
+          apt-get -qq update
+          apt-get -qqy autoremove
+          apt-get install -qqy -f google-chrome-stable
+
+          # prone to
+          # linux: The repository 'http://dl.google.com/linux/chrome/deb xenial Release' does not have a Release file.
+          # linux: Failed to fetch http://dl.google.com/linux/chrome/deb/dists/xenial/main/binary-amd64/Packages  404  Not Found [IP: 216.58.192.46 80]
+
+
+          echo Download the latest Chrome
+          # http://askubuntu.com/questions/79280/how-to-install-chrome-browser-properly-via-command-line
+          cd /tmp
+          wget -nv "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+          apt-get install -qqy libxss1 libappindicator1 libindicator7
+          dpkg -i google-chrome-stable_current_amd64.deb
+          rm google-chrome-stable_current_amd64.deb
+          apt-get install -qqy -f google-chrome-stable
+          cd -
+
+          # based on:
+          # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
+          # https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
+          echo "[PROVISION] Adding nodejs source to apt-get cache"
+
+          # https://askubuntu.com/questions/426750/how-can-i-update-my-nodejs-to-the-latest-version
+          NODE_RELEASE='10.x'
+          # NODE_RELEASE='8.x' leads to too old node (v4.2.6) and npm (3.5.2) installed:
+          #
+          NODEREPO="node_${NODE_RELEASE}"
+          DISTRO='xenial'
+          NODE_RELEASE_URL="https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release"
+          # on Windows end, ignore possible exit status 23 (CURLE_WRITE_ERROR - An error occurred when writing received data to a local file)
+          # probe copied from https://deb.nodesource.com/setup
+          curl -k -s -L -f -o /dev/null $NODE_RELEASE_URL
+          if [[ $? != 0 ]] ; then
+            echo "[WARNING] Cannot find the node distribution in ${NODE_RELEASE_URL}"
+            # from https://deb.nodesource.com/setup
+            curl -k -s -L -f $NODE_RELEASE_URL
+          fi
+          # adds gpg key, writes  nodesource.list to /etc/apt/sources.list.d
+          # remove 404'in google repositories
+          sudo rm /etc/apt/sources.list.d/google-chrome.list*
+          sed -i 's|\\(deb http://dl.google.com/linux/chrome/deb/\\)|#\\1|g' /etc/apt/sources.list
+          sudo apt-get -qy update
+
+
+          if [ $(which node) ]; then
+            NODE_VERSION=$(node --version)
+            echo "[PROVISION] Installed node version is ${NODE_VERSION}"
+          else
+            curl -sL "https://deb.nodesource.com/setup_${NODE_RELEASE}" | sudo -E bash -
+            echo "[PROVISION] Installing latest version of nodejs and npm release ${NODE_RELEASE}"
+            # Dependent on nodejs release, npm may need to be installed explicitly
+            sudo apt-get install -qy nodejs
+          fi
+          # check version
+          NODEJS_VERSION=$(nodejs --version)
+          if [ $(which npm) ]; then
+            NPM_VERSION=$(npm --version)
+            echo "[PROVISION] Installed npm version is ${NPM_VERSION}"
+          else
+            sudo apt-get install -qy npm
+          fi
+          sudo apt-get -qy  autoremove
+
+          echo '[PROVISION] Installing git'
+          if [ $(which git) ]; then
+            GIT_VERSION=$(git --version)
+            echo "[PROVISION] Installed git version is ${GIT_VERSION}"
+          else
+            sudo apt-get install -qy git
+          fi
+          echo '[PROVISION] Reconfiguring npm to install global modules to /home/vagrant/npm'
+          npm config set prefix ~/npm
+          echo "[PROVISION] Modifying paths and such in /home/vagrant/.bashrc"
+          echo 'export PATH="$PATH:$HOME/npm/bin"' >> ~/.bashrc
+          echo 'export NODE_PATH="$NODE_PATH:$HOME/npm/lib/node_modules"' >> ~/.bashrc
+          echo "[PROVISION] Reloading bashrc"
+          . ~/.bashrc
+          echo '[PROVISION] Installing lighthouse'
+          # NOTE: needed to create an empty '/home/vagrant/package.json'
+          # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
+          # if [ $(npm list -g lighthouse) ]; then
+          # -bash: [: `--: binary operator expected
+          if [ $(which lighthouse) ]; then
+            LIGHTHOUSE_VERSION=$(lighthouse --version)
+            echo "The installed lighthouse version is ${LIGHTHOUSE_VERSION}"
+          else
+            # NOTE:  dependencies may not need to be installed explicitly
+            sudo npm install -g axe-core cjs
+            sudo npm install -g lighthouse
+          fi
+          # may need two provisions to install
+          # [Audit Using Lighthouse CLI and Chrome DevTools ](https://www.youtube.com/watch?v=Dj2bZ7ailr0)
+          # [using Google Lighthouse from the browser for Site Speed - Auditing](https://www.youtube.com/watch?v=WziNW9vk0sI)
+          # https://googlechrome.github.io/lighthouse/viewer/
+          # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
+      END_SCRIPT
+
+    end
+  end
+end
