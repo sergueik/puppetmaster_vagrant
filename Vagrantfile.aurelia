@@ -3,12 +3,13 @@
 
 require 'yaml'
 require 'pp'
-# based on 
+# based on
 # origin: https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
 basedir = basedir.gsub('\\', '/')
 
+# enterprise VPN only
 vagrant_use_proxy = ENV.fetch('VAGRANT_USE_PROXY', nil)
 http_proxy        = ENV.fetch('HTTP_PROXY', nil)
 box_name          = ENV.fetch('BOX_NAME', '')
@@ -24,13 +25,14 @@ debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
 
 dir = File.expand_path(File.dirname(__FILE__))
 
+# currently only base box supported is ubuntu
 config = {}
 vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
 vagrantfile_custom = "#{dir}/Vagrantfile.local"
 if File.exists?(vagrantfile_yaml)
   puts "Loading '#{vagrantfile_yaml}'"
   config_yaml = YAML::load_file( vagrantfile_yaml )
-  
+
   box_config = config_yaml[config_yaml[:boot]]
   pp box_config
 elsif File.exist?(vagrantfile_custom)
@@ -46,7 +48,7 @@ elsif File.exist?(vagrantfile_custom)
   # convert legacy config keys to symbols
   box_config = config_legacy.inject({}) do
     |data,(key,value)| data[key.to_sym] = value
-    data 
+    data
   end
 
   end
@@ -88,7 +90,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Localy cached images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
   # described in Vagrantfile.yaml
-  
+
   config_vm_newbox = box_config[:config_vm_newbox]
   config_vm_box = box_config[:config_vm_box]
   config_vm_default = box_config[:config_vm_default]
@@ -114,7 +116,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.customize ['modifyvm', :id, '--memory', box_memory ]
       vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
       vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
-      vb.customize ['modifyvm', :id, '--ioapic', 'on'] 
+      vb.customize ['modifyvm', :id, '--ioapic', 'on']
       vb.customize ['modifyvm', :id, '--audio', 'none']
       vb.customize ['modifyvm', :id, '--usb', 'off']
     end
@@ -125,19 +127,52 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       when /ubuntu/
           # Use shell provisioner to install latest puppet
           config.vm.provision 'shell',  inline: <<-END_SCRIPT
+	  # TODO clear HTTP_PROXY, HTTPS_PROXY references from
+	  # '/etc/environment','/etc/profile.d/proxy.sh','/etc/apt/apt.conf.d/01proxy'
+          # echo Clearing the proxy settings
+          # this step is only required for certain base box xenial-server-amd64-vagrant-selenium.box
+          if [ -f '/etc/apt/apt.conf.d/01proxy' ] ; then
+            sed -i 's/^/# /' '/etc/apt/apt.conf.d/01proxy'
+          fi
+          # NOTE: sed I is GNU extension and only work with sed substitution operation
+          sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
+          rm -f /etc/profile.d/proxy.sh
+          unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
           export GITHUB_LOGIN='#{github_login}'
           export GITHUB_PASS='#{github_pass}'
           export AURELIA_PROJECT='#{aurelia_project}'
 
-          # origin: 
+          # origin:
           # https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
           echo "[PROVISION] Adding nodejs source to apt-get cache"
-          curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
-          echo "[PROVISION] Installing latest version of nodejs and npm"
-          sudo apt-get install -y nodejs
-          echo "[PROVISION] Installing git"
-          sudo apt-get install -y git
-          echo "[PROVISION] Reconfiguring npm to install global modules to /home/vagrant/npm"
+	  NODE_RELEASE='0.12'
+	  # NOTE:  Node.js 0.12 is no longer actively supported!
+	  NODE_RELEASE='10.x'
+	  NODEREPO="node_${NODE_RELEASE}"
+	  DISTRO='xenial'
+	  NODE_RELEASE_URL="https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release"
+          # on Windows end, ignore
+	  # CURLE_WRITE_ERROR (23)
+          # An error occurred when writing received data to a local file,
+          # or an error was returned to libcurl from a write callback
+	  # probe copied from https://deb.nodesource.com/setup
+	  curl -k -s -L -f -o /dev/null $NODE_RELEASE_URL
+	  if [[ $? != 0 ]] ; then
+	    echo "[WARNING] Cannot find the node distribution in ${NODE_RELEASE_URL}"
+	    # from https://deb.nodesource.com/setup
+	    curl -k -s -L -f $NODE_RELEASE_URL
+	  fi
+	  # adds gpg key, writes  nodesource.list to /etc/apt/sources.list.d
+	  #
+          curl -sL "https://deb.nodesource.com/setup_${NODE_RELEASE}" | sudo bash -
+          echo "[PROVISION] Installing latest version of nodejs and npm release ${NODE_RELEASE}"
+
+	  sudo apt-get -q -y update
+          sudo apt-get install -q -y nodejs
+	  # The following packages have unmet dependencies: nodejs : Conflicts: npm
+          echo '[PROVISION] Installing git'
+          sudo apt-get install -qy git
+          echo '[PROVISION] Reconfiguring npm to install global modules to /home/vagrant/npm'
           npm config set prefix ~/npm
           echo "[PROVISION] Modifying paths and such in /home/vagrant/.bashrc"
           echo 'export PATH="$PATH:$HOME/npm/bin"' >> ~/.bashrc
@@ -147,13 +182,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           echo 'gulp watch' >> ~/.bashrc
           echo "[PROVISION] Reloading bashrc"
           . ~/.bashrc
-          echo "[PROVISION] Adding your git credentials to ~/.netrc (required for jspm)"
-          echo "machine github.com" >> ~/.netrc
-          echo "login $GITHUB_LOGIN" >> ~/.netrc
-          echo "password $GITHUB_PASS" >> ~/.netrc
-          echo "[PROVISION] Installing gulp"
+	  if [[ ! -z ${GITHUB_LOGIN} ]]; then
+    	    if [[ ! -z ${GITHUB_PASS} ]]; then
+              echo '[PROVISION] Adding your git credentials to ~/.netrc (required for jspm)'
+              echo 'machine github.com' >> ~/.netrc
+              echo "login ${GITHUB_LOGIN}" >> ~/.netrc
+              echo "password ${GITHUB_PASS}" >> ~/.netrc
+  	    fi
+	  fi
+          echo '[PROVISION] Installing lighthouse'
+	  # needed to create an empty '/home/vagrant/package.json'
+	  # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
+	  npm install -g lighthouse
+          echo '[PROVISION] Installing gulp'
           sudo npm install -g gulp
-          echo "[PROVISION] Installing jspm"
+          echo '[PROVISION] Installing jspm'
           sudo npm install -g jspm
           # /home/vagrant/npm/bin/jspm: -No such file or directory
           # if you are using windows, either open cmd window as administrator OR uncomment
@@ -163,12 +206,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           pushd /vagrant
           # TODO: add logic to  skip re-cloning project if one already exists
           if [ "$CLEAN" != "" ] ; then
-          if [-d "/vagrant/project"] ; then
-          echo "[PROVISION] Removing Aurelia skeleton workspace"
-          rm -rf "/vagrant/project"
-          fi
-          echo "[PROVISION] Cloning Aurelia skeleton to /vagrant/project"
-          git clone https://github.com/aurelia/skeleton-navigation.git /vagrant/project
+            if [ -d '/vagrant/project'  ] ; then
+              echo '[PROVISION] Removing Aurelia skeleton workspace'
+              rm -rf '/vagrant/project'
+            fi
+            echo '[PROVISION] Cloning Aurelia skeleton to /vagrant/project'
+            git clone https://github.com/aurelia/skeleton-navigation.git /vagrant/project
           fi
           cd /vagrant/project
           git checkout master
