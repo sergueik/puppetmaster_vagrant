@@ -129,67 +129,82 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           # NOTE: sed I is GNU extension and only work with sed substitution operation
           sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
           rm -f /etc/profile.d/proxy.sh
+
+          echo '[PROVISION] installing jq and sqlite3'
+          apt-get -qqy install jq sqlite3
           unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
-
-          sudo apt-get -q -y update
-
-          echo installing libnss3 jq
-          apt-get -qqy install --only-upgrade libnss3
-
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          apt-get install -qqy software-properties-common
-          # cannot add
-          # apt-add-repository http://dl.google.com/linux/chrome/deb/
-          apt-get -qq update
-          apt-get -qqy autoremove
-          apt-get install -qqy -f google-chrome-stable
-
-          # prone to
-          # linux: The repository 'http://dl.google.com/linux/chrome/deb xenial Release' does not have a Release file.
-          # linux: Failed to fetch http://dl.google.com/linux/chrome/deb/dists/xenial/main/binary-amd64/Packages  404  Not Found [IP: 216.58.192.46 80]
-
-
-          echo Download the latest Chrome
-          # http://askubuntu.com/questions/79280/how-to-install-chrome-browser-properly-via-command-line
-          cd /tmp
-          wget -nv "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
-          apt-get install -qqy libxss1 libappindicator1 libindicator7
-          dpkg -i google-chrome-stable_current_amd64.deb
-          rm google-chrome-stable_current_amd64.deb
-          apt-get install -qqy -f google-chrome-stable
-          cd -
-
-          # based on:
-          # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
-          # https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
-          echo "[PROVISION] Adding nodejs source to apt-get cache"
-
-          # https://askubuntu.com/questions/426750/how-can-i-update-my-nodejs-to-the-latest-version
-          NODE_RELEASE='10.x'
-          # NODE_RELEASE='8.x' leads to too old node (v4.2.6) and npm (3.5.2) installed:
-          #
-          NODEREPO="node_${NODE_RELEASE}"
-          DISTRO='xenial'
-          NODE_RELEASE_URL="https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release"
-          # on Windows end, ignore possible exit status 23 (CURLE_WRITE_ERROR - An error occurred when writing received data to a local file)
-          # probe copied from https://deb.nodesource.com/setup
-          curl -k -s -L -f -o /dev/null $NODE_RELEASE_URL
-          if [[ $? != 0 ]] ; then
-            echo "[WARNING] Cannot find the node distribution in ${NODE_RELEASE_URL}"
-            # from https://deb.nodesource.com/setup
-            curl -k -s -L -f $NODE_RELEASE_URL
+          GOOGLE_CHROME_VERSION_MAJOR='0'
+          GOOGLE_CHROME_VERSION_NEEDED='60'
+          if [ $(which google-chrome) ]; then
+            GOOGLE_CHROME_VERSION=$(google-chrome --version|sed 's|Google Chrome ||')
+            # TODO: comparison 55.0.2883.87
+            # Unable to connect to Chrome
+            # google-chrome -version
+            # Google Chrome 55.0.2883.87
+            GOOGLE_CHROME_VERSION_MAJOR=$(echo $GOOGLE_CHROME_VERSION |sed 's/\\..*$//')
           fi
-          # adds gpg key, writes  nodesource.list to /etc/apt/sources.list.d
-          # remove 404'in google repositories
-          sudo rm /etc/apt/sources.list.d/google-chrome.list*
-          sed -i 's|\\(deb http://dl.google.com/linux/chrome/deb/\\)|#\\1|g' /etc/apt/sources.list
-          sudo apt-get -qy update
+          if [ $GOOGLE_CHROME_VERSION_MAJOR -gt $GOOGLE_CHROME_VERSION_NEEDED ]; then
+            echo "[PROVISION] Installed chrome browser version is ${GOOGLE_CHROME_VERSION}"
+          else
+          
+            echo "[PROVISION] Installed chrome browser version ${GOOGLE_CHROME_VERSION} / ${GOOGLE_CHROME_VERSION_MAJOR} is too old"
+            sudo apt-get -q -y update
+            echo '[PROVISION] installing libnss3 updates'
+            apt-get -qqy install --only-upgrade libnss3
 
+            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+            apt-get install -qqy software-properties-common
+            # cannot add
+            # apt-add-repository http://dl.google.com/linux/chrome/deb/
+            apt-get -qq update
+            apt-get -qqy autoremove
+            apt-get install -qqy -f google-chrome-stable
+
+            # prone to
+            # linux: The repository 'http://dl.google.com/linux/chrome/deb xenial Release' does not have a Release file.
+            # linux: Failed to fetch http://dl.google.com/linux/chrome/deb/dists/xenial/main/binary-amd64/Packages  404  Not Found [IP: 216.58.192.46 80]
+
+            echo Download the latest Chrome
+            # http://askubuntu.com/questions/79280/how-to-install-chrome-browser-properly-via-command-line
+            cd /tmp
+            wget -nv "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+            apt-get install -qqy libxss1 libappindicator1 libindicator7
+            dpkg -i google-chrome-stable_current_amd64.deb
+            rm google-chrome-stable_current_amd64.deb
+            apt-get install -qqy -f google-chrome-stable
+            cd -
+            # remove 404'in google repositories
+            sudo rm /etc/apt/sources.list.d/google-chrome.list*
+            sed -i 's|\\(deb http://dl.google.com/linux/chrome/deb/\\)|#\\1|g' /etc/apt/sources.list
+            sudo apt-get -qy update
+          fi
 
           if [ $(which node) ]; then
             NODE_VERSION=$(node --version)
             echo "[PROVISION] Installed node version is ${NODE_VERSION}"
           else
+            # based on:
+            # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
+            # https://github.com/crazedVic/vagrant-aurelia/blob/master/script.sh
+            echo "[PROVISION] Adding nodejs source to apt-get cache"
+
+            # https://askubuntu.com/questions/426750/how-can-i-update-my-nodejs-to-the-latest-version
+            NODE_RELEASE='10.x'
+            NODE_RELEASE='8.x'
+            # leads to too old node (v4.2.6) and npm (3.5.2) installed:
+            #
+            NODEREPO="node_${NODE_RELEASE}"
+            DISTRO='xenial'
+            NODE_RELEASE_URL="https://deb.nodesource.com/${NODEREPO}/dists/${DISTRO}/Release"
+            # on Windows end, ignore possible exit status 23 (CURLE_WRITE_ERROR - An error occurred when writing received data to a local file)
+            # probe copied from https://deb.nodesource.com/setup
+            curl -k -s -L -f -o /dev/null $NODE_RELEASE_URL
+            if [[ $? != 0 ]] ; then
+              echo "[WARNING] Cannot find the node distribution in ${NODE_RELEASE_URL}"
+              # from https://deb.nodesource.com/setup
+              curl -k -s -L -f $NODE_RELEASE_URL
+            fi
+            # adds gpg key, writes  nodesource.list to /etc/apt/sources.list.d
             curl -sL "https://deb.nodesource.com/setup_${NODE_RELEASE}" | sudo -E bash -
             echo "[PROVISION] Installing latest version of nodejs and npm release ${NODE_RELEASE}"
             # Dependent on nodejs release, npm may need to be installed explicitly
@@ -212,15 +227,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           else
             sudo apt-get install -qy git
           fi
-          echo '[PROVISION] Reconfiguring npm to install global modules to /home/vagrant/npm'
-          npm config set prefix ~/npm
-          echo "[PROVISION] Modifying paths and such in /home/vagrant/.bashrc"
-          echo 'export PATH="$PATH:$HOME/npm/bin"' >> ~/.bashrc
-          echo 'export NODE_PATH="$NODE_PATH:$HOME/npm/lib/node_modules"' >> ~/.bashrc
-          echo "[PROVISION] Reloading bashrc"
-          . ~/.bashrc
-          echo '[PROVISION] Installing lighthouse'
+          if false ; then
+            echo '[PROVISION] Reconfiguring npm to install global modules to /home/vagrant/npm'
+            npm config set prefix ~/npm
+            echo "[PROVISION] Modifying paths and such in /home/vagrant/.bashrc"
+            echo 'export PATH="$PATH:$HOME/npm/bin"' >> ~/.bashrc
+            echo 'export NODE_PATH="$NODE_PATH:$HOME/npm/lib/node_modules"' >> ~/.bashrc
+            echo "[PROVISION] Reloading bashrc"
+            . ~/.bashrc
+          fi
           # NOTE: needed to create an empty '/home/vagrant/package.json'
+          echo '{}' | tee '/home/vagrant/package.json'
+          echo '{}' | tee "${HOME}/package.json"
           # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
           # if [ $(npm list -g lighthouse) ]; then
           # -bash: [: `--: binary operator expected
@@ -228,15 +246,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             LIGHTHOUSE_VERSION=$(lighthouse --version)
             echo "The installed lighthouse version is ${LIGHTHOUSE_VERSION}"
           else
+            echo '[PROVISION] Installing lighthouse'
             # NOTE:  dependencies may not need to be installed explicitly
             sudo npm install -g axe-core cjs
             sudo npm install -g lighthouse
+            #     linux: Error: Cannot find module '/root/npm/lib/node_modules/lighthouse/node_modules/axe-core/build/utils/postinstall.js'
           fi
-          # may need two provisions to install
+          # May still need to ssh into the instance and install lighthouse interactively
+          # then
+          # based on https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
+          # TARGET_URL='http://example.com/edmonds-electrician'
+          # LOG_FILE='/tmp/a.json'
+          # lighthouse --quiet --output=json --output-path=$LOG_FILE --chrome-flags='--headless' $TARGET_URL
+          # TARGET_URL=$(jq '.requestedUrl' $LOG_FILE)
+          # may need two provisions to install (not working yet)
           # [Audit Using Lighthouse CLI and Chrome DevTools ](https://www.youtube.com/watch?v=Dj2bZ7ailr0)
           # [using Google Lighthouse from the browser for Site Speed - Auditing](https://www.youtube.com/watch?v=WziNW9vk0sI)
           # https://googlechrome.github.io/lighthouse/viewer/
-          # https://github.com/GoogleChrome/lighthouse/blob/master/docs/headless-chrome.md
       END_SCRIPT
 
     end
