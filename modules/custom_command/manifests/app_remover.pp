@@ -30,23 +30,23 @@ define custom_command::app_remover (
       }
     }
     exec {'Remove the package, back up logs':
-      command   => "systemctl stop ${service_name}; yum erase -qqy $(rpm -qa | grep '${app_name}' | grep -v '${app_name}-${keep_version}'| tail -1); mkdir -p ${logs_backup} ; cp ${app_home}/logs/* ${logs_backup}; rm -rf ${app_home} ${app_dirs_argument}; echo Done."
+      command   => "systemctl stop ${service_name}; yum erase -qqy $(rpm -qa | grep '${app_name}' | grep -v '${app_name}-${keep_version}'| tail -1); mkdir -p ${logs_backup} ; cp ${app_home}/logs/* ${logs_backup}; rm -rf ${app_home} ${app_dirs_argument}; echo Done.",
       onlyif    => "rpm -qa | grep '${app_name}' | grep -qv '${app_name}-${keep_version}'",
-      provider  => shell
+      provider  => shell,
       returns   => [0,1],
       path      => '/usr/bin:/bin',
       logoutput => true,
     }
   } else {
     exec {'back up logs':
-      command   => "mkdir -p ${logs_backup} ; cp ${app_home}/logs/* ${logs_backup}; rm -rf ${app_home} ${app_dirs_argument}; echo Done."
+      command   => "mkdir -p ${logs_backup} ; cp ${app_home}/logs/* ${logs_backup}; rm -rf ${app_home} ${app_dirs_argument}; echo Done.",
       onlyif    => "rpm -qa | grep '${app_name}' | grep -qv '${app_name}-${keep_version}'",
-      provider  => shell
+      provider  => shell,
       returns   => [0,1],
       path      => '/usr/bin:/bin',
       logoutput => true,
     }
-    if !defined(Package[$app_name]{
+    if ((defined('$app_name') ) and (!defined(Package[$app_name]))){
       package { $app_name:
         ensure   => absent,
         provider => 'rpm',
