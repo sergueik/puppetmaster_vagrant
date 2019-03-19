@@ -6,9 +6,9 @@ define urugeas::jenkins_job_builder (
   Array[String] $error_patterns                 = lookup('urugeas::error_patterns'),
   Optional[Array[String]] $fatal_error_patterns = lookup('urugeas::fatal_error_patterns'),
   Optional[String] $tools_path                  = '/tmp',
-  Optional[String] $webroot_path                = '/var/www/html',
-  String $java_options                         = lookup('urugeas::java_options'),
-  $version                                      = '0.1.0'
+  Optional[String] $webroot_path                = '/var/www/jenkins',
+  String $java_options                          = lookup('urugeas::java_options'),
+  $version                                      = '0.2.0'
 ) {
 
   validate_string($tools_path)
@@ -56,18 +56,20 @@ define urugeas::jenkins_job_builder (
   }
   # the replica of the above, but intentionally kept away from the loop
   $index_html_template = 'index_html'
+  # TODO: build parents
+
   $index_html = 'index.html'
-  ['/var/www', '/var/www/html'].each |String $path| {
-    file {$path:
+  ['/var/www', $webroot_path].each |String $path| {
+    ensure_resource ('file' , $path, {
       ensure => directory,
       mode   => '0775',
-    }
+    })
   }
   file { $index_html:
     ensure  => file,
     path    => "${webroot_path}/${index_html}",
     content => template("${module_name}/${index_html_template}.erb"),
-    require => File['/var/www/html'],
+    require => File[$webroot_path],
     mode    => '0755',
   }
 
