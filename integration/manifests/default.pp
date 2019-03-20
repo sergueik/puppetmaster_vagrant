@@ -1,48 +1,9 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
 node 'default' {
-  $debug = false
   $webroot_path = '/var/www/html/jenkins'
-  $array_dirs = split($webroot_path, '/')
-  if $debug {
-    notify {"array dirs size = ${array_dirs.size}": }
-  }
-  $subdirs1 = flatten($array_dirs.map|Integer $index1,String $value1| {
-    $subdir = join(flatten(
-    $array_dirs.map|Integer $index2,String $value2| {
-      if $index2 <= $index1 {
-        if $debug {
-          notify {"using ${index2} for ${index1}":}
-	} 
-	$value2
-      }
-    }),'/')
-    if $debug {
-      notify {"subdir : ${subdir}": }
-      # will produce:
-      #
-      #  Notice: subdir : /undef/undef/undef/undef
-      #  Notice: subdir : /var/undef/undef/undef
-      #  Notice: subdir : /var/www/undef/undef
-      #  Notice: subdir : /var/www/html/undef
-      #  Notice: subdir : /var/www/html/jenkins
-    }
-    $subdir
-  })
-  if $debug {
-    notify {"subdirs1 : ${subdirs1}": }
-  }
-  $subdirs2 = $subdirs1.map |$path| { regsubst($path, '/undef', '', 'G') }
-  if $debug {
-    notify {"subdirs2 : ${subdirs2}": }
-  }
-  $subdirs = $subdirs2.filter |$dir| { $dir =~ /[a-z]/ }
-  notify {"subdirs : ${subdirs}": }
-  $subdirs.each |String $path| {
-    ensure_resource ('file' , $path, {
-      ensure => directory,
-      mode   => '0775',
-    })
+  urugeas::jenkins_job_builder { 'test':
+    webroot_path => $webroot_path,
   }
   $home = env('HOME')
   notify {"home=${home}":}
@@ -143,8 +104,6 @@ node 'default' {
         value =>'true',
       },;
  }
-  urugeas::jenkins_job_builder { 'test':
-  }
   urugeas::jenkins_job_part2_builder { 'test part 2':
   }
   notify {'all done':
