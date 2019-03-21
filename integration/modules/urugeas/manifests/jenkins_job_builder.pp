@@ -42,7 +42,7 @@ define urugeas::jenkins_job_builder (
   notify { "${name} shell script (cdata)":
     message => $shell_command_cdata,
   }
-  
+
   $job_xml_template = 'job_xml'
   $job_xml = 'job.xml'
   file { $job_xml:
@@ -56,14 +56,12 @@ define urugeas::jenkins_job_builder (
   }
   # the replica of the above, but intentionally kept away from the loop
   $index_html_template = 'index_html'
-  # TODO: build parents
-
   $index_html = 'index.html'
-  ['/var/www', $webroot_path].each |String $path| {
-    ensure_resource ('file' , $path, {
-      ensure => directory,
-      mode   => '0775',
-    })
+
+  urugeas::makepath { "making ${webroot_path}":
+    target => $webroot_path,
+    before => File[$index_html],
+    debug  => false,
   }
   file { $index_html:
     ensure  => file,

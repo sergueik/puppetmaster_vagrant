@@ -2,8 +2,14 @@
 # vi: set ft=puppet :
 node 'default' {
   $webroot_path = '/var/www/html/jenkins'
+  $webroot_path = '/var/www/html/jenkins'
   urugeas::jenkins_job_builder { 'test':
     webroot_path => $webroot_path,
+  }
+  $fancy_path = '/tmp/a/b/c/d/e/f/g/h'
+  urugeas::makepath { "making ${fancy_path}":
+    target => $fancy_path,
+    debug  => true,
   }
   $home = env('HOME')
   notify {"home=${home}":}
