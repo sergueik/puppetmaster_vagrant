@@ -1,5 +1,6 @@
 ---
-urugeas::version: '0.2.2'
+urugeas::version: '0.2.3'
+urugeas::setting: On
 # suppress running augool during augeas resource testing and vice versa
 urugeas::exercise_tomcat_security_change: false
 urugeas::exercise_augtool: true

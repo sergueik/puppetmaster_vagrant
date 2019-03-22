@@ -2,7 +2,6 @@
 # vi: set ft=puppet :
 node 'default' {
   $webroot_path = '/var/www/html/jenkins'
-  $webroot_path = '/var/www/html/jenkins'
   urugeas::jenkins_job_builder { 'test':
     webroot_path => $webroot_path,
   }

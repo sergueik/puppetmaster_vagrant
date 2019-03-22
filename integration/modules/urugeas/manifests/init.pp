@@ -76,9 +76,19 @@ class urugeas(
          'patch31',
        ]),
   String $rest_command_payload_fragment = lookup('urugeas::rest_command_payload_fragment'),
+  Boolean $boolean_setting1 = lookup("${name}::setting", Boolean, 'first', false),
+  # lookup function helps detecting the error quickly
+  # String $string_setting1 = lookup("${name}::setting", String, 'first', ''),
+  # ==> urugeas: Error: Evaluation Error: Error while evaluating a Function Call, Found value has wrong type, expects a String value, got Boolean 
+  # urugeas::setting: On
+  $untyped_setting = hiera("${name}::setting",'On'),
 ){
 
   require 'stdlib'
+  # notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1} \$string_setting1  = ${string_setting1} \$untyped_setting = ${utyped_setting}": }
+  notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1}   \$untyped_setting = ${untyped_setting}": 
+    message  => template("${name}/setting_conf.erb"),
+  }
 
   $param1 = hiera('urugeas::param1')
   $param2 = hiera('urugeas::param2')
