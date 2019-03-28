@@ -24,13 +24,20 @@ class urugeas::defined_check(
   } else {
     notify { "check 3 interpolated empty false \$dummy_undef = ${dummy_undef}": }
   }
+# NOTE:  uncmmenting the code below leads to catalog compialtion error: Error while evaluating a Function Call, 'defined' parameter 'vals' expects a value of type String or Type, got Undef 
 
-  if !defined('$dummy_defined') {
-    notify { "check 1 not defined true \$dummy_defined = ${dummy_defined}": }
-  } else {
-    notify { "check 1 not defined false \$dummy_defined = ${dummy_defined}": }
+#  if !defined($dummy_undef) {
+#    notify { "check 4 not defined true \$dummy_undef = ${dummy_undef}": }
+#  } else {
+#    notify { "check 4 not defined false \$dummy_undef = ${dummy_undef}": }
+#  }
+#
+#  if !defined('$dummy_defined') {
+#    notify { "check 1 not defined true \$dummy_defined = ${dummy_defined}": }
+#  } else {
+#    notify { "check 1 not defined false \$dummy_defined = ${dummy_defined}": }
+#  }
 
-  }
   if !defined("$dummy_defined") {
     notify { "check 2 not defined true \$dummy_defined = ${dummy_defined}": }
   } else {
@@ -40,6 +47,11 @@ class urugeas::defined_check(
     notify { "check 3 interpolated empty true \$dummy_defined = ${dummy_defined}": }
   } else {
     notify { "check 3 interpolated empty false \$dummy_defined = ${dummy_defined}": }
+  }
+  if !defined($dummy_defined) {
+    notify { "check 4 not defined true \$dummy_defined = ${dummy_defined}": }
+  } else {
+    notify { "check 4 not defined false \$dummy_defined = ${dummy_defined}": }
   }
 }
 #  Puppet run log:
