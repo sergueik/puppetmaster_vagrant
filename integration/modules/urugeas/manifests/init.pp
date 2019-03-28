@@ -13,7 +13,6 @@
 # This is the only way we found augeas to work with Puppet and `web.xml`
 
 class urugeas(
-
   Boolean $exercise_tomcat_security_change,
   Boolean $exercise_augtool,
   Array $tomcat_security_part1 = [],
@@ -32,6 +31,7 @@ class urugeas(
     # 'clear securityRealm/authContext', # this does not appear to work
     # 'rm securityRealm/authContext', # this will work
   ]),
+
   Hash $package_add_01 = lookup("${name}::package_add_01",
        Hash[String,String],
        first, {
@@ -79,14 +79,15 @@ class urugeas(
   Boolean $boolean_setting1 = lookup("${name}::setting", Boolean, 'first', false),
   # lookup function helps detecting the error quickly
   # String $string_setting1 = lookup("${name}::setting", String, 'first', ''),
-  # ==> urugeas: Error: Evaluation Error: Error while evaluating a Function Call, Found value has wrong type, expects a String value, got Boolean 
+  # ==> urugeas: Error: Evaluation Error: Error while evaluating a Function Call, Found value has wrong type, expects a String value, got Boolean
   # urugeas::setting: On
   $untyped_setting = hiera("${name}::setting",'On'),
 ){
 
   require 'stdlib'
+  include urugeas::defined_check
   # notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1} \$string_setting1  = ${string_setting1} \$untyped_setting = ${utyped_setting}": }
-  notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1}   \$untyped_setting = ${untyped_setting}": 
+  notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1}   \$untyped_setting = ${untyped_setting}":
     message  => template("${name}/setting_conf.erb"),
   }
 
@@ -248,12 +249,12 @@ class urugeas(
   # error: Invalid path expression
   # error: empty name
   # /files/var/lib/jenkins/web.xml/web-app/session-config[./session-timeout/|=|[#text="30"]]
-  # but can do equivalent via axes 
+  # but can do equivalent via axes
   # augtool> print '/files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout[#text="30"][parent::*]'
   # /files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout
   # /files/var/lib/jenkins/web.xml/web-app/session-config/session-timeout/#text = "30"
   # print '/files/var/lib/jenkins/web.xml/web-app/session-config[./session-timeout="30"]'
-  
+
   $config_template = @(END)
      <hudson>
        <useSecurity>true</useSecurity>
