@@ -379,3 +379,31 @@ class urugeas(
   }
   include urugeas::cron_schedule
 }
+
+# take a vanilla tomcat 8.5 and install
+# on centos 7x
+# following e.g. on https://www.howtoforge.com/tutorial/how-to-install-tomcat-on-centos/#step-install-apache-tomcat-
+# use the latest tomcat install package from
+# https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.30/bin/apache-tomcat-8.5.30.tar.gz
+#  verify the absnce ofthe headers.
+#
+# [root@linux opt]# netstat -antp | grep 8080 | grep -i LISTEN
+# curl -I http://localhost:8080 |  grep -i 'X-Frame-Options'
+# will be empty
+# curl -I http://localhost:8080
+# HTTP/1.1 200
+# Content-Type: text/html;charset=UTF-8
+# Transfer-Encoding: chunked
+# Date: Tue, 02 Apr 2019 22:33:23 GMT
+# Then update web.xml
+# based on
+#
+# https://geekflare.com/tomcat-http-security-header/
+# uncomment the httpHederSecurity filter and asociated filter-mapping DOM nodes
+# without adding init-param tags
+# confirm the headers
+# curl -I http://localhost:8080 | grep 'X-Frame-Options'
+# X-Frame-Options: DENY
+# and add the init-param tags
+# produces the desired change of the header
+# X-Frame-Options: SAMEORIGIN
