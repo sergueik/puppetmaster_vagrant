@@ -114,8 +114,20 @@ if $DIRECT_INSTALL_PUPPET_MODULES ; then
   # gem install hiera-eyaml --no-rdoc --no-ri
 fi
 # for integration testing
-# default install for tomcat7
-sudo yum install -y tomcat
+sudo yum install -qqy java-1.8.0-openjdk
+# install tomcat 8.5.x via direct download
+# based on: https://www.howtoforge.com/tutorial/how-to-install-tomcat-on-centos/#step-install-apache-tomcat-
+sudo groupadd tomcat
+sudo useradd -s /bin/false -g tomcat -d /opt/tomcat tomcat
+TOMCAT_PACKAGE='https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.30/bin/apache-tomcat-8.5.30.tar.gz'
+sudo mkdir -p /opt/tomcat
+pushd /opt
+sudo wget -O apache-tomat-8.5.tar.gz $TOMCAT_PACKAGE
+sudo tar xzvf /opt/apache-tomat-8.5.tar.gz
+sudo mv apache-tomcat-8.5.30/* tomcat/
+sudo rmdir apache-tomcat-8.5.30/* tomcat/
+sudo chown -hR tomcat:tomcat tomcat
+popd
 # for puppet testing install jq
 sudo yum install -y jq
       SHELL
