@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- replica of tomcat 7 web.xml for standalone testing -->
+<!-- replica of tomcat 7 web.xml with httpHeaderSecurity enabled for standalone testing -->
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -537,13 +537,13 @@
   <!-- ==================== Built In Filter Mappings ====================== -->
 
   <!-- The mapping for the HTTP header security Filter -->
-<!--
+
     <filter-mapping>
         <filter-name>httpHeaderSecurity</filter-name>
         <url-pattern>/*</url-pattern>
         <dispatcher>REQUEST</dispatcher>
     </filter-mapping>
--->
+
 
   <!-- The mapping for the Set Character Encoding Filter -->
 <!--
