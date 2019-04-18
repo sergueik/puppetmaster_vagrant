@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 # https://app.vagrantup.com/bstoots/boxes/xubuntu-16.04-desktop-amd64//versions/1.0.2/providers/virtualbox.box
-
+# https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box
 # based on: https://github.com/hashicorp/consul/tree/master/demo/vagrant-cluster
 # https://www.consul.io/intro/getting-started/services.html
 # used to test
@@ -13,15 +13,15 @@
 
 consul_version = ENV.fetch('CONSUL_VERSION', '1.4.0') # nil
 consul_init = ENV.fetch('CONSUL_INIT', nil)
-# Consul is packages as plain archive by hashicorp:
+# Consul is packaged as plain archive by hashicorp:
 # old releases are available in https://releases.hashicorp.com/consul/0.8.5/
 # the  instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
 
 # see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
 # NOTE: base box too big: 755 Mb really?
-box_name = ENV.fetch('BOX_NAME', 'envimation/ubuntu-xenial')
+box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet') # 'envimation/ubuntu-xenial'
 
-# "ubuntu-xenial-v1.0.3"
+modulepath = '/opt/puppetlabs/puppet/modules'
 
 VAGRANTFILE_API_VERSION = '2'
 
@@ -32,7 +32,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box =  box_name
   # Localy cached vagrant box from https://app.vagrantup.com/envimation/boxes/ubuntu-xenial
   # invoke-webrequest -uri 'https://app.vagrantup.com/envimation/boxes/ubuntu-xenial/versions/1.0.3-1516155095/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\ubuntu-xenial-v1.0.3.box"
-  config_vm_box_name = 'ubuntu-xenial-v1.0.3.box'
+  config_vm_box_name =  'ubuntu-16.04-64-puppet.box' # 'ubuntu-xenial-v1.0.3.box'
+ 
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
   1.upto(2) do |n|
@@ -185,6 +186,21 @@ echo "exec consul agent -config-file=/etc/consul.d/consul.json -advertise=${NODE
 if [ ! -z "${CONSUL_INIT}" ] ; then
   service consul start
 fi
+MODULE_PATH='#{modulepath}'
+# set to true - need stdlib 4.25+
+DIRECT_INSTALL_PUPPET_MODULES=true
+
+if $DIRECT_INSTALL_PUPPET_MODULES ; then
+  if [ ! -d ${MODULE_PATH}/stdlib ]; then
+    puppet module install 'puppetlabs-stdlib' --version '4.25.0'
+  fi
+  if [ ! -d ${MODULE_PATH}/java ]; then
+    puppet module install 'puppetlabs-java' --version '1.3.0'
+  fi
+
+  # for encrypted yaml
+  # gem install hiera-eyaml --no-rdoc --no-ri
+fi
       SHELL
     end
     # only required for
@@ -192,7 +208,20 @@ fi
     config.vm.provider :virtualbox do |v|
       v.customize ['modifyvm', :id, '--cableconnected1', 'on']
       v.customize ['modifyvm', :id, '--memory', box_memory ]
-     end
+    end
+  
+      config.vm.synced_folder './' , '/vagrant'
+
+      manifest = 'default.pp'
+      config.vm.provision :puppet do |puppet|
+        puppet.hiera_config_path = 'hiera.yaml'
+        puppet.module_path       = 'modules'
+        puppet.manifests_path    = 'manifests'
+        puppet.manifest_file     = manifest
+        puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules "
+        puppet.working_directory = '/tmp/vagrant-puppet'
+        config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
+      end
   end
 end
 ## # Manual  cluster validation steps

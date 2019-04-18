@@ -1,0 +1,13 @@
+---
+version: 5
+defaults:
+hierarchy:
+  - name: "Per-node data (yaml version)"
+    path: "node/%{::trusted.certname}.yaml"
+  - name: "Per-role data (yaml version)"
+    path: "role/%{trusted.extensions.pp_role}.yaml"
+  - name: "Shared data"
+    path: "common.yaml"
+defaults:
+  data_hash: yaml_data
+  datadir: hieradata
