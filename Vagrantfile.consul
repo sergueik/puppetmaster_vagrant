@@ -1,7 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# https://app.vagrantup.com/bstoots/boxes/xubuntu-16.04-desktop-amd64//versions/1.0.2/providers/virtualbox.box
 # https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box
 # based on: https://github.com/hashicorp/consul/tree/master/demo/vagrant-cluster
 # https://www.consul.io/intro/getting-started/services.html
@@ -13,13 +12,19 @@
 
 consul_version = ENV.fetch('CONSUL_VERSION', '1.4.0') # nil
 consul_init = ENV.fetch('CONSUL_INIT', nil)
+# see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
 # Consul is packaged as plain archive by hashicorp:
 # old releases are available in https://releases.hashicorp.com/consul/0.8.5/
-# the  instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
+# Instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
 
-# see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
-# NOTE: base box too big: 755 Mb really?
-box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet') # 'envimation/ubuntu-xenial'
+box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet')
+# NOTE: this also is a default module path
+# varies with releases of Puppet
+debug_puppet = ENV.fetch('DEBUG_PUPPET', '')
+debug_puppet = (debug_puppet =~ (/^(true|t|yes|y|1)$/i))
+
+debug = ENV.fetch('DEBUG', '')
+debug = (debug =~ (/^(true|t|yes|y|1)$/i))
 
 modulepath = '/opt/puppetlabs/puppet/modules'
 
@@ -30,9 +35,9 @@ box_memory = ENV.fetch('BOX_MEMORY', '512').to_i
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box =  box_name
-  # Localy cached vagrant box from https://app.vagrantup.com/envimation/boxes/ubuntu-xenial
-  # invoke-webrequest -uri 'https://app.vagrantup.com/envimation/boxes/ubuntu-xenial/versions/1.0.3-1516155095/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\ubuntu-xenial-v1.0.3.box"
-  config_vm_box_name =  'ubuntu-16.04-64-puppet.box' # 'ubuntu-xenial-v1.0.3.box'
+  # Localy cached vagrant box from https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box
+  # invoke-webrequest -uri 'https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\ubuntu-16.04-64-puppet.box"
+  config_vm_box_name =  'ubuntu-16.04-64-puppet.box'
 
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
@@ -54,6 +59,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       box.vm.hostname = node_hostname
       box.vm.network "private_network", ip: node_ip
       shell_script = <<-SHELL
+DEBUG='#{debug}'
+if [[ ! -z $DEBUG ]] ; then
+set -x
+fi
 # echo Clearing the proxy settings
 # this step is only required for certain base box xenial-server-amd64-vagrant-selenium.box
 if [ -f '/etc/apt/apt.conf.d/01proxy' ] ; then
@@ -236,9 +245,16 @@ fi
         puppet.module_path       = 'modules'
         puppet.manifests_path    = 'manifests'
         puppet.manifest_file     = manifest
+
         # https://puppet.com/docs/puppet/4.10/dirs_modulepath.html
-        puppet.options           = "--debug --verbose --modulepath #{modulepath}:/vagrant/modules"
-        $stderr.puts ('puppet options: ' + puppet.options )
+        if debug_puppet
+          puppet.options           = "--debug --verbose --modulepath #{modulepath}:/vagrant/modules"
+        else
+          puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules"
+        end
+        if debug
+          $stderr.puts ('puppet options: ' + puppet.options )
+        end
         puppet.working_directory = '/tmp/vagrant-puppet'
       end
     end
