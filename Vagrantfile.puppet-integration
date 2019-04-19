@@ -75,6 +75,8 @@ Vagrant.configure('2') do |config|
     newbox = box_config[:config_vm_newbox]
     image_filename = box_config[:image_filename]
     box_url = "file://#{basedir}/Downloads/#{image_filename}"
+    config.vm.synced_folder './' , '/vagrant'
+    manifest = 'default.pp'
     config.vm.define box_name do |guest|
       guest.vm.box = box_config[:image_name]
       guest.vm.box_url = box_url
@@ -84,7 +86,7 @@ Vagrant.configure('2') do |config|
         vb.memory = box_memory
       end
 
-      config.vm.provision "shell", inline: <<-SHELL
+      guest.vm.provision 'shell', inline: <<-SHELL
         sudo yum install -y vim
 	UPGRADE_PUPPET=false
         # optionally upgrade puppet to the latest version
@@ -104,10 +106,8 @@ DIRECT_INSTALL_PUPPET_MODULES=true
 
 if $DIRECT_INSTALL_PUPPET_MODULES ; then
   if [ ! -d ${MODULE_PATH}/stdlib ]; then
-    puppet module install 'puppetlabs-stdlib' --version '4.25.0'
-  fi
-  if [ ! -d ${MODULE_PATH}/java ]; then
-    puppet module install 'puppetlabs-java' --version '1.3.0'
+    puppet module install 'puppetlabs-stdlib' --version '4.25.0' --target-dir $MODULE_PATH
+    puppet module install 'puppetlabs-java' --version '1.3.0' --target-dir $MODULE_PATH
   fi
 
   # for encrypted yaml
@@ -124,8 +124,8 @@ TOMCAT_VERSION='8.5.39'
 TOMCAT_PACKAGE="https://archive.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz"
 sudo mkdir -p /opt/tomcat
 pushd /opt
-sudo wget -O apache-tomat-8.5.tar.gz $TOMCAT_PACKAGE
-sudo tar xzvf /opt/apache-tomat-8.5.tar.gz
+sudo wget -O apache-tomcat-8.5.tar.gz $TOMCAT_PACKAGE
+sudo tar xzvf /opt/apache-tomcat-8.5.tar.gz
 sudo mv apache-tomcat-${TOMCAT_VERSION}/* tomcat/
 sudo rmdir apache-tomcat-${TOMCAt_VERSION}/* tomcat/
 sudo chown -hR tomcat:tomcat tomcat
@@ -134,15 +134,12 @@ popd
 sudo yum install -y jq
       SHELL
 
-      config.vm.synced_folder './' , '/vagrant'
-
-      manifest = 'default.pp'
 
       # workaround for older Vagrant / Puppet 4 compatibility issue
       # NOTE: hiera arguments not set
       # config.vm.provision 'shell', inline: "puppet apply --modulepath=#{modulepath}:/vagrant/modules /vagrant/manifests/#{manifest}"
 
-      config.vm.provision :puppet do |puppet|
+      guest.vm.provision :puppet do |puppet|
         puppet.hiera_config_path = 'hiera.yaml'
         puppet.module_path       = 'modules'
         puppet.manifests_path    = 'manifests'
