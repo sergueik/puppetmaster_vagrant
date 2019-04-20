@@ -85,8 +85,8 @@ Vagrant.configure('2') do |config|
         vb.name = box_name
         vb.memory = box_memory
       end
-
-      guest.vm.provision 'shell', inline: <<-SHELL
+      # guest.vm.provision is a recommended scope
+      config.vm.provision 'shell', inline: <<-SHELL
         sudo yum install -y vim
 	UPGRADE_PUPPET=false
         # optionally upgrade puppet to the latest version
@@ -139,7 +139,7 @@ sudo yum install -y jq
       # NOTE: hiera arguments not set
       # config.vm.provision 'shell', inline: "puppet apply --modulepath=#{modulepath}:/vagrant/modules /vagrant/manifests/#{manifest}"
 
-      guest.vm.provision :puppet do |puppet|
+      config.vm.provision :puppet do |puppet|
         puppet.hiera_config_path = 'hiera.yaml'
         puppet.module_path       = 'modules'
         puppet.manifests_path    = 'manifests'
