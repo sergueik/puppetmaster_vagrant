@@ -1,7 +1,6 @@
-# -*- mode: ruby -*-
+  # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box
 # based on: https://github.com/hashicorp/consul/tree/master/demo/vagrant-cluster
 # https://www.consul.io/intro/getting-started/services.html
 # used to test
@@ -15,7 +14,7 @@ consul_init = ENV.fetch('CONSUL_INIT', nil)
 # see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
 # Consul is packaged as plain archive by hashicorp:
 # old releases are available in https://releases.hashicorp.com/consul/0.8.5/
-# Instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
+# the instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
 
 box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet')
 # NOTE: this also is a default module path
@@ -35,7 +34,7 @@ box_memory = ENV.fetch('BOX_MEMORY', '512').to_i
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box =  box_name
-  # Localy cached vagrant box from https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box
+  # using localy cached vagrant box
   # invoke-webrequest -uri 'https://app.vagrantup.com/puppetlabs/boxes/ubuntu-16.04-64-puppet/versions/1.0.0/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\ubuntu-16.04-64-puppet.box"
   config_vm_box_name =  'ubuntu-16.04-64-puppet.box'
 
@@ -54,27 +53,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       config.vm.synced_folder './' , '/vagrant'
       config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
-
-      manifest = 'default.pp'
+      
       box.vm.hostname = node_hostname
       box.vm.network "private_network", ip: node_ip
       shell_script = <<-SHELL
-DEBUG='#{debug}'
-if [[ ! -z $DEBUG ]] ; then
-set -x
-fi
-# echo Clearing the proxy settings
-# this step is only required for certain base box xenial-server-amd64-vagrant-selenium.box
-if [ -f '/etc/apt/apt.conf.d/01proxy' ] ; then
-  sed -i 's/^/# /' '/etc/apt/apt.conf.d/01proxy'
-fi
-# NOTE: sed I is GNU extension and only work with sed substitution operation
-sed -i '/[pP][rR][oO][xX][yY]/I d' /etc/environment
-rm -f /etc/profile.d/proxy.sh
-unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
-#=========================================================
-sudo apt-get -qqy update
+      # origin: http://frederic-wou.net/puppet-apt-update-error-public-key-not-available-no_pubkey-7f438280ef8d349f/
+      sudo gpg --keyserver pgp.mit.edu --recv-key 7F438280EF8D349F
+      sudo gpg --keyserver pgp.mit.edu --recv-key 7F438280EF8D349F
+      gpg -a --export EF8D349F | sudo apt-key add -
+      sudo apt-get -qqy update
+      apt-key list | grep -i -B 3 puppet
 
+      # NOTE: upgrading puppet-agent from apt repository will upgrade it to 
+      sudo apt-get -qqy install puppet-agent
+      # /opt/puppetlabs/bin/puppet  --version
+      # 4.10.12
+      # do not install puppet master by mistake
+      
 # based on: https://github.com/chavo1/consul-lab
 echo 'Installing dependencies ...'
 for B in vim curl jq unzip ; do
@@ -105,6 +100,11 @@ if [ -z "${CONSUL_VERSION}" ] ; then
   echo 'Determining latest Consul version.'
   CHECKPOINT_URL='https://checkpoint-api.hashicorp.com/v1/check'
   CONSUL_VERSION=$(curl -s "${CHECKPOINT_URL}/consul" | jq '.current_version' | tr -d '"')
+  # force re-download by removing '/tmp/consul.zip'
+  # this is easier than extract consul and run
+  # ./consul  --version
+
+  rm -f '/tmp/consul.zip'
 fi
 #=========================================================
 echo "Download Consul version ${CONSUL_VERSION}"
@@ -114,6 +114,8 @@ if [ ! -e 'consul.zip' ] ; then
 fi
 #=========================================================
 echo "Install Consul version ${CONSUL_VERSION}"
+cd /tmp
+rm -fr '/tmp/consul'
 unzip consul.zip
 sudo chmod +x consul
 sudo mv consul /usr/bin
@@ -238,24 +240,27 @@ fi
       box.vm.provision 'shell',
         env: {'CONSUL_VERSION' => consul_version,
               'NODE_IP' => node_ip   },
-	# NOTE: the EOF is already in use in the embedded shell script
+        # NOTE: the EOF is already in use in the embedded shell script
         inline: shell_script
-      box.vm.provision :puppet do |puppet|
-        puppet.hiera_config_path = 'hiera.yaml'
-        puppet.module_path       = 'modules'
-        puppet.manifests_path    = 'manifests'
-        puppet.manifest_file     = manifest
+      # use Puppet Apply provisioner   
+      box.vm.provision :puppet do |p|
+        p.binary_path       = '/opt/puppetlabs/bin'
+        p.working_directory = '/tmp/vagrant-puppet'
+        p.hiera_config_path = 'hiera.yaml'
+        p.module_path       = 'modules'
+        p.manifests_path    = 'manifests'
+        p.manifest_file     = 'default.pp'
 
         # https://puppet.com/docs/puppet/4.10/dirs_modulepath.html
-        if debug_puppet
-          puppet.options           = "--debug --verbose --modulepath #{modulepath}:/vagrant/modules"
-        else
-          puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules"
-        end
+        p.options           = 
+          if debug_puppet 
+            "--debug --verbose --modulepath #{modulepath}:/vagrant/modules"
+          else 
+            "--verbose --modulepath #{modulepath}:/vagrant/modules"
+          end
         if debug
           $stderr.puts ('puppet options: ' + puppet.options )
         end
-        puppet.working_directory = '/tmp/vagrant-puppet'
       end
     end
   end
