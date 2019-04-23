@@ -68,6 +68,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # Install Perl dev dependencies
         $PERLBREW_BIN exec cpanm Test::CheckManifest Test::Pod::Coverage
         $PERLBREW_BIN exec cpanm Test::Pod Test::Perl::Critic
+        $PERLBREW_BIN exec cpanm IO::Compress::Brotli
 
         # Switch to latest new Perl version
         $PERLBREW_BIN switch perl-${PERL_NEW##* }
