@@ -38,7 +38,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       shell_script = <<-EOF
         sudo apt-get -qy update
         sudo apt-get -qqy install vim jq build-essential curl zlib1g-dev libssl-dev
-        sudo apt-get -y install libperl-critic-perl
+        sudo apt-get -qqy install libperl-critic-perl
+        sudo apt-get -qqy apache2 lynx
+        # https://tecadmin.net/enable-or-disable-cgi-in-apache24/
+        # https://httpd.apache.org/docs/2.4/howto/cgi.html
+        # http://www.wellho.net/forum/Perl-Programming/Running-Perl-CGI-scripts-under-Apache-Tomcat.html
+        sudo a2enmod cgi
+        sudo systemctl restart httpd
+
         export PERLBREW_ROOT='/home/vagrant/perl5/perlbrew'
         PERLBREW_BIN="${PERLBREW_ROOT}/bin/perlbrew"
 
