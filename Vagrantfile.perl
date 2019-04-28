@@ -65,10 +65,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         # NOTE: need to suppress cpanm testing during install: too time-consuming
 
-        # Install Perl dev dependencies
-        $PERLBREW_BIN exec cpanm Test::CheckManifest Test::Pod::Coverage
-        $PERLBREW_BIN exec cpanm Test::Pod Test::Perl::Critic
-        $PERLBREW_BIN exec cpanm IO::Compress::Brotli
+	# Install Perl dev dependencies for both old and new Perl versions. TODO: do the same in the system Perl to made vailable to apache2 CGI-BIN
+        for M in Test::CheckManifest Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper IO::Compress::Brotli CGI ; do  $PERLBREW_BIN exec cpanm $M; done
+
+        chown -R vagrant:vagrant ~vagrant/perl5
 
         # Switch to latest new Perl version
         $PERLBREW_BIN switch perl-${PERL_NEW##* }
