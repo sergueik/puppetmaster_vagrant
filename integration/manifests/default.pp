@@ -1,6 +1,7 @@
 # -*- mode: puppet -*-
 # vi: set ft=puppet :
 node 'default' {
+  include urugeas
   $webroot_path = '/var/www/html/jenkins'
   urugeas::jenkins_job_builder { 'test':
     webroot_path => $webroot_path,
@@ -19,7 +20,6 @@ node 'default' {
   # need 'stdlib' version: 4.25+
   # found that '/etc/puppetlabs/code/environments/production/modules'
   # is not in the module path - need to update module in the host 'modules'
-  include urugeas
   urugeas::exec_shell_parameters_json { 'exercise':
     template => 'shell_parameters_json',
   }

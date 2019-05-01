@@ -306,13 +306,57 @@ class urugeas(
     }
     augeas{
       default:
-        * => $default_attributes,;
+        *       => $default_attributes,;
       'tomcat security changes part1':
         changes => $tomcat_security_part1,;
       'tomcat security changes part 2':
         changes => $tomcat_security_part2,;
     }
   }
+  # for a fairly hairy good example of augeas resource see https://github.com/cegeka/puppet-limits/blob/master/manifests/conf.pp
+  #  define limits::conf(
+  #    [String]$domain, 
+  #    [String]$type, 
+  #    [String]$item, 
+  #    [String]$value
+  #  ) {
+  #  
+  #    package { ['augeas', 'augeas-libs', 'ruby-augeas']:
+  #      ensure => present,
+  #    }
+  #    $key = "${domain}/${type}/${item}"
+  #    $context = '/files/opt/tomcat/conf/web.xml'
+  #  
+  #    $path_item = "domain[. = \"$domain\"][type = \"$type\" and item = \"$item\"]"
+  #    $path_exact = "domain[. = \"$domain\"][type = \"$type\" and item = \"$item\" and value = \"$value\"]"
+  #    $path_other = "domain[. = \"$domain\"][type = \"$type\" and item = \"$item\" and value != \"$value\"]"
+  #  
+  #    augeas { "limits.conf/$key/eof":
+  #      context => $context,
+  #      onlyif  => 'match #comment[. =~ regexp("End of file")] size > 0',
+  #      changes => 'rm #comment[. =~ regexp("End of file")]',
+  #    }
+  #  
+  #    augeas { "limits.conf/$key/rm":
+  #      context => $context,
+  #      onlyif  => "match ${path_other} size > 0",
+  #      changes => "rm ${path_item}",
+  #      before  => Augeas["limits.conf/${key}/add"],
+  #    }
+  #  
+  #    augeas { "limits.conf/$key/add":
+  #      context => $context,
+  #      onlyif  => "match ${path_exact} size == 0",
+  #      changes => [
+  #        "set domain[last()+1] ${domain}",
+  #        "set domain[last()]/type ${type}",
+  #        "set domain[last()]/item ${item}",
+  #        "set domain[last()]/value ${value}"
+  #      ]
+  #    }
+  #  
+  #  }
+  # see also: https://github.com/puppetlabs/puppetlabs-limits/tree/master/manifests
   if $exercise_augtool {
     # NOTE: inline_template(*$augtool_command)
     # without explicit newlines leads to augtool error
