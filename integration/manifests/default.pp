@@ -33,4 +33,32 @@ node 'default' {
       }
     },
   }
+  # NOTE: need to make a conf extension in the resource title 
+  # otherwise is not becoming the filename, rather
+  # user + limit_type is
+  -> limits::limits { '20-limits.conf':
+    ensure     => present,
+    user       => 'username1',
+    limit_type => 'nofile',
+    hard       => 1024,
+  }
+  # need unique name for each  data entry
+  -> limits::limits { '21-nofile':
+    ensure     => present,
+    user       => 'username2',
+    limit_type => 'nofile',
+    hard       => 1024,
+  }
+  -> limits::limits { '20-nproc':
+    ensure     => present,
+    user       => 'username1',
+    limit_type => 'nproc',
+    hard       => 16,
+  }
+  -> limits::limits { '21-nproc':
+    ensure     => present,
+    user       => 'username2',
+    limit_type => 'nproc',
+    hard       => 32,
+  }
 }
