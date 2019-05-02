@@ -1,6 +1,0 @@
-# https://www.askapache.com/htaccess/#Rewrite_to_www
-RedirectMatch 301 /blog.html /todo/index.html
-RedirectMatch 301 /.*~.* /todo/index.html
-RedirectMatch 301 /.*\\\\.* /todo/index.html
-# https://www.askapache.com/htaccess/#Rewrite_to_www
-RewriteRule ^/(.*)$ /todo/index.html [R=301,L]
