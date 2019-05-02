@@ -88,12 +88,12 @@ Vagrant.configure('2') do |config|
       # guest.vm.provision is a recommended scope
       config.vm.provision 'shell', inline: <<-SHELL
         sudo yum install -y vim
-	UPGRADE_PUPPET=false
-        # optionally upgrade puppet to the latest version
-	if $UPGRADE_PUPPET ; then
-        sudo rpm -Uvh https://yum.puppet.com/puppet5/puppet5-release-el-7.noarch.rpm
-        sudo yum install -y puppet-agent
-	fi
+    UPGRADE_PUPPET=false
+    # optionally upgrade puppet to the latest version
+    if $UPGRADE_PUPPET ; then
+      sudo rpm -Uvh https://yum.puppet.com/puppet5/puppet5-release-el-7.noarch.rpm
+      sudo yum install -y puppet-agent
+    fi
 	# https://www.digitalocean.com/community/tutorials/how-to-install-apache-tomcat-7-on-centos-7-via-yum
 	# change locale of the base image
 cat<<EOF>/etc/environment
@@ -113,6 +113,7 @@ if $DIRECT_INSTALL_PUPPET_MODULES ; then
   # for encrypted yaml
   # gem install hiera-eyaml --no-rdoc --no-ri
 fi
+sudo yum install -qqy httpd
 # for integration testing
 sudo yum install -qqy java-1.8.0-openjdk
 # install tomcat 8.5.x via direct download
@@ -124,17 +125,15 @@ TOMCAT_VERSION='8.5.39'
 TOMCAT_PACKAGE="https://archive.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz"
 sudo mkdir -p /opt/tomcat
 pushd /opt
-sudo wget -O apache-tomcat-8.5.tar.gz $TOMCAT_PACKAGE
-sudo tar xzvf /opt/apache-tomcat-8.5.tar.gz
+sudo wget --progress=none -O apache-tomcat-8.5.tar.gz $TOMCAT_PACKAGE
+sudo tar xzf /opt/apache-tomcat-8.5.tar.gz
 sudo mv apache-tomcat-${TOMCAT_VERSION}/* tomcat/
 sudo rmdir apache-tomcat-${TOMCAt_VERSION}/* tomcat/
 sudo chown -hR tomcat:tomcat tomcat
 popd
 # for puppet testing install jq
-sudo yum install -y jq
-      SHELL
-
-
+sudo yum install -qqy jq
+    SHELL
       # workaround for older Vagrant / Puppet 4 compatibility issue
       # NOTE: hiera arguments not set
       # config.vm.provision 'shell', inline: "puppet apply --modulepath=#{modulepath}:/vagrant/modules /vagrant/manifests/#{manifest}"
