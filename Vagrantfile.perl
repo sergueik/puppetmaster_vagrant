@@ -40,12 +40,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         sudo apt-get -qqy install vim jq build-essential curl zlib1g-dev libssl-dev
         sudo apt-get -qqy install libperl-critic-perl
         sudo apt-get -qqy apache2 lynx
+	sudo apt-get install libhtml-tokeparser-simple-perl libmath-polygon-perl libossp-uuid-perl libregexp-common-perl
         # https://tecadmin.net/enable-or-disable-cgi-in-apache24/
         # https://httpd.apache.org/docs/2.4/howto/cgi.html
         # http://www.wellho.net/forum/Perl-Programming/Running-Perl-CGI-scripts-under-Apache-Tomcat.html
         sudo a2enmod cgi
         sudo systemctl restart httpd
-
+	cpan install Data::Dumper Time::HiRes List::MoreUtils Math::Trig
+	cpan install Data::UUID HTML::TokeParser::Simple Math::Polygon Regexp::Common Regexp::Assemble::Compressed
         export PERLBREW_ROOT='/home/vagrant/perl5/perlbrew'
         PERLBREW_BIN="${PERLBREW_ROOT}/bin/perlbrew"
 
@@ -73,7 +75,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # NOTE: need to suppress cpanm testing during install: too time-consuming
 
 	# Install Perl dev dependencies for both old and new Perl versions. TODO: do the same in the system Perl to made vailable to apache2 CGI-BIN
-        for M in Test::CheckManifest Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper IO::Compress::Brotli CGI ; do  $PERLBREW_BIN exec cpanm $M; done
+        for M in Test::CheckManifest Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper IO::Compress::Brotli CGI Time::HiRes List::MoreUtils Math::Trig Data::UUID HTML::TokeParser::Simple Math::Polygon Regexp::Common Regexp::Assemble::Compressed ; do  $PERLBREW_BIN exec cpanm $M; done
 
         chown -R vagrant:vagrant ~vagrant/perl5
 
