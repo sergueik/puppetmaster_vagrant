@@ -5,27 +5,36 @@ use strict;
 
 use Getopt::Long;
 use Data::Dumper qw(Dumper);
-use HTML::TagParser; # https://metacpan.org/pod/HTML::TagParser
+use HTML::TagParser;    # https://metacpan.org/pod/HTML::TagParser
 
-use vars qw(@data $element @elements);
+use vars qw($element $data $result $DEBUG);
 
-my $filename = 'links.htm'; # http://www.louisianaoutdoorproperties.com
-my $html     = HTML::TagParser->new($filename);
-$element = ($html->getElementsByAttribute( 'id', 'acListWrap' ))[0]->subTree();
+my $filename = 'links.htm';    # http://www.louisianaoutdoorproperties.com
+my $html = HTML::TagParser->new($filename);
+$element =
+  ( $html->getElementsByAttribute( 'id', 'acListWrap' ) )[0]->subTree();
 
-@elements = $element->getElementsByAttribute( 'class', 'listSubtitle' );
-print "Number of nodes: " . scalar(@elements) . "\n";
-@data = map { $_->innerText } @elements;
-print Dumper \@data;
+sub getData($$$) {
+    my ( $parentElement, $attributeName, $attributeValue ) = @_;
+    my @elements =
+      $parentElement->getElementsByAttribute( $attributeName, $attributeValue );
+    print "Number of nodes: " . scalar(@elements) . "\n" if $DEBUG;
+    my @data =
+      map { my $text = $_->innerText; $text =~ s|\s+| |g; $text } @elements;
+    if ($DEBUG) {
+        print "Attribute name: ${attributeName} value: ${attributeValue}\n";
+        print Dumper \@data;
+    }
+    return \@data;
 
-@elements =
-  $element->getElementsByAttribute( 'class', 'acListPrice' );
-print "Number of nodes: " . scalar(@elements) . "\n";
-@data = map { $_->innerText } @elements;
-print Dumper \@data;
+}
+$result = {};
+$data = getData( $element, 'class', 'acListPrice' );
+$result->{'price'} = $data;
 
-@elements =
-  $element->getElementsByAttribute( 'class', 'lower tabsection' );
-print "Number of nodes: " . scalar(@elements) . "\n";
-@data = map { my $text = $_->innerText; $text =~ s|\s+| |g;  $text } @elements;
-print Dumper \@data;
+$data = getData( $element, 'class', 'listSubtitle' );
+$result->{'title'} = $data;
+
+$data = getData( $element, 'class', 'lower tabsection' );
+$result->{'description'} = $data;
+print Dumper \$result ;
