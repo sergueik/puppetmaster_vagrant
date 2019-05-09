@@ -47,7 +47,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # http://www.wellho.net/forum/Perl-Programming/Running-Perl-CGI-scripts-under-Apache-Tomcat.html
         sudo a2enmod cgi
         sudo systemctl restart httpd
-        PERL_MODULES='JSON Date::Manip Date::Parse CGI::FastTemplate Test::CheckManifest Carp Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper IO::Compress::Brotli CGI Time::HiRes Time::CTime Time::Local Time::ParseDate File::Basename List::MoreUtils Math::Trig Data::UUID HTML::TokeParser::Simple Math::Polygon Regexp::Common Regexp::Assemble::Compressed XML::Simplei GetOpt::Long'
+        PERL_MODULES='JSON Date::Manip Date::Parse CGI::FastTemplate Test::CheckManifest Carp Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper IO::Compress::Brotli CGI Time::HiRes Time::CTime Time::Local Time::ParseDate File::Basename List::MoreUtils Math::Trig Data::UUID HTML::TokeParser::Simple Math::Polygon Regexp::Common Regexp::Assemble::Compressed XML::Simple HTML::TableExtract Log::Log4perl GetOpt::Long HTML::TagParser Log::Log4perl'
         for M in $PERL_MODULES; do  cpan install $M; done
 
         export PERLBREW_ROOT='/home/vagrant/perl5/perlbrew'
