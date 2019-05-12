@@ -17,14 +17,14 @@ consul_init = ENV.fetch('CONSUL_INIT', nil)
 # the instructions for rpm repackaging are in https://github.com/tomhillable/consul-rpm
 
 box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet')
-# NOTE: this also is a default module path
-# varies with releases of Puppet
 debug_puppet = ENV.fetch('DEBUG_PUPPET', '')
 debug_puppet = (debug_puppet =~ (/^(true|t|yes|y|1)$/i))
 
 debug = ENV.fetch('DEBUG', '')
 debug = (debug =~ (/^(true|t|yes|y|1)$/i))
 
+# NOTE: this also is a default module path
+# but it varies with releases of Puppet
 modulepath = '/opt/puppetlabs/puppet/modules'
 
 VAGRANTFILE_API_VERSION = '2'
@@ -39,10 +39,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config_vm_box_name =  'ubuntu-16.04-64-puppet.box'
 
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
-
+  instance_name_prefix = 'node'
+  instance_ip_common = '192.168.51'
   1.upto(2) do |n|
-    node_hostname = "node#{n}"
-    node_ip = "192.168.51.#{9+n}"
+    # node_hostname = "node#{n}"
+    # node_ip = "192.168.51.#{9+n}"
+    node_hostname = '%s%d' % [instance_name_prefix, n]
+    node_ip = '%s.%02d' % [instance_ip_common, n + 9 ]
     config.vm.define node_hostname do |box|
       # only required for
       config.vm.boot_timeout = 600
@@ -53,7 +56,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       config.vm.synced_folder './' , '/vagrant'
       config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
-      
+
       box.vm.hostname = node_hostname
       box.vm.network "private_network", ip: node_ip
       shell_script = <<-SHELL
@@ -64,12 +67,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       sudo apt-get -qqy update
       apt-key list | grep -i -B 3 puppet
 
-      # NOTE: upgrading puppet-agent from apt repository will upgrade it to 
+      # NOTE: upgrading puppet-agent from apt repository will upgrade it to
       sudo apt-get -qqy install puppet-agent
       # /opt/puppetlabs/bin/puppet  --version
       # 4.10.12
       # do not install puppet master by mistake
-      
+
 # based on: https://github.com/chavo1/consul-lab
 echo 'Installing dependencies ...'
 for B in vim curl jq unzip ; do
@@ -157,7 +160,7 @@ sudo cat <<EOF | jq -c '.' - > '/etc/consul.d/ping.json'
 
 EOF
 mkdir -p /tmp/consul
-hostname | grep -q node1
+hostname | grep -q 1
 if [ $? -eq 0 ]; then
   echo 'Starting consul agent as a server on ' $(hostname)
   consul agent -server -bootstrap-expect=1 \
@@ -242,7 +245,7 @@ fi
               'NODE_IP' => node_ip   },
         # NOTE: the EOF is already in use in the embedded shell script
         inline: shell_script
-      # use Puppet Apply provisioner   
+      # use Puppet Apply provisioner
       box.vm.provision :puppet do |p|
         p.binary_path       = '/opt/puppetlabs/bin'
         p.working_directory = '/tmp/vagrant-puppet'
@@ -252,10 +255,10 @@ fi
         p.manifest_file     = 'default.pp'
 
         # https://puppet.com/docs/puppet/4.10/dirs_modulepath.html
-        p.options           = 
-          if debug_puppet 
+        p.options           =
+          if debug_puppet
             "--debug --verbose --modulepath #{modulepath}:/vagrant/modules"
-          else 
+          else
             "--verbose --modulepath #{modulepath}:/vagrant/modules"
           end
         if debug
@@ -268,12 +271,12 @@ end
 ## # Manual  cluster validation steps
 ## # from https://github.com/chavo1/consul-lab
 ## # see also: https://github.com/chavo1/consul-vagrant, https://github.com/chavo1/consul_labs
-## # all done on node1
-## # from node1 (192.168.51.10) join node2
+## # all done on 1
+## # from 1 (192.168.51.10) join node2
 ## consul join 192.168.51.11
 ## Successfully joined cluster by contacting 1 nodes.
 ##
-## # dig node2
+## # dig 2
 ## dig @127.0.0.1 -p 8600 agent-two.node.consul
 ##
 ## # check cluster health (will be no output but the status)
