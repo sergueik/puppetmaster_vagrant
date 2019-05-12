@@ -13,6 +13,7 @@ require 'optparse'
   :dc    => 'west',
 }
 options_defined = false
+# find -type f -name "*.fb2" | sort | xargs -n1 ruby loader_skeleton.rb
 # echo application-server bcp north |./loader_skeleton.rb
 # {:debug => false, :role => "application-server", :env => "bcp", :dc => "north"}
 
