@@ -2,7 +2,7 @@
 # vi: set ft=puppet :
 
 node 'default' {
-  # include urugeas
+  include urugeas
   $user = 'username'
   class{ 'limits':
     limits_dir => '/etc/security/limits.d',

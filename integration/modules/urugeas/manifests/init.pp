@@ -15,6 +15,10 @@
 class urugeas(
   Boolean $exercise_tomcat_security_change,
   Boolean $exercise_augtool,
+  # Puppet data type check (varies with release)
+  # https://puppet.com/docs/puppet/5.3/lang_data_type.html
+  # parameter 'undef_value' expects a String value, got Undef
+  Variant[String, Undef] $undef_value,
   Array $tomcat_security_part1 = [],
   Array $tomcat_security_part2 = [],
   Boolean $practice_augeas     = false,
@@ -85,6 +89,26 @@ class urugeas(
 ){
 
   require 'stdlib'
+  $dummy_value = hiera("${name}::undef_value",'dummy')
+  $empty_value = hiera("${name}::empty_value",'empty')
+  notify {"empty value = ${empty_value}":}
+  if $empty_value  {
+    notify {"\$empty_value is evaluates to a true":}
+  } else {
+    notify {"\$empty_value is evaluates to a false":}
+  }
+  notify {"dummy value = ${dummy_value}":}
+  if $dummy_value  {
+    notify {"\$dummy_value is evaluates to a true":}
+  } else {
+    notify {"\$dummy_value is evaluates to a false":}
+  }
+  notify {"undef value = ${undef_value}":}
+  if $undef_value  {
+    notify {"\$undef_value is evaluates to a true":}
+  } else {
+    notify {"\$undef_value is evaluates to a false":}
+  }
   include urugeas::defined_check
   # notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1} \$string_setting1  = ${string_setting1} \$untyped_setting = ${utyped_setting}": }
   notify {"${name} Parameter loading: \$boolean_setting1  = ${boolean_setting1}   \$untyped_setting = ${untyped_setting}":
@@ -292,7 +316,9 @@ class urugeas(
     if !defined(File[$tomcat_config_file ]){
        file { $tomcat_config_file:
          ensure => 'file',
-         source => "puppet:///modules/${name}/tomcat/web.xml",
+         # NOTE: the minor schema differences  
+         # source => "puppet:///modules/${name}/tomcat/web-70.xml",
+         source => "puppet:///modules/${name}/tomcat/web-85.xml",
          require => File[$config_dir],
        }
     }
@@ -315,35 +341,35 @@ class urugeas(
   }
   # for a fairly hairy good example of augeas resource see https://github.com/cegeka/puppet-limits/blob/master/manifests/conf.pp
   #  define limits::conf(
-  #    [String]$domain, 
-  #    [String]$type, 
-  #    [String]$item, 
+  #    [String]$domain,
+  #    [String]$type,
+  #    [String]$item,
   #    [String]$value
   #  ) {
-  #  
+  #
   #    package { ['augeas', 'augeas-libs', 'ruby-augeas']:
   #      ensure => present,
   #    }
   #    $key = "${domain}/${type}/${item}"
   #    $context = '/files/opt/tomcat/conf/web.xml'
-  #  
+  #
   #    $path_item = "domain[. = \"$domain\"][type = \"$type\" and item = \"$item\"]"
   #    $path_exact = "domain[. = \"$domain\"][type = \"$type\" and item = \"$item\" and value = \"$value\"]"
   #    $path_other = "domain[. = \"$domain\"][type = \"$type\" and item = \"$item\" and value != \"$value\"]"
-  #  
+  #
   #    augeas { "limits.conf/$key/eof":
   #      context => $context,
   #      onlyif  => 'match #comment[. =~ regexp("End of file")] size > 0',
   #      changes => 'rm #comment[. =~ regexp("End of file")]',
   #    }
-  #  
+  #
   #    augeas { "limits.conf/$key/rm":
   #      context => $context,
   #      onlyif  => "match ${path_other} size > 0",
   #      changes => "rm ${path_item}",
   #      before  => Augeas["limits.conf/${key}/add"],
   #    }
-  #  
+  #
   #    augeas { "limits.conf/$key/add":
   #      context => $context,
   #      onlyif  => "match ${path_exact} size == 0",
@@ -354,7 +380,7 @@ class urugeas(
   #        "set domain[last()]/value ${value}"
   #      ]
   #    }
-  #  
+  #
   #  }
   # see also: https://github.com/puppetlabs/puppetlabs-limits/tree/master/manifests
   if $exercise_augtool {

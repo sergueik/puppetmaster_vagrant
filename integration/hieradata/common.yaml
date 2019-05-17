@@ -1,5 +1,7 @@
 ---
 urugeas::version: '0.2.3'
+urugeas::undef_value: ~
+urugeas::empty_value: ''
 urugeas::setting: On
 urugeas::defined_check::dummy_defined: 'yes'
 # suppress running augool during augeas resource testing and vice versa
