@@ -7,8 +7,10 @@ use Getopt::Long;
 use Data::Dumper qw(Dumper);
 use List::Util qw(max);
 use HTML::TagParser;
+use YAML qw(LoadFile);
 
 use vars qw($DEBUG $MAX $DATA);
+
 $DEBUG = 0;
 
 sub getSubTree($$$) {
@@ -26,47 +28,23 @@ sub getData($$$) {
 }
 my $filename = '1-acre-sale-several-greenhouses-residence-oneco-ct.html';
 
-my $locatorChains = {
-    'info' => {
-        'names'  => [ 'class', 'class', 'class' ],
-        'values' => [
-            'region-content', ' group-info field-group-fieldset form-wrapper',
-            'field-body'
-        ]
-    },
-    'land_area' => {
-        'names'  => [ 'class', 'class', 'class' ],
-        'values' => [
-            'region-content',
-            ' group-property-land field-group-fieldset form-wrapper',
-            'field-acres-total inline'
-        ]
-    },
-
-    'price' => {
-        'names'  => [ 'class', 'class', 'class' ],
-        'values' => [
-            'region-content',
-            ' group-property-tenure field-group-fieldset form-wrapper',
-            'field-sale-price'
-        ]
-    }
-};
+my $config = LoadFile('existing.yaml');
+print STDERR Dumper(\$config) if $DEBUG;
 my $results = {};
 
-foreach my $entry ( keys %$locatorChains ) {
+foreach my $entry ( keys %$config ) {
     $results->{$entry} = undef;
     my $element = HTML::TagParser->new($filename);
-    my $names   = $locatorChains->{$entry}->{'names'};
-    my $values  = $locatorChains->{$entry}->{'values'};
+    my $names   = $config->{$entry}->{'names'};
+    my $values  = $config->{$entry}->{'values'};
     if ($DEBUG) {
-        print Dumper($names);
-        print Dumper($values);
+        print STDERR Dumper($names);
+        print STDERR Dumper($values);
     }
     foreach my $step ( 0 ... $#$names ) {
         if ( $step == $#$names ) {
             my $data = getData( $element, $names->[$step], $values->[$step] );
-            print Dumper \$data if $DEBUG;
+            print STDERR Dumper \$data if $DEBUG;
             $results->{$entry} = $data->[0];
         }
         else {
@@ -78,4 +56,34 @@ foreach my $entry ( keys %$locatorChains ) {
 }
 
 print Dumper \$results;
-
+__END__
+my $config_yaml =<<EOF
+---
+description:
+  names:
+    - 'class'
+    - 'class'
+    - 'class'
+  values:
+    - 'region-content'
+    - ' group-info field-group-fieldset form-wrapper'
+    - 'field-body'
+price:
+  names:
+    - 'class'
+    - 'class'
+    - 'class'
+  values:
+    - 'region-content'
+    - ' group-property-tenure field-group-fieldset form-wrapper'
+    - 'field-sale-price'
+land_area:
+  names:
+    - 'class'
+    - 'class'
+    - 'class'
+  values:
+    - 'region-content'
+    - ' group-property-land field-group-fieldset form-wrapper'
+    - 'field-acres-total inline'
+EOF

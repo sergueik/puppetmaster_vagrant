@@ -1,0 +1,28 @@
+---
+description:
+  names:
+    - 'class'
+    - 'class'
+    - 'class'
+  values:
+    - 'region-content'
+    - ' group-info field-group-fieldset form-wrapper'
+    - 'field-body'
+price:
+  names:
+    - 'class'
+    - 'class'
+    - 'class'
+  values:
+    - 'region-content'
+    - ' group-property-tenure field-group-fieldset form-wrapper'
+    - 'field-sale-price'
+land_area:
+  names:
+    - 'class'
+    - 'class'
+    - 'class'
+  values:
+    - 'region-content'
+    - ' group-property-land field-group-fieldset form-wrapper'
+    - 'field-acres-total inline'
