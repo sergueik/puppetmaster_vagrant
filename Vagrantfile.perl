@@ -38,17 +38,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       shell_script = <<-EOF
         sudo apt-get -qy update
-        sudo apt-get -qqy install vim jq build-essential curl zlib1g-dev libssl-dev
-        sudo apt-get -qqy install perl-doc perltidy libperl-critic-perl
+        sudo apt-get -qqy install vim jq build-essential curl zlib1g-dev libssl-dev libexpat1-dev
+        sudo apt-get -qqy install perl-doc perltidy libperl-critic-perl libwww-perl
         sudo apt-get -qqy apache2 lynx
-	sudo apt-get install libhtml-tokeparser-simple-perl libmath-polygon-perl libossp-uuid-perl libregexp-common-perl
+        sudo apt-get install libhtml-tokeparser-simple-perl libossp-uuid-perl libregexp-common-perl
         # https://tecadmin.net/enable-or-disable-cgi-in-apache24/
         # https://httpd.apache.org/docs/2.4/howto/cgi.html
         # http://www.wellho.net/forum/Perl-Programming/Running-Perl-CGI-scripts-under-Apache-Tomcat.html
         sudo a2enmod cgi
         sudo systemctl restart httpd
-        PERL_MODULES='JSON Date::Manip Date::Parse CGI::FastTemplate Test::CheckManifest Carp Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper IO::Compress::Brotli CGI Time::HiRes Time::CTime Time::Local Time::ParseDate File::Basename List::MoreUtils Math::Trig Data::UUID HTML::TokeParser::Simple Math::Polygon Regexp::Common Regexp::Assemble::Compressed XML::Simple HTML::TableExtract Log::Log4perl GetOpt::Long HTML::TagParser Log::Log4perl'
-        for M in $PERL_MODULES; do  cpan install $M; done
+        PERL_MODULES='JSON YAML Date::Manip Date::Parse CGI::FastTemplate Test::CheckManifest Carp Test::Pod::Coverage Test::CheckManifest Test::Pod::Coverage Test::Pod Test::Perl::Critic Data::Dumper CGI Time::HiRes Time::CTime Time::Local Time::ParseDate File::Basename List::MoreUtils Data::UUID HTML::TokeParser::Simple Regexp::Common Regexp::Assemble::Compressed XML::Parser XML::SAX::Expat XML::Simple HTML::TableExtract Log::Log4perl Getopt::Long HTML::TagParser Log::Log4perl'
+        cpan install CPAN::Shell
+        # https://www.perlmonks.org/?node_id=859409
+        for M in $PERL_MODULES;
+        do
+          perl -MCPAN -e "CPAN::Shell->notest('install', '$M')"
+          # cpan install $M;
+        done
 
         export PERLBREW_ROOT='/home/vagrant/perl5/perlbrew'
         PERLBREW_BIN="${PERLBREW_ROOT}/bin/perlbrew"
@@ -76,7 +82,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         # NOTE: need to suppress cpanm testing during install: too time-consuming
 	# Install Perl dev dependencies for both old and new Perl versions. TODO: do the same in the system Perl to made vailable to apache2 CGI-BIN
-        for M in $PERL_MODULES; do  $PERLBREW_BIN exec cpanm $M; done
+        for M in $PERL_MODULES; do  $PERLBREW_BIN exec cpanm -n $M; done
 
         chown -R vagrant:vagrant ~vagrant/perl5
 
