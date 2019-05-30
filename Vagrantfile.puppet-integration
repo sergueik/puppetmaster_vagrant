@@ -122,15 +122,36 @@ sudo groupadd tomcat
 sudo useradd -s /bin/false -g tomcat -d /opt/tomcat tomcat
 # TOMCAT_VERSION='8.5.30'
 TOMCAT_VERSION='8.5.39'
+# https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.39/bin/apache-tomcat-8.5.39.tar.gz
 TOMCAT_PACKAGE="https://archive.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz"
 sudo mkdir -p /opt/tomcat
 pushd /opt
-sudo wget --progress=none -O apache-tomcat-8.5.tar.gz $TOMCAT_PACKAGE
+if wget --spider $TOMCAT_PACKAGE >/dev/null 2>&1 ; then
+  # NOTE: Invalid progress type ‘none’.
+  sudo wget -O apache-tomcat-8.5.tar.gz $TOMCAT_PACKAGE >/dev/null 2>&1
+fi
 sudo tar xzf /opt/apache-tomcat-8.5.tar.gz
 sudo mv apache-tomcat-${TOMCAT_VERSION}/* tomcat/
 sudo rmdir apache-tomcat-${TOMCAt_VERSION}/* tomcat/
 sudo chown -hR tomcat:tomcat tomcat
 popd
+
+# prerequisite for vanilla puppetlabs-mysql 
+sudo yum erase -qqy  mariadb-libs mariadb
+rpm -qa  | grep -i perc | xargs -i sudo yum erase -qqy {}
+
+# Post action to allow swiching the mysql service and directory permissions to the alternative use ("myuser"):
+# and to survive the node reboot
+
+cp /vagrant/modules/mysql_patch/files/mysqld.service  /usr/lib/systemd/system/mysqld.service
+cp /vagrant/modules/mysql_patch/files/mysqld_pre_systemd  /usr/bin/mysqld_pre_systemd
+cp /vagrant/modules/mysql_patch/files/my.cnf  /etc/my.cnf
+chown -R myuser:myuser /var/lib/mysql
+systemctl daemon-reload
+# may also convert into Exec
+chown myuser:myuser /var/log/mysqld.log
+systemctl start  mysqld
+
 # for puppet testing install jq
 sudo yum install -qqy jq
     SHELL
