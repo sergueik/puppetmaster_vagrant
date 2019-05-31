@@ -170,7 +170,7 @@ if  ! (ps -uax | grep mys[q]l | grep -q $MYSQL_USER) ; then
     changes => [
       "set Service/PermissionsStartOnly/value \"true\"",
     ],
-    onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/PermissionsStartOnly[value = \"true\"]  size == 0",
+    onlyif  => "match Service/PermissionsStartOnly[value = \"true\"]  size == 0",
   }'
 
   puppet apply -d -e 'augeas { "change mysqld.service User and Group":
@@ -181,9 +181,49 @@ if  ! (ps -uax | grep mys[q]l | grep -q $MYSQL_USER) ; then
       "set Service/User/value \"myuser\"",
       "set Service/Group/value \"myuser\"",
     ],
-    onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/User[value = \"myuser\"] size == 0",
+    onlyif  => "match Service/User[value = \"myuser\"] size == 0",
   }'
   # TODO: ins
+
+  puppet apply -d -e 'augeas { "change mysqld.service User and Group":
+    context => "/files/usr/lib/systemd/system/mysqld.service",
+    incl    =>  "/usr/lib/systemd/system/mysqld.service",
+    lens    => "Systemd.lns",
+    changes => [
+      "set Service/User/value \"myuser\"",
+      "set Service/Group/value \"myuser\"",
+    ],
+    onlyif  => "match Service/User[value = \"myuser\"] size == 0",
+  }'
+  puppet apply -d -e 'augeas { "change mysqld.service ExecStartPre commands":
+    context => "/files/usr/lib/systemd/system/mysqld.service",
+    incl    =>  "/usr/lib/systemd/system/mysqld.service",
+    lens    => "Systemd.lns",
+    changes => [
+      "set Service/ExecStartPre[1]/command  \"/bin/chown\"",
+      "ins /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre/command after /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre/command",
+      "set Service/ExecStartPre[2]/command \"/usr/bin/mysqld_pre_systemd\"",
+      "set Service/ExecStartPre[1]/arguments/1 \"myuser:myuser\"",
+      "set Service/ExecStartPre[1]/arguments/2 \"/var/run/mysqld/\"",
+    ],
+    onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/command[. = \"/bin/chown\"] size == 0",
+  }'
+
+
+
+  puppet apply -d -e 'augeas { "change mysqld.service User and Group":
+    context => "/files/usr/lib/systemd/system/mysqld.service",
+    incl    =>  "/usr/lib/systemd/system/mysqld.service",
+    lens    => "Systemd.lns",
+    changes => [
+      "ins /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre before /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[command = \"/usr/bin/mysqld_pre_ystemd\"]",
+      ExecStartPre=/bin/chown myuser:myuser /var/run/mysqld/
+      "set Service/Group/value \"myuser\"",
+    ],
+    onlyif  => "Service/ExecStartPre[command = \"/bin/chown\"] size == 0",
+  }'
+  match /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[command = '/usr/bin/mysqld_pre_systemd']
+  
 fi
 
 # for puppet testing install jq
