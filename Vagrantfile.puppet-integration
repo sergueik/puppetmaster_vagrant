@@ -156,6 +156,34 @@ if  ! (ps -uax | grep mys[q]l | grep -q $MYSQL_USER) ; then
   # https://serverfault.com/questions/60711/chown-operation-not-permitted-for-root
   sudo systemctl enable mysqld
   sudo systemctl start mysqld
+  # https://www.linode.com/docs/quick-answers/linux-essentials/introduction-to-systemctl/
+  # based on https://gist.github.com/jniesen/aecf5ee3a3f3bd55c7a84ffe4c432408
+  augtool -A
+  set /augeas/load/Systemd/lens Systemd.lns
+  set /augeas/load/Systemd/incl /usr/lib/systemd/system/mysqld.service
+  ls /files/usr/lib/systemd/system/mysqld.service/Service/PermissionsStartOnly[value= 'true']
+  set /files/usr/lib/systemd/system/mysqld.service/Service/PermissionsStartOnly/value 'true'
+  puppet apply -d -e 'augeas { "change mysqld.service PermissionsStartOnly":
+    context => "/files/usr/lib/systemd/system/mysqld.service",
+    incl    =>  "/usr/lib/systemd/system/mysqld.service",
+    lens    => "Systemd.lns",
+    changes => [
+      "set Service/PermissionsStartOnly/value \"true\"",
+    ],
+    onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/PermissionsStartOnly[value = \"true\"]  size == 0",
+  }'
+
+  puppet apply -d -e 'augeas { "change mysqld.service User and Group":
+    context => "/files/usr/lib/systemd/system/mysqld.service",
+    incl    =>  "/usr/lib/systemd/system/mysqld.service",
+    lens    => "Systemd.lns",
+    changes => [
+      "set Service/User/value \"myuser\"",
+      "set Service/Group/value \"myuser\"",
+    ],
+    onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/User[value = \"myuser\"] size == 0",
+  }'
+  # TODO: ins
 fi
 
 # for puppet testing install jq
