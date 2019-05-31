@@ -136,21 +136,27 @@ sudo rmdir apache-tomcat-${TOMCAt_VERSION}/* tomcat/
 sudo chown -hR tomcat:tomcat tomcat
 popd
 
-# prerequisite for vanilla puppetlabs-mysql 
-sudo yum erase -qqy  mariadb-libs mariadb
-rpm -qa  | grep -i perc | xargs -i sudo yum erase -qqy {}
+# prerequisite for vanilla puppetlabs-mysql https://github.com/puppetlabs/puppetlabs-mysql
+sudo yum erase -qqy mariadb-libs mariadb
+rpm -qa | grep -i percona | xargs -i sudo yum erase -qqy {}
 
 # Post action to allow swiching the mysql service and directory permissions to the alternative use ("myuser"):
 # and to survive the node reboot
-
-cp /vagrant/modules/mysql_patch/files/mysqld.service  /usr/lib/systemd/system/mysqld.service
-cp /vagrant/modules/mysql_patch/files/mysqld_pre_systemd  /usr/bin/mysqld_pre_systemd
-cp /vagrant/modules/mysql_patch/files/my.cnf  /etc/my.cnf
-chown -R myuser:myuser /var/lib/mysql
-systemctl daemon-reload
-# may also convert into Exec
-chown myuser:myuser /var/log/mysqld.log
-systemctl start  mysqld
+MYSQL_USER='myuser'
+if  ! (ps -uax | grep mys[q]l | grep -q $MYSQL_USER) ; then
+  echo "Configuring mysql service to run under ${MYSQL_USER}"
+  sudo cp /vagrant/modules/mysql_patch/files/mysqld.service /etc/systemd/system/mysql.service
+  sudo cp /vagrant/modules/mysql_patch/files/mysqld.service /usr/lib/systemd/system/mysqld.service
+  sudo cp /vagrant/modules/mysql_patch/files/mysqld_pre_systemd /usr/bin/mysqld_pre_systemd
+  sudo cp /vagrant/modules/mysql_patch/files/my.cnf /etc/my.cnf
+  sudo chown -R myuser:myuser /var/lib/mysql
+  sudo systemctl daemon-reload
+  # may also convert into Exec
+  sudo chown myuser:myuser /var/log/mysqld.log
+  # https://serverfault.com/questions/60711/chown-operation-not-permitted-for-root
+  sudo systemctl enable mysqld
+  sudo systemctl start mysqld
+fi
 
 # for puppet testing install jq
 sudo yum install -qqy jq
