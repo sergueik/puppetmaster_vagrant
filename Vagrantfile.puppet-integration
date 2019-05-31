@@ -163,39 +163,35 @@ if  ! (ps -uax | grep mys[q]l | grep -q $MYSQL_USER) ; then
   set /augeas/load/Systemd/incl /usr/lib/systemd/system/mysqld.service
   ls /files/usr/lib/systemd/system/mysqld.service/Service/PermissionsStartOnly[value= 'true']
   set /files/usr/lib/systemd/system/mysqld.service/Service/PermissionsStartOnly/value 'true'
-  puppet apply -d -e 'augeas { "change mysqld.service PermissionsStartOnly":
+
+  # Puppet manifest / profile candidates
+  
+  # 1. Change mysqld.service PermissionsStartOnly
+  # TODO: add comment
+  puppet apply -d -e 'augeas { "Change mysqld.service PermissionsStartOnly":
     context => "/files/usr/lib/systemd/system/mysqld.service",
     incl    =>  "/usr/lib/systemd/system/mysqld.service",
     lens    => "Systemd.lns",
     changes => [
-      "set Service/PermissionsStartOnly/value \"true\"",
+      "set Service/PermissionsStartOnly/value \"true\""
     ],
     onlyif  => "match Service/PermissionsStartOnly[value = \"true\"]  size == 0",
   }'
 
-  puppet apply -d -e 'augeas { "change mysqld.service User and Group":
+  # 2. Change mysqld.service User and Group
+  puppet apply -d -e 'augeas { "Change mysqld.service User and Group":
     context => "/files/usr/lib/systemd/system/mysqld.service",
     incl    =>  "/usr/lib/systemd/system/mysqld.service",
     lens    => "Systemd.lns",
     changes => [
       "set Service/User/value \"myuser\"",
-      "set Service/Group/value \"myuser\"",
+      "set Service/Group/value \"myuser\""
     ],
     onlyif  => "match Service/User[value = \"myuser\"] size == 0",
   }'
-  # TODO: ins
 
-  puppet apply -d -e 'augeas { "change mysqld.service User and Group":
-    context => "/files/usr/lib/systemd/system/mysqld.service",
-    incl    =>  "/usr/lib/systemd/system/mysqld.service",
-    lens    => "Systemd.lns",
-    changes => [
-      "set Service/User/value \"myuser\"",
-      "set Service/Group/value \"myuser\"",
-    ],
-    onlyif  => "match Service/User[value = \"myuser\"] size == 0",
-  }'
-  puppet apply -d -e 'augeas { "change mysqld.service ExecStartPre commands":
+  # 3. Insert extra mysqld.service ExecStartPre command
+  puppet apply -d -e 'augeas { "Insert extra mysqld.service ExecStartPre command":
     context => "/files/usr/lib/systemd/system/mysqld.service",
     incl    =>  "/usr/lib/systemd/system/mysqld.service",
     lens    => "Systemd.lns",
@@ -209,21 +205,36 @@ if  ! (ps -uax | grep mys[q]l | grep -q $MYSQL_USER) ; then
     onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/command[. = \"/bin/chown\"] size == 0",
   }'
 
-
-
-  puppet apply -d -e 'augeas { "change mysqld.service User and Group":
+  if 0 ; then
+    puppet apply -d -e '$comment = \"Needed desired user to own the PIDFile\" 
+    augeas { "Insert mysqld.service ExecStartPre command":
+      context => "/files/usr/lib/systemd/system/mysqld.service",
+      incl    =>  "/usr/lib/systemd/system/mysqld.service",
+      lens    => "Systemd.lns",
+      changes => [
+        "insert \"ExecStartPre\" before /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[command = \"/usr/bin/mysqld_pre_systemd\"]",
+        "set /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/command \"/bin/chown\"",
+        "set /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/arguments/1 \"myuser:myuser\"",
+        "set /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/arguments/2 \"/var/run/mysqld/\"",
+        "insert \"# ${comment}\" before  Service/ExecStartPre[command = \"/bin/chown\"]",
+      ],
+      onlyif  => "match Service/ExecStartPre[command = \"/bin/chown\"] size == 0",
+    }'
+  fi
+  # 3. Insert mysqld.service extra ExecStartPre command comment
+  
+  # Error: /Stage[main]/Main/Augeas[Insert mysqld.service ExecStartPre comment]: Could not evaluate: Saving failed, see debug
+  puppet apply -d -e '
+  augeas { "Insert mysqld.service extra ExecStartPre command comment":
     context => "/files/usr/lib/systemd/system/mysqld.service",
     incl    =>  "/usr/lib/systemd/system/mysqld.service",
     lens    => "Systemd.lns",
     changes => [
-      "ins /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre before /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[command = \"/usr/bin/mysqld_pre_ystemd\"]",
-      ExecStartPre=/bin/chown myuser:myuser /var/run/mysqld/
-      "set Service/Group/value \"myuser\"",
+      "insert \"# Needed desired user to own the PIDFile\" before Service/ExecStartPre[command = \"/bin/chown\"]",
     ],
-    onlyif  => "Service/ExecStartPre[command = \"/bin/chown\"] size == 0",
+    onlyif  => "match Service/ExecStartPre[command = \"/bin/chown\"] size == 1",
   }'
-  match /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[command = '/usr/bin/mysqld_pre_systemd']
-  
+
 fi
 
 # for puppet testing install jq
