@@ -39,18 +39,11 @@ node 'default' {
       },
     }
   }
-
-#  file {'/var/log/mysqld.log':
-#    owner => $custom_user,
-#    group => $custom_group,
-#    notify  => Service['mysqld'],
-#  }
-
+  # based on: https://puppet.com/docs/puppet/5.3/resources_augeas.html#a-better-way
   # 1. Change PermissionsStartOnly
-  # TODO: ordering
   augeas { "Change ${unit} Service PermissionsStartOnly":
     context => "/files/usr/lib/systemd/system/${unit}",
-    incl    =>  "/usr/lib/systemd/system/${unit}",
+    incl    => "/usr/lib/systemd/system/${unit}",
     lens    => 'Systemd.lns',
     changes => [
       'set Service/PermissionsStartOnly/value "true"'
@@ -62,7 +55,7 @@ node 'default' {
   # 2. Add / Change User and Group
   -> augeas { "Change ${unit} Service User and Group":
     context => "/files/usr/lib/systemd/system/${unit}",
-    incl    =>  "/usr/lib/systemd/system/${unit}",
+    incl    => "/usr/lib/systemd/system/${unit}",
     lens    => 'Systemd.lns',
     changes => [
       "set Service/User/value '${custom_user}'",
@@ -75,34 +68,34 @@ node 'default' {
   # 3. Insert extra mysqld.service ExecStartPre command
   -> augeas { "Insert ${unit} Service extra ExecStartPre command":
     context => "/files/usr/lib/systemd/system/${unit}",
-    incl    =>  "/usr/lib/systemd/system/${unit}",
+    incl    => "/usr/lib/systemd/system/${unit}",
     lens    => 'Systemd.lns',
     changes => [
-      'set Service/ExecStartPre[1]/command "/bin/chown"',
       'insert "ExecStartPre" after /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]',
-      "set Service/ExecStartPre[2]/command \"/usr/bin/mysqld_pre_systemd\"",
-      "set Service/ExecStartPre[1]/arguments/1 \"myuser:myuser\"",
-      "set Service/ExecStartPre[1]/arguments/2 \"/var/run/mysqld/\"",
+      'set Service/ExecStartPre[1]/command "/bin/chown"',
+      'set Service/ExecStartPre[1]/arguments/1 "myuser:myuser"',
+      'set Service/ExecStartPre[1]/arguments/2 "/var/run/mysqld/"',
+      'set Service/ExecStartPre[2]/command "/usr/bin/mysqld_pre_systemd"',
     ],
-    onlyif  => "match /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/command[. = \"/bin/chown\"] size == 0",
+    onlyif  => 'match /files/usr/lib/systemd/system/mysqld.service/Service/ExecStartPre[1]/command[. = "/bin/chown"] size == 0',
     notify  => Service['mysqld'],
   }
 
   # 3. Insert mysqld.service extra ExecStartPre command comment
-
-  # Error: /Stage[main]/Main/Augeas[Insert mysqld.service ExecStartPre comment]: Could not evaluate: Saving failed, see debug
+  # see also: https://groups.google.com/forum/#!topic/puppet-users/g8pVNJg_jtY
 
   if false {
     augeas { "Insert mysqld.service extra ExecStartPre command comment":
-      context => "/files/usr/lib/systemd/system/mysqld.service",
-      incl    =>  "/usr/lib/systemd/system/mysqld.service",
-      lens    => "Systemd.lns",
+      context => "/files/usr/lib/systemd/system/${unit}",
+      incl    => "/usr/lib/systemd/system/${unit}",
+      lens    => 'Systemd.lns',
       changes => [
-        "insert \"# ${comment}\" before  Service/ExecStartPre[command = \"/bin/chown\"]",
+        "insert #comment before Service/ExecStartPre[command = '/bin/chown']",
+        "set #comment[last()] '${comment}'" # NOTE: poor locator
       ],
-      onlyif  => "match Service/ExecStartPre[command = \"/bin/chown\"] size == 1",
+      onlyif  => "match Service/ExecStartPre[command = '/bin/chown'] size == 1",
       notify  => Service['mysqld'],
-      require => Augeas[ "Insert ${unit} Service extra ExecStartPre command"],
+      require => Augeas["Insert ${unit} Service extra ExecStartPre command"],
     }
   }
   # the real fix is through https://developers.redhat.com/blog/2016/09/20/managing-temporary-files-with-systemd-tmpfiles-on-rhel7/
