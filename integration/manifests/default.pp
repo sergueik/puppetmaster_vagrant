@@ -8,6 +8,9 @@ node 'default' {
   $custom_group = 'myuser'
   $comment = 'Needed desired user to own the PIDFile'
   $mysqld_pre_systemd = '/usr/bin/mysqld_pre_systemd'
+  $pidfile = '/var/run/mysqld/mysqld.pid'
+  $pidfile_dir = regsubst($pidfile, '/[^/]*$', '')
+
   yumrepo { 'percona':
     descr    => 'CentOS $releasever - Percona',
     baseurl  => 'http://repo.percona.com/percona/yum/release/$releasever/RPMS/$basearch',
@@ -32,7 +35,7 @@ node 'default' {
       mysqld => {
         user      => $custom_user, 
         log-error => '/var/log/mysqld.log',
-        pid-file  => '/var/run/mysqld/mysqld.pid',
+        pid-file  => $pidfile,
       },
       mysqld_safe => {
         log-error => '/var/log/mysqld.log',
@@ -85,18 +88,19 @@ node 'default' {
   # 3. Insert mysqld.service extra ExecStartPre command comment
   # see also: https://groups.google.com/forum/#!topic/puppet-users/g8pVNJg_jtY
 
-  augeas { "Insert mysqld.service extra ExecStartPre command comment":
-    context => "/files/usr/lib/systemd/system/${unit}",
-    incl    => "/usr/lib/systemd/system/${unit}",
-    lens    => 'Systemd.lns',
-    changes => [
-      "insert #comment before Service/ExecStartPre[command = '/bin/chown']",
-      "set #comment[last()] '${comment}'",
-    ],
-    onlyif  => "match Service/ExecStartPre[command = '/bin/chown'] size == 1",
-    notify  => Service['mysqld'],
-    require => Augeas["Insert ${unit} Service extra ExecStartPre command"],
-  }
+ #   augeas { "Insert mysqld.service extra ExecStartPre command comment":
+ #     context => "/files/usr/lib/systemd/system/${unit}",
+ #     incl    => "/usr/lib/systemd/system/${unit}",
+ #     lens    => 'Systemd.lns',
+ #     changes => [
+ #       "insert #comment before Service/ExecStartPre[command = '/bin/chown']",
+ #       "set #comment[last()] '${comment}'",
+ #     ],
+ #     onlyif  => "match Service/ExecStartPre[command = '/bin/chown'] size == 1",
+ #     notify  => Service['mysqld'],
+ #     require => Augeas["Insert ${unit} Service extra ExecStartPre command"],
+ #   }
+
   # alternative: https://github.com/tohuwabohu/puppet-patch
   class { 'patch':
   }
@@ -108,23 +112,34 @@ node 'default' {
        [Service]
       -User=mysql
       -Group=mysql
-      +User=<%= $custom_user -%>
-      +Group=<%= $custom_group -%>
+      +User=<%= $custom_user %>
+      +Group=<%= $custom_group %>
 
        Type=forking
-     |END
 
+      @@ -18,6 +18,11 @@
+       # Disable service start and stop timeout logic of systemd for mysqld service.
+       TimeoutSec=0
+
+      +# Execute pre and post scripts as root
+      +PermissionsStartOnly=true
+      +
+      +# Needed desired user to own the PIDFile
+      +ExecStartPre=/bin/chown <%= $custom_user -%>:<%= $custom_group -%> <%= $pidfile_dir %>
+
+       # Needed to create system tables
+       ExecStartPre=/usr/bin/mysqld_pre_systemd
+      |END
   file {"${unit}.patch":
     path    => $path_to_diff,
     ensure  => 'file',
-    content => inline_epp($unit_template, {'user' => $custom_user}),
+    content => inline_epp($unit_template, {'custom_user' => $custom_user, 'custom_group' => $custom_group, 'pidfile_dir' => $pidfile_dir }),
   }
   -> patch::file { "/usr/lib/systemd/system/${unit}":
     diff_source => $path_to_diff,
   }
   
-  patch --dry-run  mysqld.service /tmp/mysqld.service.patch
-checking file mysqld.service
+  # patch --dry-run  mysqld.service /tmp/mysqld.service.patch checking file mysqld.service
   # the real fix is through https://developers.redhat.com/blog/2016/09/20/managing-temporary-files-with-systemd-tmpfiles-on-rhel7/
   include urugeas
   $user = 'username'
