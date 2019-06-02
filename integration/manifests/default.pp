@@ -40,6 +40,7 @@ node 'default' {
     }
   }
   # based on: https://puppet.com/docs/puppet/5.3/resources_augeas.html#a-better-way
+
   # 1. Change PermissionsStartOnly
   augeas { "Change ${unit} Service PermissionsStartOnly":
     context => "/files/usr/lib/systemd/system/${unit}",
@@ -84,20 +85,46 @@ node 'default' {
   # 3. Insert mysqld.service extra ExecStartPre command comment
   # see also: https://groups.google.com/forum/#!topic/puppet-users/g8pVNJg_jtY
 
-  if false {
-    augeas { "Insert mysqld.service extra ExecStartPre command comment":
-      context => "/files/usr/lib/systemd/system/${unit}",
-      incl    => "/usr/lib/systemd/system/${unit}",
-      lens    => 'Systemd.lns',
-      changes => [
-        "insert #comment before Service/ExecStartPre[command = '/bin/chown']",
-        "set #comment[last()] '${comment}'" # NOTE: poor locator
-      ],
-      onlyif  => "match Service/ExecStartPre[command = '/bin/chown'] size == 1",
-      notify  => Service['mysqld'],
-      require => Augeas["Insert ${unit} Service extra ExecStartPre command"],
-    }
+  augeas { "Insert mysqld.service extra ExecStartPre command comment":
+    context => "/files/usr/lib/systemd/system/${unit}",
+    incl    => "/usr/lib/systemd/system/${unit}",
+    lens    => 'Systemd.lns',
+    changes => [
+      "insert #comment before Service/ExecStartPre[command = '/bin/chown']",
+      "set #comment[last()] '${comment}'",
+    ],
+    onlyif  => "match Service/ExecStartPre[command = '/bin/chown'] size == 1",
+    notify  => Service['mysqld'],
+    require => Augeas["Insert ${unit} Service extra ExecStartPre command"],
   }
+  # alternative: https://github.com/tohuwabohu/puppet-patch
+  class { 'patch':
+  }
+  $path_to_diff = "/tmp/${unit}.patch"
+  $unit_template = @(END)
+      @@ -8,8 +8,8 @@
+       Alias=mysql.service
+
+       [Service]
+      -User=mysql
+      -Group=mysql
+      +User=<%= $custom_user -%>
+      +Group=<%= $custom_group -%>
+
+       Type=forking
+     |END
+
+  file {"${unit}.patch":
+    path    => $path_to_diff,
+    ensure  => 'file',
+    content => inline_epp($unit_template, {'user' => $custom_user}),
+  }
+  -> patch::file { "/usr/lib/systemd/system/${unit}":
+    diff_source => $path_to_diff,
+  }
+  
+  patch --dry-run  mysqld.service /tmp/mysqld.service.patch
+checking file mysqld.service
   # the real fix is through https://developers.redhat.com/blog/2016/09/20/managing-temporary-files-with-systemd-tmpfiles-on-rhel7/
   include urugeas
   $user = 'username'
@@ -130,6 +157,7 @@ node 'default' {
       }
     },
   }
+
   # NOTE: need to make a conf extension in the resource title
   # otherwise is not becoming the filename, rather
   # user + limit_type is
