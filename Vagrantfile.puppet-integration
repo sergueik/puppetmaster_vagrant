@@ -137,8 +137,8 @@ sudo chown -hR tomcat:tomcat tomcat
 popd
 
 # prerequisite for vanilla puppetlabs-mysql https://github.com/puppetlabs/puppetlabs-mysql
-sudo yum erase -qqy mariadb-libs mariadb
-rpm -qa | grep -i percona | xargs -i sudo yum erase -qqy {}
+sudo yum erase -q -y mariadb-libs mariadb
+rpm -qa | grep -i percona | xargs -i sudo yum erase -q -y {}
 # for puppet testing install jq
 sudo yum install -qqy jq
     SHELL

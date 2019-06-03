@@ -3,6 +3,7 @@ urugeas::version: '0.2.3'
 urugeas::undef_value: ~
 urugeas::empty_value: ''
 urugeas::setting: On
+urugeas::jetty_mod::xml_template: 'jetty_xml.erb'
 urugeas::defined_check::dummy_defined: 'yes'
 # suppress running augool during augeas resource testing and vice versa
 urugeas::exercise_tomcat_security_change: false

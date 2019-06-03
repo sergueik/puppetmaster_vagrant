@@ -3,6 +3,9 @@
 
 node 'default' {
 
+  include urugeas
+  include urugeas::jetty_mod 
+
   $unit = 'mysqld.service'
   $custom_user = 'myuser'
   $custom_group = 'myuser'
@@ -141,7 +144,6 @@ node 'default' {
   
   # patch --dry-run  mysqld.service /tmp/mysqld.service.patch checking file mysqld.service
   # the real fix is through https://developers.redhat.com/blog/2016/09/20/managing-temporary-files-with-systemd-tmpfiles-on-rhel7/
-  include urugeas
   $user = 'username'
   class{ 'limits':
     limits_dir => '/etc/security/limits.d',
