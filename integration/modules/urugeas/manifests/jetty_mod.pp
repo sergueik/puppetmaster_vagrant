@@ -9,7 +9,7 @@ class urugeas::jetty_mod (
   # NOTE: the class name ${name} used for hieradata lookup would include prefix
   $xml_template = lookup("${name}::xml_template", String, first, 'jetty_xml.erb')
   # chop away the .erb extension and convert the preceding _<ext> into and .ext
-  $xml_filename = $xml_template.regsubst('_([^_.]+)(?:.erb)*', '.\1')
+  $xml_filename = $xml_template.regsubst('_([^_.]+)(?:.erb|epp)*', '.\1')
   notify{"template target filename: ${xml_filename}":
     before => File[$xml_filename]
   }
