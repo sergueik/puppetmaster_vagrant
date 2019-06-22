@@ -170,3 +170,6 @@ mysql::params::datadir: "%{hiera('mysql::params::default_datadir')}"
 mysql::params::socket:  "%{hiera('mysql::params::datadir')}/mysql.sock"
 mysql::params::user: 'mysql'
 urugeas::mysql::migrate_datadir: true
+
+artifact_checksum: 'b9b53d774b4d8889837bff12a04e184cb54165d0c1fe2b2298362163078e1a5d'
+artifact_filename: 'dummy.file'

@@ -10,8 +10,8 @@ then
   echo "PROCNAME=${PROCNAME}"
   echo "PROCMASK=${PROCMASK}"
   /bin/ps -ef | grep $PROCMASK | grep -v $SELF
-  # sometimes there is flipped order of command and output redirect
-  # it is a bad idea
+  # sometimes there is suggested sippet flip the order of command and its output redirect (>/dev/null or 1>/dev/null)
+  # the blow status code check illustrate this is a bad idea
   echo ">/dev/null /bin/ps -ef | grep $PROCMASK | grep -v $SELF" 
   >/dev/null /bin/ps -ef | grep $PROCMASK | grep -v $SELF
   echo $?
