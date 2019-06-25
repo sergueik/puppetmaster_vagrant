@@ -10,8 +10,8 @@ require 'pp'
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
 basedir = basedir.gsub('\\', '/')
-debug = ENV.fetch('DEBUG', '')
-debug = ( debug =~ (/^(true|yes|1)$/i))
+debug = ENV.fetch('DEBUG', false)
+debug =  true if debug =~ /^(?:true|yes|1)$/i
 
 dir = File.expand_path(File.dirname(__FILE__))
 
@@ -113,9 +113,9 @@ if $DIRECT_INSTALL_PUPPET_MODULES ; then
   # for encrypted yaml
   # gem install hiera-eyaml --no-rdoc --no-ri
 fi
-sudo yum install -qqy httpd
+sudo yum install -q -y httpd
 # for integration testing
-sudo yum install -qqy java-1.8.0-openjdk
+sudo yum install -q -y java-1.8.0-openjdk
 # install tomcat 8.5.x via direct download
 # based on: https://www.howtoforge.com/tutorial/how-to-install-tomcat-on-centos/#step-install-apache-tomcat-
 sudo groupadd tomcat
@@ -140,7 +140,7 @@ popd
 sudo yum erase -q -y mariadb-libs mariadb
 rpm -qa | grep -i percona | xargs -i sudo yum erase -q -y {}
 # for puppet testing install jq
-sudo yum install -qqy jq
+sudo yum install -q -y jq
     SHELL
       # workaround for older Vagrant / Puppet 4 compatibility issue
       # NOTE: hiera arguments not set
@@ -184,6 +184,8 @@ sudo yum install -qqy jq
         echo Done
         echo Running spec
         cd /vagrant/local_test
+	export DEBUG=#{debug}
+	echo "Set DEBUG=${DEBUG}"
         rake spec
       EOF
     end
