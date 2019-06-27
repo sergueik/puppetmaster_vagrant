@@ -11,11 +11,12 @@ basedir = basedir.gsub('\\', '/')
 vagrant_use_proxy = ENV.fetch('VAGRANT_USE_PROXY', nil)
 http_proxy        = ENV.fetch('HTTP_PROXY', nil)
 box_name          = ENV.fetch('BOX_NAME', '')
-debug             = ENV.fetch('DEBUG', 'false')
 box_memory        = ENV.fetch('BOX_MEMORY', '')
 box_cpus          = ENV.fetch('BOX_CPUS', '')
 box_gui           = ENV.fetch('BOX_GUI', 'false')
-debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
+run_serverspec    = ENV.fetch('RUN_SERVERSPEC', 'false')
+debug             = ENV.fetch('DEBUG', false)
+debug             = true if debug =~ /^(?:true|yes|1)$/i
 
 dir = File.expand_path(File.dirname(__FILE__))
 
@@ -25,7 +26,7 @@ vagrantfile_custom = "#{dir}/Vagrantfile.local"
 if File.exists?(vagrantfile_yaml)
   puts "Loading '#{vagrantfile_yaml}'"
   config_yaml = YAML::load_file( vagrantfile_yaml )
-  
+
   box_config = config_yaml[config_yaml[:boot]]
   pp box_config
 elsif File.exist?(vagrantfile_custom)
@@ -41,7 +42,7 @@ elsif File.exist?(vagrantfile_custom)
   # convert legacy config keys to symbols
   box_config = config_legacy.inject({}) do
     |data,(key,value)| data[key.to_sym] = value
-    data 
+    data
   end
 
   end
@@ -49,6 +50,8 @@ else
     # TODO: throw an error
 end
 pp config
+puts 'run serverspec ?'
+pp run_serverspec
 unless box_name =~ /\S/
   box_name = box_config[:box_name]
   box_gui = box_config[:box_gui] != nil && box_config[:box_gui].to_s.match(/(true|t|yes|y|1)$/i) != nil
@@ -67,12 +70,12 @@ centos_bootstrap = <<-EOF
 yum list puppet > /dev/null
 if [ "$?" == "0" ]
 then
-   echo "Puppet $(puppet --version) is already installed"
+  echo "Puppet $(puppet --version) is already installed"
 else
-   if true
-   then
-      # echo 'Install Puppet'
-      yum -y install puppet
+  if true
+  then
+    # echo 'Install Puppet'
+    yum -y install puppet
       # echo "Install Puppet 3.1 server"
       # yum -y install ntp
       # chkconfig ntpd on
@@ -83,7 +86,7 @@ else
    else
       # this installs Puppet 3.8.1 and Ruby 2.4.7. This is very slow
       cd /tmp
-      wget 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
+      wget --progress=none 'http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
       rpm -Uvh 'epel-release-6-8.noarch.rpm'
       yum -y update
       yum -y groupinstall 'Development Tools'
@@ -176,7 +179,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.customize ['modifyvm', :id, '--memory', box_memory ]
         vb.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
         vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
-        vb.customize ['modifyvm', :id, '--ioapic', 'on'] 
+        vb.customize ['modifyvm', :id, '--ioapic', 'on']
         vb.customize ['modifyvm', :id, '--audio', 'none']
         vb.customize ['modifyvm', :id, '--usb', 'off']
       end
@@ -189,7 +192,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             # Use shell provisioner to install latest puppet
             config.vm.provision 'shell', inline: centos_bootstrap
           end
-          puppet_options = if debug then '--verbose --modulepath /vagrant/modules --pluginsync --debug' else '--verbose --modulepath /vagrant/modules --pluginsync' end 
+          puppet_options = if debug then '--verbose --modulepath /vagrant/modules --pluginsync --debug' else '--verbose --modulepath /vagrant/modules --pluginsync' end
           config.vm.provision :puppet do |puppet|
             # for not using module_data
             # http://blog.wilcoxd.com/2015/03/02/a-deep-dive-into-vagrant-puppet-and-hiera/
@@ -224,9 +227,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             # install puppet using chocolatey
             config.vm.provision :shell, :path => 'install_puppet.ps1'
             # run facter
-            # NOTE: error from Vagrant: 
-            # The splatting operator '@' cannot be used to reference variables in an expression. 
-            # '@puppet' can be used only as an 
+            # NOTE: error from Vagrant:
+            # The splatting operator '@' cannot be used to reference variables in an expression.
+            # '@puppet' can be used only as an
             # argument to a command. To reference variables in an expression use '$puppet'.
             config.vm.provision :shell, :inline => windows_bootstrap
           end
@@ -235,7 +238,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           #   chef.version = '12.5.1'
           #   chef.data_bags_path = 'data_bags'
           #   chef.add_recipe 'custom_powershell'
-          # end 
+          # end
           # Use puppet provisioner
           config.vm.provision :puppet do |puppet|
             puppet.binary_path    = 'C:/PROGRA~1/PUPPET~1/PUPPET/bin'
@@ -248,23 +251,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             # puppet.options        = '--verbose --parser'
           end
       end
-      config.vm.provision :serverspec do |spec|
-        spec.pattern = 'spec/linux/*_spec.rb'
-          # NOTE: cannot process results of the backend command e.g
-          # Failure/Error: 
-          # SystemStackError:
-          # stack level too deep
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:7:in `os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
-          # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
 
+      if run_serverspec != nil && run_serverspec.to_s.match(/(true|t|yes|y|1)$/i) != nil
+
+        config.vm.provision :serverspec do |spec|
+          spec.pattern = 'spec/linux/*_spec.rb'
+            # NOTE: cannot process results of the backend command e.g
+            # Failure/Error:
+            # SystemStackError:
+            # stack level too deep
+            # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:7:in `os'
+            # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/configuration.rb:38:in `os'
+            # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:16:in `detect_os'
+            # C:/Users/Serguei/.vagrant.d/gems/gems/specinfra-2.59.4/lib/specinfra/helper/os.rb:9:in `os'
+            # repeats the last two frames
+        end
       end
     end
 end

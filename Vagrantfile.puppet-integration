@@ -11,7 +11,7 @@ basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
 basedir = basedir.gsub('\\', '/')
 debug = ENV.fetch('DEBUG', false)
-debug =  true if debug =~ /^(?:true|yes|1)$/i
+debug = true if debug =~ /^(?:true|yes|1)$/i
 
 dir = File.expand_path(File.dirname(__FILE__))
 

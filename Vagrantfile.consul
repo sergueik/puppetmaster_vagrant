@@ -18,10 +18,10 @@ consul_init = ENV.fetch('CONSUL_INIT', nil)
 
 box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet')
 debug_puppet = ENV.fetch('DEBUG_PUPPET', '')
-debug_puppet = (debug_puppet =~ (/^(true|t|yes|y|1)$/i))
+debug_puppet = true if debug_puppet =~ /^(?:true|yes|1)$/i
 
-debug = ENV.fetch('DEBUG', '')
-debug = (debug =~ (/^(true|t|yes|y|1)$/i))
+debug = ENV.fetch('DEBUG', false)
+debug = true if debug =~ /^(?:true|yes|1)$/i
 
 # NOTE: this also is a default module path
 # but it varies with releases of Puppet

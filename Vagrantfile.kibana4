@@ -12,13 +12,13 @@ require 'pp'
 
 VAGRANTFILE_API_VERSION = '2'
 
-basedir           = ENV.fetch('USERPROFILE', '')
-basedir           = ENV.fetch('HOME', '') if basedir == ''
-basedir           = basedir.gsub('\\', '/')
-box_name          = ENV.fetch('BOX_NAME', '')
+basedir  = ENV.fetch('USERPROFILE', '')
+basedir  = ENV.fetch('HOME', '') if basedir == ''
+basedir  = basedir.gsub('\\', '/')
+box_name = ENV.fetch('BOX_NAME', '')
 
-debug             = ENV.fetch('DEBUG', 'false')
-debug             = (debug =~ (/^(true|t|yes|y|1)$/i))
+debug    = ENV.fetch('DEBUG', false)
+debug    = true if debug =~ /^(?:true|yes|1)$/i
 
 kibana_init_script = <<-EOF
 
@@ -132,9 +132,9 @@ fi
 pushd $CACHE
 if [ ! -f $PACKAGE_ARCHIVE ]; then
   if [ -z $DEBUG ] ; then
-    echo curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+    echo curl -Lkso $PACKAGE_ARCHIVE ${DOWNLOAD_URL}/${PACKAGE_ARCHIVE}
   fi
-  curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+  curl -Lkso $PACKAGE_ARCHIVE ${DOWNLOAD_URL}/${PACKAGE_ARCHIVE}
 fi
 popd
 
@@ -164,6 +164,7 @@ if [ -z "${DEBUG}" ] ; then
   set -x
 fi
 
+DOWNLOAD_URL='https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files'
 ARCH=${1:-32}
 CACHE=/vagrant/cache
 
@@ -177,9 +178,9 @@ fi
 pushd $CACHE
 if [ ! -f $PACKAGE_ARCHIVE ]; then
   if [ -z $DEBUG ] ; then
-    echo curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+    echo curl -Lkso $PACKAGE_ARCHIVE ${DOWNLOAD_URL}/${PACKAGE_ARCHIVE}
   fi
-  curl -Lkso $PACKAGE_ARCHIVE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${PACKAGE_ARCHIVE}
+  curl -Lkso $PACKAGE_ARCHIVE ${DOWNLOAD_URL}/${PACKAGE_ARCHIVE}
 fi
 tar -C /usr/local -zxf ${CACHE}/${PACKAGE_ARCHIVE}
 popd
@@ -196,9 +197,9 @@ if [ $? -ne 0 ]; then
   pushd $CACHE
   if [ ! -f $DEB_PACKAGE ]; then
   if [ -z $DEBUG ] ; then
-    echo curl -Lkso $DEBIAN_PACKAGE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${DEBIAN_PACKAGE}
+    echo curl -Lkso $DEBIAN_PACKAGE ${DOWNLOAD_URL}/${DEBIAN_PACKAGE}
   fi
-    curl -Lkso $DEB_PACKAGE https://github.com/timroes/kibana4-vagrant/raw/master/provisioning/files/${DEB_PACKAGE}
+    curl -Lkso $DEB_PACKAGE ${DOWNLOAD_URL}/${DEB_PACKAGE}
   fi
   dpkg -i ${CACHE}/${DEB_PACKAGE}
   popd

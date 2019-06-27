@@ -10,10 +10,10 @@ perl_version = ENV.fetch('PERL_VERSION', '5.28.0') # TODO: use to suppress brew
 
 box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet')
 debug_perl = ENV.fetch('DEBUG_PERL', '')
-debug_perl = (debug_perl =~ (/^(true|t|yes|y|1)$/i))
+debug_perl = true if debug_perl =~ /^(?:true|yes|1)$/i
 
-debug = ENV.fetch('DEBUG', '')
-debug = (debug =~ (/^(true|t|yes|y|1)$/i))
+debug = ENV.fetch('DEBUG', false)
+debug = true if debug =~ /^(?:true|yes|1)$/i
 
 perl_old = '5.8.9 5.10.1 5.12.5 5.14.4 5.16.3 5.18.4 '
 perl_new = '5.20.3 5.22.4 5.24.4 5.26.2 5.28.0'
