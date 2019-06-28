@@ -26,6 +26,21 @@ define urugeas::exec_shell_parameters_json(
     }
   ),
   String $template = 'shell_parameters_json',
+
+  # The below parameter is declared flexibly to allow everything to
+  # help bypass Puppet type cast validator and notify about the hard to debug catalog compilation error
+  # parameter expects te value of Array (or Undef or Array) got String
+  # that occasionally a non-linted typo or corrupt hieradadata YAML
+  # loose_parameter with no space
+  #  -'value'
+
+  Variant[String, Optional[Array[String[]]$loose_parameter = lookup("${name}::loose_parameter",
+    Array[String],
+    first,
+    [
+    ]
+  ),
+
   String $version = '0.1.0'
 )   {
 
