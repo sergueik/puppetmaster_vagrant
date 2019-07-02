@@ -1,0 +1,168 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'fileutils'
+require 'find'
+require 'json'
+require 'net/http'
+require 'pathname'
+require 'pp'
+
+# based on
+# https://github.com/afritzler/vagrant-dsc-cassandra/blob/master/Vagrantfile
+# see also:
+# https://dzone.com/articles/setting-up-a-cassandra-cluster-with-vagrant
+#
+#
+# Adjustable settings
+CFG_MEMSIZE = '3000'    # max memory for each VM
+CFG_TZ = 'US/Eastern'   # timezone, like US/Pacific, US/Eastern, UTC, Europe/Warsaw, etc.
+NETWORK = '10.10.10.'   # base IP for DSC nodes
+FIRST_IP = 10
+
+# number of nodes to create
+DSC_NODES = 1
+
+provision_cassandra = ENV.fetch('PROVISION_CASSANDRA', 'true')
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'vagrant-ubuntu-trusty64-strider')
+
+use_oracle_java = ENV.fetch('USE_ORACLE_JAVA', '')
+
+box_download = ENV.fetch('BOX_DOWNLOAD', '')
+box_download = (box_download =~ (/^(true|t|yes|y|1)$/i))
+debug = ENV.fetch('DEBUG', '')
+debug = (debug =~ (/^(true|t|yes|y|1)$/i))
+
+VAGRANTFILE_API_VERSION = '2'
+basedir = ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')
+box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
+basedir = basedir.gsub('\\', '/')
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = 'ubuntu/trusty64'
+  config.vm.hostname = box_hostname
+  # Localy cached vagrant box images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
+  # NOTE: do not need selenium
+  config_vm_box_name = 'trusty-server-amd64-vagrant-selenium.box'
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  config.vm.network :forwarded_port, guest:4444, host:4444
+  config.vm.network :private_network, ip: '192.168.33.10'
+  config.vm.boot_timeout = 600
+  # Configure common synced folder
+  config.vm.synced_folder './' , '/vagrant'
+  config.vm.provision 'shell', inline: <<-END_OF_PROVISION
+#!/bin/bash
+DEBUG='#{debug}'
+if [[ ! -z $DEBUG ]] ; then
+set -x
+fi
+
+#=========================================================
+echo 'Install the packages'
+
+# GPG servers aren't entirely reliable
+
+# default: gpgkeys: key 6494C6D6997C215E can't be retrieved
+# default: gpg: no valid OpenPGP data found.
+
+declare -A key_hash=( ['keyserver.ubuntu.com']='1397BC53640DB551' ['keyserver.ubuntu.com']='6494C6D6997C215E' ['pgp.mit.edu']='6494C6D6997C215E')
+for server in "${!key_hash[@]}"; do sudo apt-key adv --keyserver "${server}" --recv-keys "${key_hash[$server]}"; done
+
+apt-get -qq update
+apt-get -qqy install unzip vim default-jre rungetty wget libxml2-utils jq
+#=========================================================
+USE_ORACLE_JAVA='#{use_oracle_java}'
+if  [ ! -z "${USE_ORACLE_JAVA}" ] ; then
+  echo 'Installing the oracle 8 JDK from ppa:webupd8team/java'
+  # does it still stops on Oracle Licence Agreement prompt
+  # for alternative install set USE_ORACLE_JAVA
+  add-apt-repository ppa:webupd8team/java -y
+  apt-get -qq update
+  # origin: https://examples.javacodegeeks.com/devops/docker/docker-compose-example/
+  echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 boolean true' | debconf-set-selections
+  apt-get -qqy install oracle-java8-installer
+  apt-get -qqy install oracle-java8-set-default
+else
+  add-apt-repository -y ppa:openjdk-r/ppa
+  apt-get -qqy update
+  apt-get install -qqy openjdk-8-jdk
+  update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+fi
+# Provisioning script for DSC nodes (dsc0, dsc1, ...)
+# todo: better dynamic generation of /etc/hosts list
+cat <<EOF> '/etc/hosts' 
+127.0.0.1       localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+10.10.10.10   dsc0
+EOF
+mkdir -p /etc/opscenter/clusters/
+cat  <<EOF> '/etc/opscenter/clusters/Test_Cluster.conf'
+[jmx]
+username =
+password =
+port = 7199
+
+[agents]
+
+[cassandra]
+username =
+seed_hosts = localhost
+password =
+cql_port = 9042
+EOF
+# set timezone
+echo "#{CFG_TZ}" > /etc/timezone
+dpkg-reconfigure -f noninteractive tzdata
+
+# Add DataStax repository
+echo "deb http://debian.datastax.com/community stable main" | sudo tee -a /etc/apt/sources.list.d/datastax.sources.list
+wget -q -O - http://debian.datastax.com/debian/repo_key | sudo apt-key add -
+apt-get update
+
+
+# install DSC, Java, and a few base packages
+apt-get install vim curl zip unzip git python-pip datastax-agent opscenter dsc22 cassandra=2.2.8 -y
+
+# configure DSC
+echo "Configuring DataStax Enterprise"
+sudo sed -i 's/- seeds:.*$/- seeds: vagrant-ubuntu-trusty64-strider/'             /etc/cassandra/cassandra.yaml
+sudo sed -i 's/listen_address:.*$/listen_address: %s/' /etc/cassandra/cassandra.yaml
+# localhost
+sudo sed -i 's/rpc_address:.*$/rpc_address: %s/'       /etc/cassandra/cassandra.yaml
+
+# start DSC
+echo "Starting DataStax Community Edition"
+sudo service cassandra start
+echo "stomp_interface: 127.0.0.1" | sudo tee -a /var/lib/datastax-agent/conf/address.yaml
+sudo service datastax-agent start
+sudo service opscenterd start
+service cassandra start
+# service cassandra status
+# * Cassandra is running
+# shortly after
+# 
+# service cassandra status
+# * could not access pidfile for Cassandra
+# ERROR [main] 2019-07-02 12:08:15,409 CassandraDaemon.java:654 - Exception encountered during startup
+# org.apache.cassandra.exceptions.ConfigurationException: Invalid yaml: file:/etc/cassandra/cassandra.yaml
+# Caused by: org.yaml.snakeyaml.scanner.ScannerException: while scanning for the next token; found character %'%' that cannot start any token;  in 'reader', line 416, column 17:
+#    listen_address: %s
+# No local state, state is in silent shutdown, or node hasn't joined, not announcing shutdown
+echo "Vagrant provisioning complete"
+
+  END_OF_PROVISION
+  config.vm.provider :virtualbox do |v|
+    v.gui = true
+    v.name = 'Selenium Fluxbox Trusty'
+    v.customize ['modifyvm', :id, '--memory', box_memory ]
+    v.customize ['modifyvm', :id, '--vram', '16']
+    v.customize ['modifyvm', :id, '--cableconnected1', 'on']
+    # VBoxManage controlvm 'Selenium Fluxbox Trusty' setvideomodehint 1280 800 32
+  end
+end
