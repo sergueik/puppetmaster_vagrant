@@ -153,6 +153,43 @@ urugeas::jetty_mod::headers:
   'Content-Security-Policy': "frame-ancestors 'self' *.stackoverflow.com"
   'X-Frame-Options': 'SAMEORIGIN'
 urugeas::source_encoding: 'UTF-8'
+urugeas::cron_command:  |
+  # example of custom markup that would be replaced by Puppet
+  # to alow query_filepath to be more flexible than per in-place hiera call
+  # $cron_command =  regsubst(hiera('urugeas::cron_command'), '%QUERY_FILEPATH%', $query_filepath, 'G')
+  # may have a problem with global replace, non-critical
+  QUERY_FILEPATH=%QUERY_FILEPATH%
+  if [ -z "${QUERY_FILEPATH}" ]
+  then
+    echo 'query file path is not defined'
+    exit 1
+  fi
+  if [ ! -f "${QUERY_FILEPATH}" ]
+  then
+    echo 'query file path is not found'
+    exit 1
+  fi
+  DB_QUERY=$(cat "${QUERY_FILEPATH}")
+  DB_USER='%{hiera('db_user')}'
+  DB_PASSWORD='%{hiera('db_password')}'
+  DB_HOST='database.consul.domain'
+  DB_PORT='%{hiera('db_port')}'
+  DB_OPTIONS='%{hiera('db_options')}'
+  DATABASE='%{hiera('database')}'
+  DB_REPORT_DIR='/tmp'
+  DB_REPORT_FILENAME="report_$(date +%D|sed 's|/|_|g').log"
+  # report_07_26_19.log
+  DB_REPORT_FILENAME="report_$(date +%Y_%m_%d).log"
+  # report_2019_07_26.log
+  DB_POSPROCESSOR='%{hiera('db_postprocessor')}'
+  pushd $DB_REPORT_DIR
+  mysql -h $DB_HOST -u
+  mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DP_PASSWORD -D $DATABASE -e $DB_OPTIONS "${DB_QUERY}"
+  popd
+  # post processing
+  $DB_POSPROCESSOR
+
+# NOTE: need a blank line above
 urugeas::java_options:  |
   -Dfile.encoding=%{hiera('urugeas::source_encoding')} \
   -DAPP_LOG_ROOT=/var/log \
