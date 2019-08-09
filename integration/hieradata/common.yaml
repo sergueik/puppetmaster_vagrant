@@ -146,6 +146,19 @@ urugeas::param1:
   - 'one'
   - 'two'
   - 'three'
+urugeas::dummy::dummy_params:
+  created_resource1:
+    parameter1: 'param11'
+    parameter2: 'param12'
+    # can not loose - would raise the cast exception
+    # parameter 'parameter' expects a String value, got Undef
+    parameter4: 'param24'
+    delete_param: 'delete_param1'
+  created_resource2:
+    parameter1: 'param21'
+    parameter3: 'param23'
+    parameter4: 'param24'
+    delete_param: 'delete_param2'
 
 urugeas::param2: "%{alias('urugeas::param1')}"
 urugeas::param3: "%{hiera('urugeas::param1')}"

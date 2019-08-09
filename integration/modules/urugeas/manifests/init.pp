@@ -88,7 +88,25 @@ class urugeas(
   $untyped_setting = hiera("${name}::setting",'On'),
 ){
 
+  notify {"begin": }
   require 'stdlib'
+  $default_args = {
+    'require' => [
+      Notify['begin'],
+    ],
+    'before' => [
+      Notify['done'],
+    ],
+  }
+  notify {"done": }
+  $dummy_parameters = hiera_hash('urugeas::dummy::dummy_params')
+  validate_hash($dummy_parameters)
+  $dummy_parameters.each |$name,$params| {
+    $real_parameters = delete($params, ['delete_param' ] )
+    $args = {$name => $real_parameters }
+    create_resources('urugeas::dummy', $args, $default_args)
+  }
+
   $dummy_value = hiera("${name}::undef_value",'dummy')
   $empty_value = hiera("${name}::empty_value",'empty')
   notify {"empty value = ${empty_value}":}
@@ -316,7 +334,7 @@ class urugeas(
     if !defined(File[$tomcat_config_file ]){
        file { $tomcat_config_file:
          ensure => 'file',
-         # NOTE: the minor schema differences  
+         # NOTE: the minor schema differences
          # source => "puppet:///modules/${name}/tomcat/web-70.xml",
          source => "puppet:///modules/${name}/tomcat/web-85.xml",
          require => File[$config_dir],
