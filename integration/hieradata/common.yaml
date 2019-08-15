@@ -174,7 +174,8 @@ urugeas::source_encoding: 'UTF-8'
 # may have a problem with global replace, non-critical
 
 urugeas::cron_command:  |
-  QUERY_FILEPATH=%QUERY_FILEPATH%
+  QUERY_FILENAME='%QUERY_FILENAME%' # replaced my Puppet
+  QUERY_FILEPATH='%QUERY_FILEPATH%' # replaced my Puppet
   if [ -z "${QUERY_FILEPATH}" ]
   then
     echo 'query file is not defined'
@@ -192,13 +193,17 @@ urugeas::cron_command:  |
   DB_PASSWORD='%{hiera('db_password')}'
   DATABASE='%{hiera('database')}'
   DB_OPTIONS='%{hiera('db_options')}'
+  QUERY_PARAM='%QUERY_PARAM%' # filled by Puppet
+  # https://stackoverflow.com/questions/14098222/pass-parameters-to-mysql-script
+  # https://stackoverflow.com/questions/10229324/pass-parameter-to-mysql-script-command-line/10265580
+  DB_QUERY_PARAM="set @query_param = '${QUERY_PARAM}';"
   DB_QUERY=$(cat "${QUERY_FILEPATH}")
   DB_REPORT_FILENAME="report_$(date +%D|sed 's|/|_|g').log" # report_07_26_19.log
   DB_REPORT_FILENAME="report_$(date +%Y_%m_%d).log" # report_2019_07_26.log
   DB_POSPROCESSOR='%{hiera('db_postprocessor')}'
   pushd $DB_REPORT_DIR
   # collect the data
-  mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p"${DP_PASSWORD}" -D $DATABASE -e $DB_OPTIONS "${DB_QUERY}"
+  mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p"${DP_PASSWORD}" -D $DATABASE -e $DB_OPTIONS "${DB_QUERY_PARAM}\n${DB_QUERY}"
   # post processing
   $DB_POSPROCESSOR
   popd
