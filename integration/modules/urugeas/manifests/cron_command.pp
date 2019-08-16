@@ -17,24 +17,23 @@ class urugeas::cron_command (
   $command = regsubst(regsubst(regsubst(regsubst($command_template,'\${QUERY_FILEPATH_PARAMETER}',$query_filepath,'G'),'\${QUERY_FILENAME}',$query_filename,'G'),'\${QUERY_PARAM1_PARAMETER}',"${query_param1}",'G'),'\${QUERY_PARAM2_PARAMETER}',"${query_param2}",'G')
   notify { "command: ${command}":}
 
-  $sum = reduce([0, 2, 40]) |$result, $value|  { $result + $value }
-  notify { "sum: ${sum}":}
   $command2_template = '${key1} ${key2} ${key3}'
   $replaceents = {
-    'not a key' => $command2_template,
     'key1' => 'first value',
     'key2' => 'second value',
     'key3' => 'third value'
   }
+  # https://puppet.com/docs/puppet/5.5/lang_iteration.html#using-iteration-to-transform-data
   $keys = [undef, 'not a key', 'key1', 'key2', 'key3']
   $command_result = reduce($keys) |$result, $value|  {
     if ($result) {
-      notify {"processing ${value} to update ${result}": }
+      $spot = "\\\${${value}}"
+      notify {"processing ${value} (${spot}) to update result (${result})": }
       # Evaluation Error: Cannot reassign variable '$result'
-      regsubst($result,"${value}",$replaceents[$value],'G')
+      regsubst($result, "\\\${${value}}", "${$replaceents[$value]}",'G')
     } else {
-      notify {"processing ${value} to initialize ${result}": }
-      $replaceents[$value]
+      notify {"initialize result": }
+      $command2_template
     }
   }
   notify { "command_result: ${command_result}":}
