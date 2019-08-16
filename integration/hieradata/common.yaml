@@ -167,6 +167,7 @@ urugeas::jetty_mod::headers:
   'X-Frame-Options': 'SAMEORIGIN'
 urugeas::source_encoding: 'UTF-8'
 
+urugeas::query_filepath: '/tmp/sample_query.sql'
 # example of custom markup that would be replaced by Puppet
 # to alow query_filepath to be more flexible than per in-place hiera call
 # $cron_command = regsubst( hiera('urugeas::cron_command'), '%QUERY_FILEPATH%',
@@ -174,8 +175,10 @@ urugeas::source_encoding: 'UTF-8'
 # may have a problem with global replace, non-critical
 
 urugeas::cron_command:  |
-  QUERY_FILENAME='%QUERY_FILENAME%' # replaced my Puppet
-  QUERY_FILEPATH='%QUERY_FILEPATH%' # replaced my Puppet
+  # NOTE: cannot use '%{}' notation - will be discovered and evaluated by hiera itself
+  # NOTE: the %% syntax looks strange in shell script, likely a bad choice
+  QUERY_FILENAME='${QUERY_FILENAME_PARAMETER}' # replaced my Puppet
+  QUERY_FILEPATH='${QUERY_FILEPATH_PARAMETER}' # replaced my Puppet
   if [ -z "${QUERY_FILEPATH}" ]
   then
     echo 'query file is not defined'
@@ -193,10 +196,11 @@ urugeas::cron_command:  |
   DB_PASSWORD='%{hiera('db_password')}'
   DATABASE='%{hiera('database')}'
   DB_OPTIONS='%{hiera('db_options')}'
-  QUERY_PARAM='%QUERY_PARAM%' # filled by Puppet
+  QUERY_PARAM1='${QUERY_PARAM1_PARAMETER}' # filled by Puppet
+  QUERY_PARAM2='${QUERY_PARAM2_PARAMETER}' # filled by Puppet
   # https://stackoverflow.com/questions/14098222/pass-parameters-to-mysql-script
   # https://stackoverflow.com/questions/10229324/pass-parameter-to-mysql-script-command-line/10265580
-  DB_QUERY_PARAM="set @query_param = '${QUERY_PARAM}';"
+  DB_QUERY_PARAM="set @query_param1 = '${QUERY_PARAM1}'; set @query_param2 = '${QUERY_PARAM2}'; "
   DB_QUERY=$(cat "${QUERY_FILEPATH}")
   DB_REPORT_FILENAME="report_$(date +%D|sed 's|/|_|g').log" # report_07_26_19.log
   DB_REPORT_FILENAME="report_$(date +%Y_%m_%d).log" # report_2019_07_26.log

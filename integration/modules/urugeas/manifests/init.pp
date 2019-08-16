@@ -22,7 +22,7 @@ class urugeas(
   Array $tomcat_security_part1 = [],
   Array $tomcat_security_part2 = [],
   Boolean $practice_augeas     = false,
-  Array $augeas_testing        = lookup("${name}::augeas_testing",
+  Array[String] $augeas_testing        = lookup("${name}::augeas_testing",
                           Array[String],
                           first,
                          [
