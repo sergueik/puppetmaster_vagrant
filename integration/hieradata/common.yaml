@@ -166,6 +166,11 @@ urugeas::jetty_mod::headers:
   'Content-Security-Policy': "frame-ancestors 'self' *.stackoverflow.com"
   'X-Frame-Options': 'SAMEORIGIN'
 urugeas::source_encoding: 'UTF-8'
+urugeas::cron_command::replacements:
+ key1: 'first value from hiera'
+ key2: 'second value from hiera'
+ key3: 42
+ key4: 'not used'
 
 urugeas::query_filepath: '/tmp/sample_query.sql'
 # example of custom markup that would be replaced by Puppet
