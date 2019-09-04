@@ -26,6 +26,14 @@ else
     1>&2 echo "Creating \"${LOG_DIRS}\""
   fi
   touch $LOG_DIRS
+  # alternatively, use date manipulation
+  # DATE1=$(date -d "-2 months" +"%Y-%m-%d %k:%M:%S %z")
+  # DATE2=$(date -d "-1 months" +"%Y-%m-%d %k:%M:%S %z")
+  # find . -newermt "$DATE1" ! -newermt "$DATE2" -ls
+  # find . -newermt "$DATE1" -and \( ! -newermt "$DATE2" \) | while read FILEPATH ; do echo $FILEPATH; done
+  # alternatively
+  # find . -newermt $(date -d "-2 days" +"%Y-%m-%d") ! -newermt "$(date -d "-1 days" +"%Y-%m-%d") -ls
+  # find . -newermt "$(date -d "-2 days" +"%Y-%m-%d %k:%M:%S")" ! -newermt "$(date -d "-1 days" +"%Y-%m-%d %k:%M:%S")" -ls
   for LOG_DIR in $(find '.' -maxdepth 1 -type d -and -newer $DUMMY_FILE -and -name '*' -and \( -user $USER1 -or -user $USER2 -or -user $USER3 \));
   # NOTE: find: ‘vagrant’ is not the name of a known user
   do
@@ -56,5 +64,5 @@ else
     1>&2 echo "Removing \"${LOG_DIRS}\""
   fi
   rm -f $LOG_DIRS
-fi	
+fi
 
