@@ -31,9 +31,9 @@ else
   # DATE2=$(date -d "-1 months" +"%Y-%m-%d %k:%M:%S %z")
   # find . -newermt "$DATE1" ! -newermt "$DATE2" -ls
   # find . -newermt "$DATE1" -and \( ! -newermt "$DATE2" \) | while read FILEPATH ; do echo $FILEPATH; done
-  # alternatively
-  # find . -newermt $(date -d "-2 days" +"%Y-%m-%d") ! -newermt "$(date -d "-1 days" +"%Y-%m-%d") -ls
-  # find . -newermt "$(date -d "-2 days" +"%Y-%m-%d %k:%M:%S")" ! -newermt "$(date -d "-1 days" +"%Y-%m-%d %k:%M:%S")" -ls
+  # alternatively, inline
+  # find . -newermt "$(date -d '-12 months' +'%Y-%m-%d')" ! -newermt "$(date -d '-6 months' +'%Y-%m-%d %k:%M:%S')"
+  # find . -type d -maxdepth 1 ! -newer "DATE1" -exec mv {} old_logs/{} \;
   for LOG_DIR in $(find '.' -maxdepth 1 -type d -and -newer $DUMMY_FILE -and -name '*' -and \( -user $USER1 -or -user $USER2 -or -user $USER3 \));
   # NOTE: find: ‘vagrant’ is not the name of a known user
   do
