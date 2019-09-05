@@ -1,14 +1,27 @@
 #!/bin/bash
 
+
+
 TODAY_MONTH_DATE=$(date +%m%d)
 # testing
 DEBUG=true
+
+INTERVAL=$1
+if [[ ! -z $INTERVAL ]]; then
+  START_DATE=$(date -d "-$INTERVAL days" +'%Y-%m-%d')
+  END_DATE=$(date +'%Y-%m-%d')
+  if [[ $DEBUG == 'true' ]] ; then
+    printf "Customer specified interval of %s dates is  %s ... %s\n" "${INTERVAL}" "${START_DATE}" "${END_DATE}"
+  fi
+  exit 0
+fi
 if [[ $DEBUG == 'true' ]] ; then
   TODAY_MONTH_DATE=0215
 fi
 if [[ $DEBUG == 'true' ]] ; then
   echo "Today is ${TODAY_MONTH_DATE}"
 fi
+
 TODAY_YEAR=$(date +%Y)
 # TODO: year adjustment for 4th quarter when evaluating the last completed quarter
 
@@ -30,7 +43,7 @@ QUARTER=4
 for ENTRY in "${FOLLOWING_QUARTER_START_DATE[@]}" ; do
   KEY="${ENTRY%%:*}"
   VALUE="${ENTRY##*:}"
-  if [[ "${TODAY_MONTH_DATE}" < "${KEY}" ]] ; then
+  if [[ "${TODAY_MONTH_DATE}" -lt "${KEY}" ]] ; then
     QUARTER=$VALUE
     if [[ $DEBUG == 'true' ]] ; then
       printf "Date %s is quarter %s.\n" "${TODAY_MONTH_DATE}" "${QUARTER}"
@@ -62,7 +75,7 @@ for ENTRY in "${QUARTER_END_DATES[@]}" ; do
 done
 # date format YYYY-mm-dd
 printf "Current quarter is %s-%s ... %s-%s\n" "${TODAY_YEAR}" "${QUARTER_START_DATE}" "${TODAY_YEAR}" "${QUARTER_END_DATE}"
- 
+
 
 PREV_QUARTERS=('1:4' '2:1' '3:2' '4:3')
 for ENTRY in "${PREV_QUARTERS[@]}" ; do
@@ -77,7 +90,7 @@ for ENTRY in "${PREV_QUARTERS[@]}" ; do
     fi
     if [[ $DEBUG == 'true' ]] ; then
       printf "Previous quarter of %s is %s.\n" "${QUARTER}" "${PREV_QUARTER}"
-    fi  
+    fi
   fi
 done
 for ENTRY in "${QUARTER_START_DATES[@]}" ; do
@@ -102,4 +115,4 @@ for ENTRY in "${QUARTER_END_DATES[@]}" ; do
 done
 # date format YYYY-mm-dd
 printf "Previous quarter is %s-%s ... %s-%s\n" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_START_DATE}" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_END_DATE}"
- 
+
