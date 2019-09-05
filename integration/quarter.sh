@@ -1,17 +1,38 @@
 #!/bin/bash
 
-
-
 TODAY_MONTH_DATE=$(date +%m%d)
 # testing
 DEBUG=true
+OPTS=$(getopt -o hse: --long help,start,end: -n 'parse-options' -- "$@")
+if [ $? != 0 ] ; then echo 'Failed parsing options' >&2 ; exit 1 ; fi
+while true; do
+  case "$1" in
+    -h | --help ) HELP=true; shift ;;
+    -s | --start ) START_DATE="$2"; shift; shift ;;
+    -e | --end ) END_DATE="$2"; shift; shift ;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
+done
 
-INTERVAL=$1
+if [[ $DEBUG == 'true' ]] ; then
+  echo "OPTIND=${OPTIND}"
+  echo "START_DATE=${START_DATE}"
+  echo "END_DATE=${END_DATE}"
+  # usage unclear
+fi
+# interval argument overrides the named arguments:
+# ./quarter.sh -s 2019-09-01 -e 2019-09-05 2
+# will ignore START_DATE and END_DATE
+DEFAULT_INTERVAL=''
+
+INTERVAL=${1:-$DEFAULT_INTERVAL}
 if [[ ! -z $INTERVAL ]]; then
+  echo "INTERVAL=${INTERVAL}"
   START_DATE=$(date -d "-$INTERVAL days" +'%Y-%m-%d')
   END_DATE=$(date +'%Y-%m-%d')
   if [[ $DEBUG == 'true' ]] ; then
-    printf "Customer specified interval of %s dates is  %s ... %s\n" "${INTERVAL}" "${START_DATE}" "${END_DATE}"
+    printf "Customer specified interval of %s days is %s...%s\n" "${INTERVAL}" "${START_DATE}" "${END_DATE}"
   fi
   exit 0
 fi
@@ -69,12 +90,12 @@ for ENTRY in "${QUARTER_END_DATES[@]}" ; do
   if [[ "${QUARTER}" = "${KEY}" ]] ; then
     QUARTER_END_DATE=$VALUE
     if [[ $DEBUG == 'true' ]] ; then
-      printf "End date of quarter %s is: %s.\n" "${QUARTER}" "${QUARTER_END_DATE}"
+      printf "End date of quarter %s is: %s\n" "${QUARTER}" "${QUARTER_END_DATE}"
     fi
   fi
 done
 # date format YYYY-mm-dd
-printf "Current quarter is %s-%s ... %s-%s\n" "${TODAY_YEAR}" "${QUARTER_START_DATE}" "${TODAY_YEAR}" "${QUARTER_END_DATE}"
+printf "Current quarter is %s-%s...%s-%s\n" "${TODAY_YEAR}" "${QUARTER_START_DATE}" "${TODAY_YEAR}" "${QUARTER_END_DATE}"
 
 
 PREV_QUARTERS=('1:4' '2:1' '3:2' '4:3')
@@ -98,7 +119,7 @@ for ENTRY in "${QUARTER_START_DATES[@]}" ; do
   VALUE="${ENTRY##*:}"
   if [[ "${PREV_QUARTER}" = "${KEY}" ]] ; then
     PREV_QUARTER_START_DATE=$VALUE
-    printf "Start date of quarter %s is: %s.\n" "${PREV_QUARTER}" "${PREV_QUARTER_START_DATE}"
+    printf "Start date of quarter %s is: %s\n" "${PREV_QUARTER}" "${PREV_QUARTER_START_DATE}"
     break
   fi
 done
@@ -109,10 +130,10 @@ for ENTRY in "${QUARTER_END_DATES[@]}" ; do
   if [[ "${PREV_QUARTER}" = "${KEY}" ]] ; then
     PREV_QUARTER_END_DATE=$VALUE
     if [[ $DEBUG == 'true' ]] ; then
-      printf "End date of quarter %s is: %s.\n" "${PREV_QUARTER}" "${PREV_QUARTER_END_DATE}"
+      printf "End date of quarter %s is: %s\n" "${PREV_QUARTER}" "${PREV_QUARTER_END_DATE}"
     fi
   fi
 done
 # date format YYYY-mm-dd
-printf "Previous quarter is %s-%s ... %s-%s\n" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_START_DATE}" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_END_DATE}"
+printf "Previous quarter is %s-%s...%s-%s\n" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_START_DATE}" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_END_DATE}"
 
