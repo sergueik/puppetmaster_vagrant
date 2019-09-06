@@ -36,6 +36,13 @@ if [[ ! -z $INTERVAL ]]; then
   fi
   exit 0
 fi
+
+if [[ ! -z $START_DATE ]]; then
+  if [[ $DEBUG == 'true' ]] ; then
+    printf "Customer specified dates %s...%s\n" "${START_DATE}" "${END_DATE}"
+  fi
+  exit 0
+fi
 if [[ $DEBUG == 'true' ]] ; then
   TODAY_MONTH_DATE=0215
 fi
