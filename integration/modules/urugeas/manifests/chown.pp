@@ -10,8 +10,9 @@ define urugeas::chown (
   # FThe gist is to illustrate the `unless`, `onlyif` commands therefore a simply unlink the files if some is detected being owned by wrong user
 
   $wrong_user = 'root' # some account
-  $correct_user = 'some_account' # another account
-  $correct_group = 'some_account' # another account
+  # find: ‘some_account’ is not the name of a known user
+  $correct_user = 'vagrant' # need to be an existing account
+  $correct_group = 'vagrant'
   $parent_folder = '/var/log/mysql'
   $files = ['/tmp/a.txt', '/tmp/b.txt', '/tmp/c.txt'].join(' ')
   exec { 'remove files owned by wrong user':
