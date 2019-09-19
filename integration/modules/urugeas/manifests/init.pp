@@ -469,23 +469,5 @@ class urugeas(
 
   }
 
-  # NOTE: quick mass file operation example one may need to perform when the owneheship of every file need to change. 
-  # FThe gist is to illustrate the `unless`, `onlyif` commands therefore a simply unlink the files if some is detected being owned by wrong user
-
-  $wrong_user = 'root' # some account
-  $correct_user = 'some_account' # another account
-
-  $files = ['/tmp/a.txt', '/tmp/b.txt', '/tmp/c.txt']
-  exec { "Mass cleanup of files (${files}), version 1":
-    command => "rm -f ${files}",
-    path    => '/bin',
-    onlyif  => "stat ${files} | sed -n '/Uid/s|^.*\\(Uid: ([^)]*) \\).*\$|\\1|p'| grep -q '${wrong_user}'",
-  }
-  exec { "Mass cleanup of files (${files}), version 2":
-    command => "rm -f ${files}",
-    path    => '/bin',
-    unless  => "stat ${files} | sed -n '/Uid/s|^.*Uid: (\\([^)]*\\)) .*\$|\\1|p'  grep -vq '${correct_user}'",
-  }
-
   include urugeas::cron_schedule
 }
