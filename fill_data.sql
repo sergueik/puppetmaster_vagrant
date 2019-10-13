@@ -1,12 +1,13 @@
-USE TEST;
+USE test;
+
 DROP TABLE IF EXISTS events;
 CREATE TABLE IF NOT EXISTS events (
- APP VARCHAR(10) NOT NULL,
- STATUS TINYINT DEFAULT 0,
- EVENT_DATE DATETIME NOT NULL
+  APP VARCHAR(10) NOT NULL,
+  STATUS TINYINT DEFAULT 0,
+  EVENT_DATE DATETIME NOT NULL
 );
 -- TODO: IGNORE ERROR 1091 (42000): CAN'T DROP 'events_idx'; CHECK THAT COLUMN/KEY EXISTS
-DROP INDEX events_idx ON events;
+DROP INDEX IF EXISTS events_idx ON events;
 CREATE INDEX events_idx ON events(APP, EVENT_DATE);
 
 DROP PROCEDURE IF EXISTS `fill_table` ;
@@ -35,6 +36,9 @@ END
 DELIMITER ;
 
 CALL `fill_table`();
+
+
+
 SELECT COUNT(1) FROM events;
 
 SELECT 
@@ -49,10 +53,9 @@ SELECT
 SUM(follower.ERROR_STATUS) 
 FROM (
 SELECT 
-IF(STATUS <> 0, 1, 0) ERROR_STATUS
+IF(STATUS <> 0, 1, 0) AS ERROR_STATUS
 FROM 
--- events USE INDEX(events_idx)
-events
+events USE INDEX(events_idx)
 WHERE 
 APP =  origin.APP
 AND
@@ -76,11 +79,11 @@ STATUS <> 0
 AND
 (
 SELECT
-SUM(IF(STATUS <> 0, 1, 0)) AS  ERROR_STATUS_COUNT 
+SUM(IF(STATUS <> 0, 1, 0)) AS ERROR_STATUS_COUNT 
 FROM
 events USE INDEX(events_idx)
 WHERE 
-APP =  origin.APP
+APP = origin.APP
 AND
 EVENT_DATE >= origin.EVENT_DATE
 ORDER BY APP, EVENT_DATE LIMIT 5
@@ -99,12 +102,12 @@ FROM
 -- events USE INDEX(events_idx)
 events
 WHERE 
-APP =  @origin_app
+APP = @origin_app
 AND
 EVENT_DATE >= @origin_event_date
 ORDER BY APP, EVENT_DATE LIMIT 5;
 SELECT
-CASE STATUS WHEN  0 THEN 0 ELSE 1 END AS  ERROR_STATUS, APP, EVENT_DATE
+CASE STATUS WHEN 0 THEN 0 ELSE 1 END AS ERROR_STATUS, APP, EVENT_DATE
 FROM
 events USE INDEX(events_idx)
 WHERE 
@@ -120,7 +123,7 @@ SUM(CASE STATUS WHEN  0 THEN 0 ELSE 1 END) AS  ERROR_STATUS_COUNT
 FROM
 events USE INDEX(events_idx)
 WHERE 
-APP =  @origin_app
+APP = @origin_app
 AND
 EVENT_DATE >= @origin_event_date
 ORDER BY APP, EVENT_DATE LIMIT 5;
@@ -128,3 +131,26 @@ ORDER BY APP, EVENT_DATE LIMIT 5;
 
 
 --- ignored the LIMIT statement
+
+
+-- NOTE: unfinished.
+-- NOTE: apparently one can not use view anyways:
+-- ERROR 1349 (HY000): View's SELECT contains a subquery in the from clause
+
+CREATE VIEW following_event_count (v_app, v_event_date, lookahead_events, count) AS
+(
+SELECT SUM(effective_status) FROM
+(
+SELECT 
+IF(STATUS <> 0, 1, 0) AS effective_status
+FROM 
+events USE INDEX(events_idx)
+WHERE 
+APP = v_app
+AND
+EVENT_DATE >= v_event_date
+ORDER BY APP, EVENT_DATE LIMIT lookahead_events
+) following_events
+)
+
+--  http://sqlfiddle.com/#!9/6fc2962/1/0
