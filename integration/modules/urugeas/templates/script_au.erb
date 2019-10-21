@@ -1,5 +1,50 @@
+<%#
+#  make a simple sample file from a '/opt/tomcat/conf/web.xml'  ,
+# e.g.
+<?xml version="1.0" encoding="UTF-8"?>
+<web>
+  <servlet>
+    <servlet-name>default</servlet-name>
+    <servlet-class>org.apache.catalina.servlets.DefaultServlet</servlet-class>
+    <init-param>
+      <param-name>debug</param-name>
+      <param-value>0</param-value>
+    </init-param>
+    <init-param>
+      <param-name>listings</param-name>
+      <param-value>false</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+</web>
+	
+export PATH=$PATH:/opt/puppetlabs/puppet/bin/
+augtool -A
+augtool>
+set '/augeas/load/xml/lens' 'Xml.lns'
+set '/augeas/load/xml/incl' '/tmp/dummy.xml'
+load
+print /files/tmp/dummy.xml/web/servlet
+...
+/files/tmp/dummy.xml/web/servlet/load-on-startup
+/files/tmp/dummy.xml/web/servlet/load-on-startup/#text = "1"
+/files/tmp/dummy.xml/web/servlet/#text[6] = "    "
+augtool>
+
+%>
 set '/augeas/load/xml/lens' 'Xml.lns'
 set '/augeas/load/xml/incl' '<%= @tomcat_config_file -%>'
+<%#
+incorrect values of the template would lead to
+/augeas/error/pathx/ = "type error"
+/augeas/error/pathx/pos = ... details of the unpareseable locator ...
+
+and
+
+/augas/files/....path.../error = "put_read"
+/augas/files/....path.../error/message = "is a directory"
+
+%>
 load
 # Arbirtarily places the new config close to an end ot web-app 
 # NOTE: assumes the session-config is present
