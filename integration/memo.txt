@@ -1,0 +1,17 @@
+augtool> ls /files/opt/tomcat/
+conf/ = (none)
+augtool> ls /files/opt/tomcat/conf/
+web.xml/ = (none)
+augtool> ls /files/opt/tomcat/conf/web.xml/
+#declaration/ = (none)
+#comment =
+  Licensed to the Apache Software Foundation (ASF) under one or more
+web-app/ = (none)
+
+example
+augtool> ls /files/opt/tomcat/conf/web.xml/web-app/servlet
+tons of output like e.g.
+....
+load-on-startup/ = (none)
+#text[6] =
+
