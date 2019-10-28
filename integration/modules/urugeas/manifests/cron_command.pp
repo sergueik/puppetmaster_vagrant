@@ -11,40 +11,14 @@ class urugeas::cron_command (
   # ==> urugeas: Error: Function lookup() did not find a value for the name 'urugeas::query_filepath'
   String$query_filepath = hiera('urugeas::query_filepath'),
 ) {
-
-  # fragment of the (cron job,shell script, sql script) combo-producing Pupet custom user-defined type
-  notify { "command_template: ${command_template}":}
-  $command = regsubst(regsubst(regsubst(regsubst($command_template,'\${QUERY_FILEPATH_PARAMETER}',$query_filepath,'G'),'\${QUERY_FILENAME}',$query_filename,'G'),'\${QUERY_PARAM1_PARAMETER}',"${query_param1}",'G'),'\${QUERY_PARAM2_PARAMETER}',"${query_param2}",'G')
-  notify { "command: ${command}":}
-
-  # $command2_template = '${key1} ${key2} ${key3}'
-
-  $command2_template = lookup("${name}::command2_template", {'default_value' => '${key1} ${key2} ${key3}'})
-  notify {"Loading parameters for command2_template from '${name}::command2_template' hieradata key ": }
-
-  $replacements = lookup("${name}::replacements",
-    Hash[String,Variant[String,Integer,Undef]],
-    first, {
-    'key1' => 'first value',
-    'key2' => 'second value',
-    'key3' => 'third value'
-    })
-  notify {"Loading parameters for replacements from '${name}::replacements' hieradata key": }
-
-  # https://puppet.com/docs/puppet/5.5/lang_iteration.html#using-iteration-to-transform-data
-  # the undef entry will be skipped ?
-
-  $keys = flatten([[undef, undef], ['key1', 'key2', 'key3']])
-  $command_result = reduce($keys) |$result, $value|  {
-    if ($result) {
-      $spot = "\\\${${value}}"
-      notify {"processing ${value} (${spot}) to update result (${result})": }
-      # Evaluation Error: Cannot reassign variable '$result'
-      regsubst($result, "\\\${${value}}", "${$replacements[$value]}",'G')
-    } else {
-      notify {"initialize the result with '${command2_template}' ignoring the value ${value}": }
-      $command2_template
-    }
+  # NOTE:  missing title leads to the 
+  # Error: This expression is invalid. Did you try declaring a 'urugeas::cron_command::worker' resource without a title?
+  urugeas::cron_command::worker  {"called by class {name}":
+    query_param1     => $query_param1,
+    query_param2     => $query_param2,
+    command_template => $command_template,
+    query_filename   => $query_filename,
+    query_filepath   => $query_filepath,
   }
-  notify { "command_result: ${command_result}":}
+
 }
