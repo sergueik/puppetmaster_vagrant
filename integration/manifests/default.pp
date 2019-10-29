@@ -6,6 +6,25 @@ node 'default' {
   include urugeas
   include urugeas::jetty_mod 
 
+  # urugeas::chown {'dummy': }
+  # include urugeas
+  # include urugeas::cron_command
+  urugeas::hieradata_check::worker{ 'called (1) from "default.pp"':
+    long    => 'apache-2.4.5',
+    short   => '2.4.5', # try '2.4.51'
+    search  => '^apache(?:.?)([.\d]+)(?:[^d].*)*$',
+    replace => '\1', # most common
+    debug   => true,
+  }
+  urugeas::hieradata_check::worker{ 'called (2) from "default.pp"':
+    long    => 'apache-2.4.5',
+    short   => '2.4.51',
+    search  => '^apache(?:.?)([.\d]+)(?:[^d].*)*$',
+    replace => '\1', # most common
+    debug   => true,
+  }
+  include urugeas::hieradata_check
+
   $unit = 'mysqld.service'
   $custom_user = 'myuser'
   $custom_group = 'myuser'

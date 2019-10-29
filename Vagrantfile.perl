@@ -12,7 +12,8 @@ box_name = ENV.fetch('BOX_NAME', 'puppetlabs/ubuntu-16.04-64-puppet')
 debug_perl = ENV.fetch('DEBUG_PERL', '')
 debug_perl = true if debug_perl =~ /^(?:true|yes|1)$/i
 
-debug = ENV.fetch('DEBUG', false)
+# debug = ENV.fetch('DEBUG', false)
+debug = ENV.fetch('DEBUG', '')
 debug = true if debug =~ /^(?:true|yes|1)$/i
 
 perl_old = '5.8.9 5.10.1 5.12.5 5.14.4 5.16.3 5.18.4 '
@@ -30,7 +31,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config_vm_box_name =  'ubuntu-16.04-64-puppet.box'
 
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
-
+  # based on https://groups.google.com/forum/#!topic/vagrant-up/k2aUobRmn1A
+  # config.vm.provision 'file', source: './bootstrap', destination: '/tmp/bootstrap'
+  # config.vm.provision 'shell', inline: '/tmp/bootstrap/bootstrap-script.sh'
       # only required for
       config.vm.boot_timeout = 600
 

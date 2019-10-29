@@ -238,4 +238,7 @@ mysql::params::user: 'mysql'
 urugeas::mysql::migrate_datadir: true
 
 artifact_checksum: 'b9b53d774b4d8889837bff12a04e184cb54165d0c1fe2b2298362163078e1a5d'
+urugeas::hieradata_check::search: '^(\d+)(?:\-.*)$'
+urugeas::hieradata_check::replace: '\1'
+
 artifact_filename: 'dummy.file'
