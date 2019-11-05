@@ -10,20 +10,28 @@ NUM=0
 DATE_END='31.10.2019'
 DATE_START='2019-01-11'
 
-while [ "$D" != "${DATE_END}" ]; do
-  D=$(date -d "${DATE_START} + ${NUM} day" +%d.%m.%Y)
+while [ "$NEXT_DATE" != "${DATE_END}" ]; do
+  NEXT_DATE=$(date -d "${DATE_START} + ${NUM} day" +%d.%m.%Y)
   ((NUM++))
-  touch $D
+  echo $NEXT_DATE
+  # touch $NEXT_DATE
 done
 popd
 
 DATE_END='10/01/2019'
 DATE_START='07/01/2019'
-DAY_INCREMENT=7
+DAY_INCREMENT=10
 
 NEXT_DATE="${DATE_START}"
 until [[ "${NEXT_DATE}" > "${DATE_END}" ]]; do
-  echo "${NEXT_DATE}"
+  INTERVAL_START=$NEXT_DATE
   NEXT_DATE=$(date -d "${NEXT_DATE} + ${DAY_INCREMENT} day" +%m/%d/%Y)
+  if  [[ "${NEXT_DATE}" < "${DATE_END}" ]]; then
+    INTERVAL_END=$NEXT_DATE
+  else
+    INTERVAL_END=$DATE_END
+  fi
+  echo "${INTERVAL_START} ${INTERVAL_END}"
+  # echo "${NEXT_DATE}"
 done
 
