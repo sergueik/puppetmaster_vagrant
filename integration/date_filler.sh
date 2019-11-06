@@ -18,8 +18,8 @@ while [ "$NEXT_DATE" != "${DATE_END}" ]; do
 done
 popd
 
-DATE_END='10/01/2019'
 DATE_START='07/01/2019'
+DATE_END='10/01/2019'
 DAY_INCREMENT=10
 
 NEXT_DATE="${DATE_START}"
@@ -34,4 +34,10 @@ until [[ "${NEXT_DATE}" > "${DATE_END}" ]]; do
   echo "${INTERVAL_START} ${INTERVAL_END}"
   # echo "${NEXT_DATE}"
 done
+
+# exotic version of the date interval generation
+
+DATE_START='07/01/2019'
+DATE_END='10/01/2019'
+seq 0 $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 )) | xargs -I {} date -d "$DATE_START {} days" +%m/%d/%Y | xargs printf "%s\n"
 
