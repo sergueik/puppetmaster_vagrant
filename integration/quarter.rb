@@ -1,12 +1,11 @@
 require 'pp'
 require 'date'
 
-
 $DEBUG = true
 today = Date.today
 today_month_day = ('%02d' % today.month ) + ('%02d' % today.day)
 if $DEBUG
-PP.pp today_month_day, $stderr
+  PP.pp today_month_day, $stderr
 end
 quarter_boundaries = {
   '1' => ['01/01', '03/31'],
@@ -29,6 +28,6 @@ quarter_starts.each do |quarter_boundary, quarter|
   end
 end
 if $DEBUG
-  PP.pp "current cuarter is #{current_quarter}" , $stderr
+  PP.pp "Current quarter is #{current_quarter}" , $stderr
   PP.pp quarter_boundaries[current_quarter], $stderr
 end
