@@ -1,6 +1,10 @@
 #!/bin/bash
 # origin: http://www.cyberforum.ru/shell/thread2524082.html
 # see also: https://stackoverflow.com/questions/25701265/how-to-generate-a-list-of-all-dates-in-a-range-using-the-tools-available-in-bash
+
+# testing
+DEBUG=true
+
 cd '/tmp'
 mkdir 'range'
 pushd '/tmp/range'
@@ -35,9 +39,45 @@ until [[ "${NEXT_DATE}" > "${DATE_END}" ]]; do
   # echo "${NEXT_DATE}"
 done
 
-# exotic version of the date interval generation
-
+# safe against the accidental date format change leading to the endless loop
 DATE_START='07/01/2019'
 DATE_END='10/01/2019'
-seq 0 $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 )) | xargs -I {} date -d "$DATE_START {} days" +%m/%d/%Y | xargs printf "%s\n"
 
+# exotic version of the date interval generation
+seq 0 $DAY_INREMENT $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 )) | xargs -I {} date -d "$DATE_START {} days" +%m/%d/%Y | xargs printf "%s\n"
+
+DAY_INCREMENT=10
+
+DATE_START='08/01/2019'
+DATE_END='10/01/2019'
+DAY_INCREMENT=10
+
+DATE_START='08/01/2019'
+DATE_END='10/01/2019'
+
+
+if [[ $DEBUG == 'true' ]] ; then
+  echo "DAY_INCREMENT=${DAY_INCREMENT}"
+  echo "DATE_END=${DATE_END}"
+  echo "DATE_START=${DATE_START}"
+  echo "Day count sequence:"
+  seq 0 $DAY_INCREMENT $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 ))
+fi
+
+# safer loop against date comparison:
+# accidental date format change can lead to the endless loop
+NEXT_DATE="${DATE_START}"
+for DAY_COUNT in $( seq 0 $DAY_INCREMENT $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 ))) ; do
+  DAY_COUNT=$(expr $DAY_COUNT + $DAY_INCREMENT)
+  if [[ $DEBUG == 'true' ]] ; then
+    echo "DAY_COUNT=${DAY_COUNT}"
+  fi
+  INTERVAL_START=$NEXT_DATE
+  NEXT_DATE=$(date -d "${DATE_START} + ${DAY_COUNT} day" +%m/%d/%Y)
+  if  [[ "${NEXT_DATE}" < "${DATE_END}" ]]; then
+    INTERVAL_END=$NEXT_DATE
+  else
+    INTERVAL_END=$DATE_END
+  fi
+  echo "INTERVAL_START=${INTERVAL_START} INTERVAL_END=${INTERVAL_END}"
+done
