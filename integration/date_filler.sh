@@ -22,20 +22,27 @@ while [ "$NEXT_DATE" != "${DATE_END}" ]; do
 done
 popd
 
-DATE_START='07/01/2019'
-DATE_END='10/01/2019'
+DATE_START='09/05/2019'
+DATE_END='10/15/2019'
 DAY_INCREMENT=10
 
 NEXT_DATE="${DATE_START}"
 until [[ "${NEXT_DATE}" > "${DATE_END}" ]]; do
   INTERVAL_START=$NEXT_DATE
   NEXT_DATE=$(date -d "${NEXT_DATE} + ${DAY_INCREMENT} day" +%m/%d/%Y)
-  if  [[ "${NEXT_DATE}" < "${DATE_END}" ]]; then
+  if [[ "${NEXT_DATE}" < "${DATE_END}" ]]; then
     INTERVAL_END=$NEXT_DATE
   else
     INTERVAL_END=$DATE_END
   fi
-  echo "${INTERVAL_START} ${INTERVAL_END}"
+  # avoid running SQL if report date interval collapses to the same start, end
+  if [[ ${INTERVAL_START} < ${INTERVAL_END} ]]; then
+    echo "Running the report over START=${INTERVAL_START} END=${INTERVAL_END}"
+  else  
+    if [[ $DEBUG == 'true' ]] ; then
+      echo 'Skipping collapsed report interval'
+    fi  
+  fi
   # echo "${NEXT_DATE}"
 done
 
@@ -48,12 +55,10 @@ seq 0 $DAY_INREMENT $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/
 
 DAY_INCREMENT=10
 
-DATE_START='08/01/2019'
-DATE_END='10/01/2019'
 DAY_INCREMENT=10
 
-DATE_START='08/01/2019'
-DATE_END='10/01/2019'
+DATE_START='09/05/2019'
+DATE_END='10/15/2019'
 
 
 if [[ $DEBUG == 'true' ]] ; then
@@ -79,5 +84,12 @@ for DAY_COUNT in $( seq 0 $DAY_INCREMENT $(( ($(date -d $DATE_END +%s) - $(date 
   else
     INTERVAL_END=$DATE_END
   fi
-  echo "INTERVAL_START=${INTERVAL_START} INTERVAL_END=${INTERVAL_END}"
+  # avoid running SQL if report date interval collapses to the same start, end
+  if [[ ${INTERVAL_START} < ${INTERVAL_END} ]]; then
+    echo "Running the report over INTERVAL_START=${INTERVAL_START} INTERVAL_END=${INTERVAL_END}"
+  else 
+    if [[ $DEBUG == 'true' ]] ; then
+      echo 'Skipping collapsed report interval'
+    fi  
+  fi
 done
