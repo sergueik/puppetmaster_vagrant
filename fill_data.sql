@@ -1,4 +1,4 @@
-USE test;
+  USE test;
 -- setup
 -- some realistic data , generating events, doing some querying afterwards
 
@@ -14,6 +14,7 @@ DROP INDEX events_idx ON events;
 CREATE INDEX events_idx ON events(app, event_date);
 
 DROP PROCEDURE `fill_table` ;
+
 DELIMITER //
 CREATE PROCEDURE `fill_table`()
 BEGIN
@@ -27,6 +28,7 @@ DECLARE v_event_id INTEGER DEFAULT 0;
 DECLARE v_status TINYINT DEFAULT 0;
 
 set v_conseq_count = RAND() * 10;
+DELETE FROM events;
 INS: LOOP
   IF v_count > 100 THEN
     LEAVE INS;
@@ -36,15 +38,15 @@ INS: LOOP
   SET v_event_date = DATE_ADD(v_event_date0, INTERVAL v_count SECOND);
   IF v_conseq_count = 0 THEN
     SET  v_conseq_count = RAND() * 10;
-    -- SET v_status =  1 -v_status ;
+    SET v_status =  1 -v_status ;
   ELSE
     SET v_conseq_count = v_conseq_count - 1;
   END IF;
-  IF v_conseq_count < 4 THEN
-    SET v_status = 1;
-  ELSE
-    SET v_status = MOD(v_count, 2);
-  END IF;
+  -- IF v_conseq_count < 6 THEN
+  --   SET v_status = 1;
+  -- ELSE
+  --   SET v_status = MOD(v_count, 2);
+  -- END IF;
   SET V_APP = 'A1';
   INSERT INTO events (event_date, event_id, app, status)
   VALUES (v_event_date, v_event_id, v_app, v_status );
@@ -71,7 +73,7 @@ DECLARE V_FOLLOWING_STATUS TINYINT DEFAULT 0;
 DECLARE data_cursor CURSOR FOR SELECT APP, EVENT_DATE FROM events
   WHERE STATUS <> 0 ORDER BY APP, EVENT_DATE;
 
--- (un)commenting the next block expooses the stored pcedure to throwing / suppresses the 
+-- (un)commenting the next block expooses the stored pcedure to throwing / suppresses the
 -- ERROR 1329 (02000):
 -- No data - zero rows fetched, selected, or processed
 
@@ -95,23 +97,19 @@ DELIMITER ;
 CALL `find_subsequent_errors`();
 
 
-DROP PROCEDURE `flat_status` ;
-
--- https://wiki.ispirer.com/sqlways/mysql/techniques/return-value-from-procedure
--- TODO
 
 DROP TABLE IF EXISTS results;
 CREATE TABLE IF NOT EXISTS results (
   status_string VARCHAR(1024) NOT NULL
 );
+-- https://wiki.ispirer.com/sqlways/mysql/techniques/return-value-from-procedure
+-- TODO: inout parameter not working
 
+DROP PROCEDURE `flat_status` ;
 DELIMITER //
-CREATE PROCEDURE `flat_status`(INOUT status_string VARCHAR(1024))
-RET:
+CREATE PROCEDURE `flat_status`()
 
 BEGIN
-
-
 DECLARE v_event_date DATETIME DEFAULT CURDATE();
 DECLARE v_event_id INTEGER DEFAULT 0;
 DECLARE v_count INTEGER DEFAULT 0;
@@ -121,7 +119,7 @@ DECLARE v_status_string VARCHAR(1024) default '';
 
 DECLARE data_cursor CURSOR FOR SELECT app, event_date, event_id, status FROM events
   ORDER BY app, event_date limit 100;
-DELETE FROM results; 
+DELETE FROM results;
 INSERT INTO results (status_string) VALUES ('');
 OPEN data_cursor;
 INS: LOOP
@@ -134,24 +132,38 @@ INS: LOOP
     set v_status_string = CONCAT(v_status_string , 'o');
   ELSE
     set v_status_string = CONCAT(v_status_string , 'x');
-  END IF;    
-  SELECT 'Loop: '  ,  v_status_string;
-  SET status_string = v_status_string;
+  END IF;
   UPDATE results SET results.status_string = v_status_string;
-  SELECT 'Status_string (inout) '  ,  status_string;
-    
 END LOOP;
-
 CLOSE data_cursor;
--- LEAVE RET;
 END;
 //
 DELIMITER ;
 
-
-@status_string = '' ;
-CALL `flat_status`(@status_string);
-SELECT @status_string;
--- null
+CALL `flat_status`();
 SELECT status_string FROM results INTO @status_string;
 SELECT @status_string;
+-- | xxooooooooooxxxxxxxxxooooxxooooooooxxxoooooooooooxxxxoooooxooxxxxxxooxxxxxxxxxxoooooxoxooxxxxooooxxx |
+-- +--------------------------------+
+-- | INSTR(@status_string, 'xxxxx') |
+-- +--------------------------------+
+-- |                             13 |
+-- +--------------------------------+
+-- +---------------------------------+
+-- | LOCATE('xxxxx', @status_string) |
+-- +---------------------------------+
+-- |                              13 |
+-- +---------------------------------+
+-- +------------------------------------+
+-- | LOCATE('xxxxx', @status_string,19) |
+-- +------------------------------------+
+-- |                                 62 |
+-- +------------------------------------+
+-- | LOCATE('xxxxx', @status_string,68) |
+-- +------------------------------------+
+-- |                                 70 |
+-- +------------------------------------+
+-- | LOCATE('xxxxx', @status_string,76) |
+-- +------------------------------------+
+-- |                                  0 |
+-- +------------------------------------+
