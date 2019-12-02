@@ -1,7 +1,7 @@
   USE test;
 -- setup
 -- some realistic data , generating events, doing some querying afterwards
-
+-- https://www.saashub.com/mysql-workbench-alternatives
 DROP TABLE IF EXISTS events;
 CREATE TABLE IF NOT EXISTS events (
   app VARCHAR(10) NOT NULL,
@@ -14,13 +14,13 @@ DROP INDEX events_idx ON events;
 CREATE INDEX events_idx ON events(app, event_date);
 
 DROP PROCEDURE `fill_table` ;
+-- NOTE: "CREATE OR REPLACE PROCEDURE" is sensiive to the presence of the procedure
 
 DELIMITER //
-CREATE PROCEDURE `fill_table`()
+CREATE PROCEDURE `fill_table`(IN verbose TINYINT)
 BEGIN
 DECLARE v_event_date0 DATETIME DEFAULT CURDATE();
 DECLARE v_event_date DATETIME DEFAULT DATE_SUB(CURDATE(), INTERVAL 10 DAY);
-DECLARE v_verbose TINYINT DEFAULT 0;
 DECLARE v_app VARCHAR(10);
 DECLARE v_count INTEGER DEFAULT 0;
 DECLARE v_conseq_count INTEGER DEFAULT 0;
@@ -32,31 +32,28 @@ DELETE FROM events;
 INS: LOOP
   IF v_count > 100 THEN
     LEAVE INS;
-  END IF ;
+  END IF;
   SET v_count =  v_count + 1;
   SET v_event_id =  v_event_id + 1;
   SET v_event_date = DATE_ADD(v_event_date0, INTERVAL v_count SECOND);
   IF v_conseq_count = 0 THEN
-    SET  v_conseq_count = RAND() * 10;
-    SET v_status =  1 -v_status ;
+    SET v_conseq_count = RAND() * 10;
+    SET v_status = 1 -v_status ;
   ELSE
     SET v_conseq_count = v_conseq_count - 1;
   END IF;
-  -- IF v_conseq_count < 6 THEN
-  --   SET v_status = 1;
-  -- ELSE
-  --   SET v_status = MOD(v_count, 2);
-  -- END IF;
   SET v_app = 'A1';
   INSERT INTO events (event_date, event_id, app, status)
   VALUES (v_event_date, v_event_id, v_app, v_status );
-  -- SELECT v_app, v_event_date, v_status , v_count;
+  IF verbose <> 0 THEN
+    SELECT v_app, v_event_date, v_status , v_count;
+  END IF;  
 END LOOP;
 END
 //
 DELIMITER ;
 
-CALL `fill_table`();
+CALL `fill_table`(1);
 
 DROP PROCEDURE `find_subsequent_errors` ;
 
@@ -94,6 +91,16 @@ END
 //
 DELIMITER ;
 
+SHOW CREATE PROCEDURE find_subsequent_errors;
+SELECT
+routine_schema, routine_name, routine_definition
+FROM
+information_schema.routines
+WHERE
+routine_type = 'PROCEDURE'
+AND
+routine_name = 'find_subsequent_errors';
+
 CALL `find_subsequent_errors`();
 
 DROP TABLE IF EXISTS results;
@@ -103,6 +110,7 @@ CREATE TABLE IF NOT EXISTS results (
 
 -- https://wiki.ispirer.com/sqlways/mysql/techniques/return-value-from-procedure
 -- TODO: inout parameter not working
+-- OR UPDATE PROCEDURE 
 
 DROP PROCEDURE `flat_status`;
 DELIMITER //
@@ -175,7 +183,7 @@ DECLARE v_count INTEGER DEFAULT 0;
 SELECT COUNT(1) FROM events WHERE status <> 0 into v_count;
 IF (v_count > 10 ) THEN
   RETURN 0;
-ELSE  
+ELSE
   RETURN 1;
 END IF;
 END;
@@ -185,7 +193,6 @@ DELIMITER ;
 set @result =  `dummy_calc_int`();
 select @result as result;
 DROP FUNCTION `dummy_calc_int`;
-
 
 
 DELIMITER //
@@ -242,42 +249,32 @@ DROP FUNCTION `make_dummy_string`;
 
 --- following is broken
 
-DROP FUNCTION `construct_index_string`;
 
+-- NOTE: cannot "CREATE OR UPDATE" with "FUNCTION"
+DECLARE function_count TINYINT DEFAULT(0);
+SELECT COUNT(1) FROM information_schema.routines WHERE routine_type = 'function' AND routine_name = 'construct_index_string' into @function_count ; 
+-- IF function_count  <> 0 THEN
+--   DROP FUNCTION `construct_index_string`;
+-- END IF;
+
+DROP PROCEDURE `construct_index_string_proc`;
+-- NOTE: "or update" would lead to a failure initially
 DELIMITER //
-CREATE FUNCTION `construct_index_string`()
-RETURNS VARCHAR(1024)
+
+CREATE PROCEDURE `construct_index_string_proc`( INOUT status_string VARCHAR(1024))
 BEGIN
+
 DECLARE v_status_string VARCHAR(1024) default '';
 DECLARE v_count INTEGER DEFAULT 0;
 DECLARE v_status TINYINT DEFAULT 0;
 
 DECLARE data_cursor CURSOR FOR SELECT status FROM events
   ORDER BY app, event_date limit 100;
-OPEN data_cursor;
-INS: LOOP
-  FETCH NEXT FROM data_cursor INTO v_status;
-  IF v_count > 100 THEN
-    LEAVE INS;
-  END IF;
-  SET v_count = v_count + 1;
-  IF v_status THEN
-    set v_status_string = CONCAT(v_status_string , 'o');
-  ELSE
-    set v_status_string = CONCAT(v_status_string , 'x');
-  END IF;
-END LOOP;
-RETURN (select v_status_string);
-END;
-//
-DELIMITER;
 
-
-set @result =  `construct_index_string`();
-select @result as result;
-
-
--- ERROR 1415 (0A000): Not allowed to return a result set from a function
--- RETURN v_status_string;
-
+DROP
+TEMPORARY 
+TABLE IF EXISTS results;
+CREATE
+TEMPORARY
+TABLE IF NOT EXISTS results (
 
