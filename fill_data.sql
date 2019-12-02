@@ -1,4 +1,4 @@
-  USE test;
+USE test;
 -- setup
 -- some realistic data , generating events, doing some querying afterwards
 -- https://www.saashub.com/mysql-workbench-alternatives
@@ -14,7 +14,7 @@ DROP INDEX events_idx ON events;
 CREATE INDEX events_idx ON events(app, event_date);
 
 DROP PROCEDURE `fill_table` ;
--- NOTE: "CREATE OR REPLACE PROCEDURE" is sensiive to the presence of the procedure
+-- NOTE: "CREATE OR REPLACE PROCEDURE" appears sensitive to the presence of the subject, do not use
 
 DELIMITER //
 CREATE PROCEDURE `fill_table`(IN verbose TINYINT)
@@ -103,18 +103,13 @@ routine_name = 'find_subsequent_errors';
 
 CALL `find_subsequent_errors`();
 
-DROP TABLE IF EXISTS results;
-CREATE TABLE IF NOT EXISTS results (
-  status_string VARCHAR(1024) NOT NULL
-);
-
 -- https://wiki.ispirer.com/sqlways/mysql/techniques/return-value-from-procedure
 -- TODO: inout parameter not working
 -- OR UPDATE PROCEDURE 
 
 DROP PROCEDURE `flat_status`;
 DELIMITER //
-CREATE PROCEDURE `flat_status`()
+CREATE PROCEDURE `flat_status`( IN verbose TINYINT, INOUT status_string VARCHAR(1024))
 
 BEGIN
 DECLARE v_event_date DATETIME DEFAULT CURDATE();
@@ -126,6 +121,12 @@ DECLARE v_status_string VARCHAR(1024) default '';
 
 DECLARE data_cursor CURSOR FOR SELECT app, event_date, event_id, status FROM events
   ORDER BY app, event_date limit 100;
+
+DROP TEMPORARY TABLE IF EXISTS results;
+CREATE TEMPORARY TABLE IF NOT EXISTS results (
+  status_string VARCHAR(1024) NOT NULL
+);
+
 DELETE FROM results;
 INSERT INTO results (status_string) VALUES ('');
 OPEN data_cursor;
@@ -136,145 +137,18 @@ INS: LOOP
   END IF;
   SET v_count = v_count + 1;
   IF v_status THEN
-    set v_status_string = CONCAT(v_status_string , 'o');
+    SET v_status_string = CONCAT(v_status_string , 'o');
   ELSE
-    set v_status_string = CONCAT(v_status_string , 'x');
+    SET v_status_string = CONCAT(v_status_string , 'x');
   END IF;
   UPDATE results SET results.status_string = v_status_string;
 END LOOP;
 CLOSE data_cursor;
+SELECT status_string FROM results LIMIT 1 INTO status_string;
 END;
 //
 DELIMITER ;
 
-CALL `flat_status`();
-SELECT status_string FROM results INTO @status_string;
+CALL `flat_status`(0, @status_string);
 SELECT @status_string;
--- | xxooooooooooxxxxxxxxxooooxxooooooooxxxoooooooooooxxxxoooooxooxxxxxxooxxxxxxxxxxoooooxoxooxxxxooooxxx |
--- +--------------------------------+
--- | INSTR(@status_string, 'xxxxx') |
--- +--------------------------------+
--- |                             13 |
--- +--------------------------------+
--- +---------------------------------+
--- | LOCATE('xxxxx', @status_string) |
--- +---------------------------------+
--- |                              13 |
--- +---------------------------------+
--- +------------------------------------+
--- | LOCATE('xxxxx', @status_string,19) |
--- +------------------------------------+
--- |                                 62 |
--- +------------------------------------+
--- | LOCATE('xxxxx', @status_string,68) |
--- +------------------------------------+
--- |                                 70 |
--- +------------------------------------+
--- | LOCATE('xxxxx', @status_string,76) |
--- +------------------------------------+
--- |                                  0 |
--- +------------------------------------+
-
-DELIMITER //
-CREATE FUNCTION `dummy_calc_int`()
-RETURNS INT
-BEGIN
-DECLARE v_count INTEGER DEFAULT 0;
-SELECT COUNT(1) FROM events WHERE status <> 0 into v_count;
-IF (v_count > 10 ) THEN
-  RETURN 0;
-ELSE
-  RETURN 1;
-END IF;
-END;
-//
-DELIMITER ;
-
-set @result =  `dummy_calc_int`();
-select @result as result;
-DROP FUNCTION `dummy_calc_int`;
-
-
-DELIMITER //
-CREATE FUNCTION `make_dummy_string`()
-RETURNS VARCHAR(256)
-BEGIN
-DECLARE v_count INTEGER DEFAULT 0;
-SELECT COUNT(1) FROM events WHERE status <> 0 into v_count;
-IF (v_count > 10 ) THEN
-  RETURN '0000000000';
-END IF;
-RETURN '1111111111';
-END;
-//
-DELIMITER ;
-
-set @result =  `make_dummy_string`();
-select @result as result;
-DROP FUNCTION `make_dummy_string`;
-
-
-
-
-DELIMITER //
-CREATE FUNCTION `make_dummy_string`()
-RETURNS VARCHAR(256)
-BEGIN
-DECLARE v_count INTEGER DEFAULT 0;
-INS: LOOP
-  IF v_count > 100 THEN
-    LEAVE INS;
-  END IF;
-  SET v_count = v_count + 1;
-END LOOP;
-
-IF (v_count > 10 ) THEN
-  RETURN CONCAT('Result = ', v_count);
-END IF;
-RETURN '0';
-END;
-//
-DELIMITER ;
-
-set @result = `make_dummy_string`();
-select @result as result;
-
--- +--------------+
--- | result       |
--- +--------------+
--- | Result = 101 |
--- +--------------+
-DROP FUNCTION `make_dummy_string`;
-
-
---- following is broken
-
-
--- NOTE: cannot "CREATE OR UPDATE" with "FUNCTION"
-DECLARE function_count TINYINT DEFAULT(0);
-SELECT COUNT(1) FROM information_schema.routines WHERE routine_type = 'function' AND routine_name = 'construct_index_string' into @function_count ; 
--- IF function_count  <> 0 THEN
---   DROP FUNCTION `construct_index_string`;
--- END IF;
-
-DROP PROCEDURE `construct_index_string_proc`;
--- NOTE: "or update" would lead to a failure initially
-DELIMITER //
-
-CREATE PROCEDURE `construct_index_string_proc`( INOUT status_string VARCHAR(1024))
-BEGIN
-
-DECLARE v_status_string VARCHAR(1024) default '';
-DECLARE v_count INTEGER DEFAULT 0;
-DECLARE v_status TINYINT DEFAULT 0;
-
-DECLARE data_cursor CURSOR FOR SELECT status FROM events
-  ORDER BY app, event_date limit 100;
-
-DROP
-TEMPORARY 
-TABLE IF EXISTS results;
-CREATE
-TEMPORARY
-TABLE IF NOT EXISTS results (
 
