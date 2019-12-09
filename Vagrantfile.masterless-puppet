@@ -1,0 +1,229 @@
+# -*- mode: puppet -*-
+# vi: set ft=puppet :
+#
+# https://blog.blakeerickson.com/masterless-puppet-on-ubuntu-16-04
+# masterless Puppet "just drop" setup stems on copying of all Puppet modules to every node via Git followed by Puppet apply the changes locally works great without having to upscale
+# logically requires two connected nodes: the gitlab server and the puppet node
+# for initial testing may install both on one machine
+#
+# the gitlab Vagrantfile is
+# based on:
+# https://gitlab.com/qzchenwl/vagrant-gitlab
+# http://blog.bobbyallen.me/2014/01/11/setup-your-own-private-gitlab-server-using-gitlab-and-ubuntu-server-12-04-lts/
+# https://www.digitalocean.com/community/tutorials/how-to-set-up-gitlab-as-your-very-own-private-gitlab-clone
+# https://www.digitalocean.com/community/tutorials/how-to-set-up-a-masterless-puppet-environment-on-ubuntu-14-04
+# https://docs.gitlab.com/ee/api/
+
+basedir = ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')
+basedir = basedir.gsub('\\', '/')
+
+box_gui = (ENV.fetch('BOX_GUI', '') =~ (/^(true|t|yes|y|1)$/i))
+box_memory = ENV.fetch('BOX_MEMORY', '2048').to_i
+box_name = ENV.fetch('BOX_NAME', 'masterless')
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'gitlab.example.com')
+debug = (ENV.fetch('DEBUG', 'false') =~ (/^(true|t|yes|y|1)$/i))
+gitlab_version = ENV.fetch('GITLAB_VERSION', '8.13.1-ce.0') # 7.7.2-omnibus.5.4.2.ci-1
+http_proxy = ENV.fetch('HTTP_PROXY', nil)
+static_ip = ENV.fetch('STATIC_IP', '192.168.33.10')
+vagrant_use_proxy = ENV.fetch('VAGRANT_USE_PROXY', nil)
+
+VAGRANTFILE_API_VERSION = '2'
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = 'ubuntu/trusty64'
+  config.vm.hostname = box_hostname
+  # Localy cached vagrant box images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
+  # with the generic base box  bionic 18.04 over 1g
+  # https://app.vagrantup.com/generic/boxes/ubuntu1804/versions/1.9.40/providers/virtualbox.box
+  config_vm_box_name = 'trusty-server-amd64-vagrant-selenium.box'
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  config.vm.network 'forwarded_port', guest: 80, host: 8080
+  config.vm.network 'forwarded_port', guest: 22, host: 8022
+  config.vm.network :private_network, ip: static_ip
+  # Configure Proxy authentication
+  if vagrant_use_proxy
+    if http_proxy
+      if Vagrant.has_plugin?('vagrant-proxyconf')
+        # Windows-specific case
+        # A proxy should be specified in the form of http://[user:pass@]host:port.
+        # without the domain part and with percent signs doubled - Vagrant and Ruby still use batch files on Windows
+        # https://gitlab.com/tmatilai/vagrant-proxyconf
+        # https://gitlab.com/WinRb/vagrant-windows
+        config.proxy.http = http_proxy.gsub('%%','%')
+        config.proxy.https = http_proxy.gsub('%%','%')
+        config.proxy.no_proxy = 'localhost,127.0.0.1'
+      end
+    end
+  end
+  # Configure common synced folder
+  config.vm.synced_folder './' , '/vagrant'
+  # Enable provisioning with a shell script
+  config.vm.provision 'shell', inline: <<-END_OF_PROVISION
+
+  #!/bin/bash
+  # set -x
+  1>&2 echo Install the prerequisite packages
+  export DEBIAN_FRONTEND=noninteractive
+  sudo apt-get -qq update
+  sudo apt-get -qqy install \
+    build-essential  \
+    libcurl4-openssl-dev  \
+    libffi-dev  \
+    libgdbm-dev  \
+    libicu-dev \
+    libncurses5-dev  \
+    libreadline-dev  \
+    libssl-dev  \
+    libxml2-dev  \
+    libxslt-dev  \
+    libyaml-dev  \
+    zlib1g-dev  \
+    curl  \
+    git-core  \
+    openssh-server  \
+    redis-server  \
+    checkinstall  \
+
+
+  debconf-set-selections <<< "postfix postfix/mailname string $HOSTNAME"
+  debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+  sudo apt-get -qqy install curl openssh-server ca-certificates postfix
+  sudo apt-get -qqy install ruby2.0 ruby2.0-dev
+
+  SELECTED_GITLAB_VERSION='#{gitlab_version}'
+  if [[ $SELECTED_GITLAB_VERSION ]]
+    then
+      case $SELECTED_GITLAB_VERSION in
+        auto)
+          # Does not work ?
+          echo Downloading and running Gitlab setup script from https://packages.gitlab.com
+          curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | sudo bash
+          sudo apt-get install gitlab-ce
+        ;;
+        latest)
+          echo Determine the latest version of Gitlab
+          PACKAGE_ARCHIVE=$(curl -insecure -L -# https://packages.gitlab.com/gitlab/gitlab-ce | \\
+          sed -n 's/<a href="\\/gitlab\\/gitlab-ce\\/packages\\/ubuntu\\/trusty\\/\\(.*\\)">.*/\\1/p' | head -1)
+          # NOTE: trusty builds are no longer listed
+          # A more compact command can be
+          PACKAGE_ARCHIVE=$(curl -# https://packages.gitlab.com/gitlab/gitlab-ce 2>/dev/null | xmllint --html --xpath '//a[contains(@href, "ubuntu/xenial")]' -  2>/dev/null | head -1)
+          GITLAB_VERSION=$(echo $PACKAGE_ARCHIVE|sed  -n 's/gitlab-ce_\\(.*\\)_amd64.deb/\\1/p')
+        ;;
+        *)
+          GITLAB_VERSION=$SELECTED_GITLAB_VERSION
+        ;;
+      esac
+      if [[ $GITLAB_VERSION ]]
+      then
+          1>&2 echo 'Checking the possibly installed gitlab-ce version'
+        if $(dpkg -l gitlab-ce | grep -q "$GITLAB_VERSION")
+        then
+          1>&2 echo "gitlab-ce version ${GITLAB_VERSION} is already installed"
+        else
+          pushd /vagrant
+          PACKAGE_ARCHIVE="gitlab-ce_${GITLAB_VERSION}_amd64.deb"
+          if [ ! -e $PACKAGE_ARCHIVE ]; then
+            URL="https://packages.gitlab.com/gitlab/gitlab-ce/packages/ubuntu/trusty/${PACKAGE_ARCHIVE}/download"
+            echo Downloading Gitlab version $GITLAB_VERSION from $URL
+            wget -O $PACKAGE_ARCHIVE -nv $URL
+          else
+            echo using previously downloaded $PACKAGE_ARCHIVE
+          fi
+          popd
+          sudo dpkg -i /vagrant/$PACKAGE_ARCHIVE
+          sudo gitlab-ctl reconfigure
+        fi
+      fi
+    fi
+    # install masterless
+    sudo apt-get remove -qqy puppet
+    pushd /vagrant
+    PACKAGE_ARCHIVE='puppetlabs-release-trusty.deb'
+    if [ ! -e $PACKAGE_ARCHIVE ]; then
+      URL="wget http://apt.puppetlabs.com/${PACKAGE_ARCHIVE}"
+      echo Downloading Puppet release from $URL
+      wget -O $PACKAGE_ARCHIVE -nv $URL
+    else
+      echo using previously downloaded $PACKAGE_ARCHIVE
+    fi
+    popd
+    sudo dpkg -i /vagrant/$PACKAGE_ARCHIVE
+    sudo apt-get -qq update
+    sudo apt-get install -qqy puppet git-core
+
+    # initialize one git repository right in the /etc/puppet directory, where the Puppet configuration files live
+    cd /etc/puppet
+    git init
+    git add .
+    git commit -m 'initialize one git repository right in Puppet own configuration directory'
+    git remote remove origin
+    git remote add origin git@192.168.33.10:root/puppet.git
+    # NOTE: without initilizing the user won't be able to push
+    sudo cat<<EOF>'/etc/puppet/puppet.conf'
+[main]
+logdir=/var/log/puppet
+vardir=/var/lib/puppet
+ssldir=/var/lib/puppet/ssl
+rundir=/var/run/puppet
+factpath=$confdir/facter
+EOF
+    cd /etc/puppet/modules
+    sudo mkdir -p cron-puppet/manifests cron-puppet/files
+    sudo cat<<EOF>'/etc/puppet/modules/cron-puppet/manifests/init.pp'
+class cron-puppet {
+    file { 'post-hook':
+        ensure  => file,
+        path    => '/etc/puppet/.git/hooks/post-merge',
+        source  => 'puppet:///modules/cron-puppet/post-merge',
+        mode    => 0755,
+        owner   => root,
+        group   => root,
+    }
+    cron { 'puppet-apply':
+        ensure  => present,
+        command => "cd /etc/puppet ; /usr/bin/git pull",
+        user    => root,
+        minute  => '*/30',
+        require => File['post-hook'],
+    }
+}
+EOF
+    sudo cat<<EOF>'/etc/puppet/modules/cron-puppet/files/post-merge'
+#!/bin/bash -e
+## Run Puppet locally using puppet apply
+/usr/bin/puppet apply /etc/puppet/manifests/site.pp
+
+## Log status of the Puppet run
+if [ $? -eq 0 ]
+then
+    /usr/bin/logger -i "Puppet has run successfully" -t "puppet-run"
+    exit 0
+else
+    /usr/bin/logger -i "Puppet has ran into an error, please run Puppet manually" -t "puppet-run"
+    exit 1
+fi
+EOF
+    sudo cat<<EOF>'/etc/puppet/manifests/site.pp'
+node default {
+    include cron-puppet
+}
+EOF
+  sudo puppet apply '/etc/puppet/manifests/site.pp'
+END_OF_PROVISION
+  # first time login credentials: root / 5iveL!fe
+  config.vm.provider :virtualbox do |v|
+    v.customize ['modifyvm', :id, '--memory', box_memory ]
+    if box_gui
+      v.customize ['modifyvm', :id, '--vram', '16']
+      v.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
+      v.customize ['setextradata', 'global', 'GUI/MaxGuestResolution', 'any']
+    end
+    v.gui = box_gui
+    v.name = box_name
+  end
+end
+if debug
+  puts "box_name=#{box_name}"
+  puts "box_gui=#{box_gui}"
+  puts "gitlab_version=#{gitlab_version}"
+  puts "static_ip=#{static_ip}"
+end

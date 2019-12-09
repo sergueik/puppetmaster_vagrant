@@ -1,4 +1,4 @@
-  # -*- mode: ruby -*-
+# -*- mode: ruby -*-
 # vi: set ft=ruby :
 
 # based on: https://github.com/hashicorp/consul/tree/master/demo/vagrant-cluster
@@ -10,6 +10,8 @@
 # Override consul version
 
 consul_version = ENV.fetch('CONSUL_VERSION', '1.4.0') # nil
+# NOTE: 0.8.0 was the last consul version when exec was enabled by default
+# https://groups.google.com/forum/#!topic/consul-tool/zE4G9ixWq60
 consul_init = ENV.fetch('CONSUL_INIT', nil)
 # see https://github.com/chavo1/consul-lab/blob/master/Vagrantfile
 # Consul is packaged as plain archive by hashicorp:
@@ -74,18 +76,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # do not install puppet master by mistake
 
 # based on: https://github.com/chavo1/consul-lab
+
 echo 'Installing dependencies ...'
 for B in vim curl jq unzip ; do
   which $B &>/dev/null || {
     sudo apt-get install -qqy $B
   }
 done
-# the base box has no ping, need to install one
 which ping &>/dev/null || {
   sudo apt-get install -qqy inetutils-ping
 }
 
-# the base box has no dig, need to install one
 which dig &>/dev/null || {
   sudo apt-get install -qqy dnsutils
 }
@@ -159,18 +160,26 @@ sudo cat <<EOF | jq -c '.' - > '/etc/consul.d/ping.json'
 }
 
 EOF
+
+
+# NOTE: enforcing "disable_remote_exec" to be false
+# based on workaround from https://stackoverflow.com/questions/53151941/consul-exec-doesnt-do-anything
+# see also: https://www.consul.io/docs/agent/options.html#disable_remote_exec
+
 mkdir -p /tmp/consul
-hostname | grep -q 1
+INSTANCE_NAME_PREFIX='#{instance_name_prefix}'
+hostname | grep -q "${INSTANCE_NAME_PREFIX}1"
 if [ $? -eq 0 ]; then
   echo 'Starting consul agent as a server on ' $(hostname)
   consul agent -server -bootstrap-expect=1 \
     -data-dir=/tmp/consul -node=agent-one -bind=192.168.51.10 \
-    -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
+    -enable-script-checks=true -hcl 'disable_remote_exec=false' -config-dir=/etc/consul.d &>/dev/null &
 else
   echo 'Starting consul agent on ' $(hostname)
   consul agent -data-dir=/tmp/consul -node=agent-two \
-    -bind=192.168.51.11 -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
+    -bind=192.168.51.11 -hcl 'disable_remote_exec=false' -enable-script-checks=true -config-dir=/etc/consul.d &>/dev/null &
 fi
+
 # based on: https://github.com/chavo1/consul-vagrant
 # NOTE: service is not enabled atm
 sudo cat <<EOF | jq -c '.' - > '/etc/consul.d/consul.json'
@@ -184,6 +193,7 @@ sudo cat <<EOF | jq -c '.' - > '/etc/consul.d/consul.json'
     "192.168.51.11"
   ],
   "ui": true,
+  "disable_remote_exec": false,
   "verify_incoming": false,
   "verify_outgoing": false
 }
@@ -203,8 +213,8 @@ env PATH="/usr/local/bin:/usr/bin:/bin"
 kill signal TERM
 reload signal HUP
 EOF
-
-echo "exec consul agent -config-file=/etc/consul.d/consul.json -advertise=${NODE_IP}"| tee -a /etc/init/consul.conf
+#
+echo "exec consul agent -config-file=/etc/consul.d/consul.json -advertise=${NODE_IP}" -hcl 'disable_remote_exec=false' | tee -a /etc/init/consul.conf
 if [ ! -z "${CONSUL_INIT}" ] ; then
   service consul start
 fi
@@ -231,11 +241,97 @@ COPY_MODULES=true
 if [ $COPY_MODULES ] ; then
   # ln -s /opt/puppetlabs/puppet/modules/consul /vagrant/modules/consul
   # failed to create symbolic link '/vagrant/modules/consul': Protocol error
-  mkdir /vagrant/modules/consul
+  if [[ ! -d /vagrant/modules/consul ]] ; then
+    mkdir /vagrant/modules/consul
+  fi
   cp -R /opt/puppetlabs/puppet/modules/consul/* /vagrant/modules/consul
   # dependencies need to be copied tooo
   cp -R /opt/puppetlabs/puppet/modules/ /vagrant/
 fi
+
+# NOTE: can probably use the Ruby embedded in Puppet agent:
+# /opt/puppetlabs/puppet/bin/ruby
+# many rspec critical gems lacking from Puppet will have to be installed
+echo 'install system Ruby'
+sudo apt-get install -qqy ruby2.3
+gem install --no-rdoc --no-ri serverspec
+cd ~vagrant
+mkdir -p spec/localhost
+# copy the stock Rakefile and minimal spec/spec_helper.rb
+# NOTE: doubling te backslashes and the Ruby interpolations
+
+sudo cat <<EOF>'Rakefile'
+require 'rake'
+require 'rspec/core/rake_task'
+
+task :spec => 'spec:all'
+task :default => :spec
+
+namespace :spec do
+  targets = []
+  Dir.glob('./spec/*').reject { |x| x=~ /.\\/spec\\/(?:type|config)/ }.each do |dir|
+    next unless File.directory?(dir)
+    target = File.basename(dir)
+    target = "_\#{target}" if target == 'default'
+    targets << target
+  end
+
+  task :all     => targets
+  task :default => :all
+
+  targets.each do |target|
+    original_target = target == '_default' ? target[1..-1] : target
+    desc "Run serverspec tests to \#{original_target}"
+    RSpec::Core::RakeTask.new(target.to_sym) do |t|
+      ENV['TARGET_HOST'] = original_target
+      t.rspec_opts = "--require spec_helper --format documentation --format html --out results/result_\#{$host}.html --format json --out results/result_\#{$host}.json"
+      t.pattern = "spec/\#{original_target}/*_spec.rb"
+    end
+  end
+end
+
+EOF
+
+sudo cat <<EOF>'spec/spec_helper.rb'
+require 'serverspec'
+# This spec_helper.rb is for running serverspec locally on a Linux box
+set :backend, :exec
+
+EOF
+# Create the spec for consul
+# NOTE: escape backslashes, Ruby and shell interpolation tokens
+sudo cat <<EOF>'spec/localhost/sample_spec.rb'
+require 'spec_helper'
+
+context 'Consul' do
+  context 'Consul Response Headers' do
+    name = 'X-Consul-Effective-Consistency'
+    value = 'leader'
+    describe command(<<-EOF
+      curl -I -X GET http://localhost:8500/v1/health/state/any
+    EOF
+    ), Specinfra::Runner::run_command("ps ax | grep consu[l]").exit_status.eql?(0)  do
+      its(:stdout) { should contain /\#{name}: \#{value}/i }
+    end
+  end
+  context 'Consul Execs' do
+    describe command(<<-EOF
+      MESSAGE='start on runlevel'
+      CONFIG_FILE='/etc/init/consul.conf'
+      consul exec -verbose \\\\\\\\
+      \\\\\\\\( grep -q \\\\\\\\"\\$MESSAGE\\\\\\\\" \\\\\\\\"\\$CONFIG_FILE\\\\\\\\" \\\\\\\\) \\\\\\\\&\\\\\\\\& \\\\\\\\( DATA=\\\\\\\\$\\\\\\\\( hostname -f \\\\\\\\)\\\\\\\\; /usr/bin/printf \\\\\\\\"MARKER: \\\\\\\\%s\\\\\\\\" \\\\\\\\\\$DATA \\\\\\\\) | grep 'MARKER'
+  
+    EOF
+    ), Specinfra::Runner::run_command("ps ax | grep consu[l]").exit_status.eql?(0)  do
+      its(:stdout) { should contain 'agent-one: MARKER: node1' }
+    end
+  end
+end
+
+EOF
+
+sudo rake spec
+
       SHELL
       # NOTE: the order of provision chunks can be wrong:
       # 'shell' after 'puppet'
@@ -283,3 +379,4 @@ end
 ## curl -I -X GET http://localhost:8500/v1/health/state/critical
 ## echo $?
 ## 0
+#
