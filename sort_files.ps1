@@ -77,6 +77,9 @@ get-childitem -path '.' | sort-object $to_number_from_name
 $files = @{}; get-childitem -path '.' | foreach-object { $number = $_.Name -replace '\(|\)|\.mpg', '' ; $files[( '{0:0000}' -f (0 + $number ))] = $_.Name }
 $files.keys | sort-object | foreach-object { write-output $files[$_]}
 
+# alternative from http://www.cyberforum.ru/powershell/thread2549860.html
+get-childitem -path '.'| sort {[Int32]($_.Basename -replace '\(|\)')}
+
 # NOTE:  it appears impossible to ask Explorer application to do the desired sorting
 # $o = new-object -com Shell.Application
 # $folder =  $o.Namespace($dir_path)
