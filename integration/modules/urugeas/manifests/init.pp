@@ -36,6 +36,7 @@ class urugeas(
     # 'rm securityRealm/authContext', # this will work
   ]),
 
+
   Hash $package_add_01 = lookup("${name}::package_add_01",
        Hash[String,String],
        first, {
@@ -87,6 +88,24 @@ class urugeas(
   # urugeas::setting: On
   $untyped_setting = hiera("${name}::setting",'On'),
 ){
+
+
+  $group_data = hiera('deep_data.group_key1')
+  $frag1 = inline_template( "<% @group_data.each do |key,value| %> key: <%=key %> value: <%=value %>\n<% end -%>")
+  notify { "result (frag1): ${frag1}": }
+
+  $deep_data = hiera('deep_data')
+  # Evaluation Error: Unknown function: 'group_key2'
+  # $data = $deep_data.group_key2
+  # $frag2 = inline_template( "<% @deep_data.group_key2.each do |key,value| %> key: <%=k %> value: <%=v %>\n<% end -%>")
+  # Failed to parse inline template: undefined method `group_key2' for nil:NilClass
+  #  Failed to parse inline template: undefined method `group_key2' for {"group_key"=>{"key"=>"value"}}:Hash
+  $frag2 = inline_template( "<% @deep_data['group_key2'].each do |key,value| %> key: <%=key %> value: <%=value %>\n<% end -%>")
+  notify { "result (frag2): ${frag2}": }
+
+  $flat_data = $deep_data['group_key3'] 
+  $frag3 = inline_template( "<% @flat_data.each do |key,value| %> key: <%=key %> value: <%=value %>\n<% end -%>")
+  notify { "result (frag3): ${frag3}": }
 
   notify {"begin": }
   require 'stdlib'
