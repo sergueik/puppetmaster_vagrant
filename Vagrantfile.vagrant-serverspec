@@ -1,0 +1,105 @@
+﻿# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+
+require 'yaml'
+require 'pp'
+
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+debug = ENV.fetch('DEBUG', false)
+debug =  true if debug =~ /^(?:true|yes|1)$/i
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+# Read nodes details
+nodes = {}
+nodes = YAML.load(<<-NODES)
+---
+- name: 'urugeas'
+  box: 'centos'
+  ram: '512'
+  ipaddress: '172.17.8.102'
+
+NODES
+if debug
+  nodes.each do |box|
+    pp box
+  end
+end
+
+# Read box details
+configs = YAML::load( <<-BOXES)
+---
+:boot: 'centos'
+'centos':
+  :image_name: 'centos'
+  :box_memory: '512'
+  :box_cpus: '1'
+  :box_gui: false
+  :config_vm_newbox: false
+  :config_vm_default: 'linux'
+  :config_vm_box: 'centos'
+  :image_filename: 'centos7-generic-x86_64.box'
+  # :image_filename: 'centos_6.7_x86_64_bento.box'
+
+BOXES
+if debug
+  pp configs
+end
+modulepath = '/opt/puppetlabs/puppet/modules'
+
+box_config = {}
+
+Vagrant.configure('2') do |config|
+  nodes.each do |box|
+    box_name = box['name']
+    box_config = configs[box['box']]
+    box_gui = box_config[:box_gui] != nil && box_config[:box_gui].to_s.match(/(true|yes|1)$/i) != nil
+    box_cpus = box_config[:box_cpus].to_i
+    box_memory = box_config[:box_memory].to_i
+    newbox = box_config[:config_vm_newbox]
+    image_filename = box_config[:image_filename]
+    box_url = "file://#{basedir}/Downloads/#{image_filename}"
+    config.vm.synced_folder './' , '/vagrant'
+    config.vm.define box_name do |guest|
+      guest.vm.box = box_config[:image_name]
+      guest.vm.box_url = box_url
+      guest.vm.network 'private_network', ip: box['ipaddress']
+      guest.vm.provider :virtualbox do |vb|
+        vb.name = box_name
+        vb.memory = box_memory
+      end
+      config.vm.provision 'shell', inline: <<-SHELL
+          sudo yum install -y epel-release
+          # for installing of jq and xmllint
+          which jq
+          if [ $? != 0 ] ; then
+            sudo yum install -q -y jq
+          fi
+          which xmllint
+          if [ $? != 0 ] ; then
+            sudo yum install -q -y libxml2
+          fi
+          # indicate successful provision regardless
+          exit 0
+        SHELL
+    end
+# NOTE: cannot run from mounted Windows media
+# The private key to connect to this box via SSH has invalid permissions
+set on it.
+# The permissions of the private key should be set to 0600, otherwise SSH will ignore the key.
+  config.vm.provision :serverspec do |spec|
+    spec.pattern = '*_spec.rb'
+    # from vgarant-serverspec 1.2.0:
+    # serverspec provisioner:
+    # * The following settings shouldn't exist:
+    #   html_output, junit_output, junit_output_file
+    # spec.html_output = true
+    # spec.junit_output = true
+    # spec.junit_output_file = 'junit.xml'
+    # see also workarounds required to install vagrant-serverspec 1.3.0
+    # https://github.com/vvchik/vagrant-serverspec/issues/37
+  end
+  end
+end
