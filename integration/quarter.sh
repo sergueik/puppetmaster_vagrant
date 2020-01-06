@@ -44,14 +44,10 @@ if [[ ! -z $START_DATE ]]; then
   exit 0
 fi
 if [[ $DEBUG == 'true' ]] ; then
-  TODAY_MONTH_DATE=0215
-fi
-if [[ $DEBUG == 'true' ]] ; then
   echo "Today is ${TODAY_MONTH_DATE}"
 fi
 
 TODAY_YEAR=$(date +%Y)
-# TODO: year adjustment for 4th quarter when evaluating the last completed quarter
 
 QUARTER_START_DATES=( '1:01-01'
   '2:04-01'
@@ -71,6 +67,9 @@ QUARTER=4
 for ENTRY in "${FOLLOWING_QUARTER_START_DATE[@]}" ; do
   KEY="${ENTRY%%:*}"
   VALUE="${ENTRY##*:}"
+  if [[ $DEBUG == 'true' ]] ; then
+    echo "Inspecting quarter boundaies of quarter ${VALUE}"	
+  fi
   if [[ "${TODAY_MONTH_DATE}" -lt "${KEY}" ]] ; then
     QUARTER=$VALUE
     if [[ $DEBUG == 'true' ]] ; then
@@ -104,13 +103,14 @@ done
 # date format YYYY-mm-dd
 printf "Current quarter is %s-%s...%s-%s\n" "${TODAY_YEAR}" "${QUARTER_START_DATE}" "${TODAY_YEAR}" "${QUARTER_END_DATE}"
 
-
 PREV_QUARTERS=('1:4' '2:1' '3:2' '4:3')
+
 for ENTRY in "${PREV_QUARTERS[@]}" ; do
   KEY="${ENTRY%%:*}"
   VALUE="${ENTRY##*:}"
   if [[ "${QUARTER}" = "${KEY}" ]] ; then
     PREV_QUARTER=$VALUE
+    # year adjustment for 4th quarter
     if [[ "${PREV_QUARTER}" == '4' ]] ;  then
       PREV_QUARTER_YEAR=$((TODAY_YEAR -1 ))
     else
