@@ -21,6 +21,8 @@ if [[ $DEBUG == 'true' ]] ; then
   echo "END_DATE=${END_DATE}"
   # usage unclear
 fi
+
+
 # interval argument overrides the named arguments:
 # ./quarter.sh -s 2019-09-01 -e 2019-09-05 2
 # will ignore START_DATE and END_DATE
@@ -100,6 +102,16 @@ for ENTRY in "${QUARTER_END_DATES[@]}" ; do
     fi
   fi
 done
+
+# Amending the qurter end date for report ranges with interval breakdown
+# NOTE: frequently overlooked implicitily "inclusive" meaning of dates
+# foound in a typical report header
+# based on: https://stackoverflow.com/questions/18706823/how-to-increment-a-date-in-a-bash-script
+REPORT_END_DATE=$(date +%Y-%m-%d -d "${TODAY_YEAR}-${QUARTER_END_DATE} + 1 day")
+
+if [[ $DEBUG == 'true' ]] ; then
+  echo "REPORT_END_DATE=${REPORT_END_DATE}"
+fi
 # date format YYYY-mm-dd
 printf "Current quarter is %s-%s...%s-%s\n" "${TODAY_YEAR}" "${QUARTER_START_DATE}" "${TODAY_YEAR}" "${QUARTER_END_DATE}"
 
@@ -143,4 +155,10 @@ for ENTRY in "${QUARTER_END_DATES[@]}" ; do
 done
 # date format YYYY-mm-dd
 printf "Previous quarter is %s-%s...%s-%s\n" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_START_DATE}" "${PREV_QUARTER_YEAR}" "${PREV_QUARTER_END_DATE}"
+
+REPORT_END_DATE=$(date +%Y-%m-%d -d "${PREV_QUARTER_YEAR}-${PREV_QUARTER_END_DATE} + 1 day")
+
+if [[ $DEBUG == 'true' ]] ; then
+  echo "REPORT_END_DATE=${REPORT_END_DATE}"
+fi
 
