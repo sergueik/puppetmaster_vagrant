@@ -4,15 +4,20 @@ DEBUG=1
 SELF=$(basename $0)
 PROCNAME=${1:-VBoxService}
 PROCMASK=$(echo $PROCNAME | sed 's|\([a-z0-9]\)$|\[\1\]|')
+# Should the following work?
+# PROCMASK=$(echo $PROCNAME | sed 's|\([a-z0-9]\)$|[\1]|')
 
 if [[ $DEBUG -ne 0 ]]
 then
   echo "PROCNAME=${PROCNAME}"
   echo "PROCMASK=${PROCMASK}"
   /bin/ps -ef | grep $PROCMASK | grep -v $SELF
-  # sometimes there is suggested sippet flip the order of command and its output redirect (>/dev/null or 1>/dev/null)
-  # the blow status code check illustrate this is a bad idea
-  echo ">/dev/null /bin/ps -ef | grep $PROCMASK | grep -v $SELF" 
+  # sometimes there is suggestons to swap the
+  # command and its output redirection (>/dev/null or 1>/dev/null)
+  # the folloing line illustrates why this is a bad idea
+  # if a status code check is performed after the command run
+
+  echo ">/dev/null /bin/ps -ef | grep $PROCMASK | grep -v $SELF"
   >/dev/null /bin/ps -ef | grep $PROCMASK | grep -v $SELF
   echo $?
 
