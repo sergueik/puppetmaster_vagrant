@@ -4,8 +4,8 @@
 require 'yaml'
 require 'pp'
 
-# This needs vagrant-alpine plugin with pre-2.2.6 Vagrant (e.g. with Vagrant 2.0.2)
-box_hostname = ENV.fetch('BOX_HOSTNAME', 'alpine-guest-additions')
+# with pre-2.2.6 Vagrant (e.g. with Vagrant 2.0.2) this requires vagrant-alpine plugin to be present
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'alpine')
 
 basedir = ENV.fetch('USERPROFILE', '')
 basedir = ENV.fetch('HOME', '') if basedir == ''
@@ -14,7 +14,6 @@ basedir = basedir.gsub('\\', '/')
 dir = File.expand_path(File.dirname(__FILE__))
 
 # overrides the setting in Vagrantfile.yaml
-
 box_name = 'alpine38'
 vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
 if File.exists?(vagrantfile_yaml)
@@ -24,7 +23,7 @@ if File.exists?(vagrantfile_yaml)
     box_config = config_yaml[config_yaml[:boot]]
     box_name = box_config[:box_name]
   else
-    box_config = config_yaml[box_name]  
+    box_config = config_yaml[box_name]
   end
   box_cpus = box_config[:box_cpus].to_i
   box_memory = box_config[:box_memory].to_i
@@ -47,22 +46,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.network :forwarded_port, host: 3000, guest: 3000
   config.ssh.forward_agent = true
   config.vm.boot_timeout = 600
+  config.vm.synced_folder './', '/vagrant'
   config.vm.network :private_network, ip: '192.168.33.40'
   # if the shared folder do not work use scp 
   config.vm.provider 'virtualbox' do |vb|
     vb.customize ['modifyvm', :id, '--cpus', box_cpus ]
     vb.customize ['modifyvm', :id, '--memory', box_memory ]
-    vb.customize ["modifyvm", :id, "--hwvirtex", "on"]
-    vb.customize ["modifyvm", :id, "--pae", "on"]
-    vb.customize ['modifyvm', :id, '--ioapic', 'on'] 
+    vb.customize ['modifyvm', :id, '--hwvirtex', 'on']
+    vb.customize ['modifyvm', :id, '--pae', 'on']
+    vb.customize ['modifyvm', :id, '--ioapic', 'on']
     vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
     vb.customize ['modifyvm', :id, '--audio', 'none']
     vb.customize ['modifyvm', :id, '--usb', 'off']
   end
 
-
   if ! Vagrant.has_plugin?('vagrant-alpine')
-	  # TODO: raise an error
+    # TODO: raise an error
   end
 
   config.vm.provision 'shell', inline: <<-SHELL
@@ -75,7 +74,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     OPTONAL_GEMS=
 
     sudo  apk update
-    sudo apk add --update --no-cache $PACKAGES virtualbox-guest-additions ruby-dev
+    sudo apk add --update --no-cache $PACKAGES virtualbox-guest-additions ruby-dev ruby-etc ruby-io-console
     sudo rm -rf /var/cache/apk/*
     sudo apk add
     sudo sh -c "echo vboxguest >> /etc/modules"
@@ -85,92 +84,95 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     sudo mkdir -p "${BASEDIR}/spec/localhost"
 
     cat <<EOF>"${BASEDIR}/Rakefile"
-require 'rake'
-require 'rspec/core/rake_task'
-
-task :spec => 'spec:all'
-task :default => :spec
-
-namespace :spec do
-  targets = []
-  Dir.glob('./spec/*').reject { |x| x=~ /.\\/spec\\/(?:type|config)/ }.each do |dir|
-    next unless File.directory?(dir)
-    target = File.basename(dir)
-    target = "_\#{target}" if target == 'default'
-    targets << target
-  end
-
-  task :all     => targets
-  task :default => :all
-
-  targets.each do |target|
-    original_target = target == '_default' ? target[1..-1] : target
-    desc "Run serverspec tests to \#{original_target}"
-    RSpec::Core::RakeTask.new(target.to_sym) do |t|
-      ENV['TARGET_HOST'] = original_target
-      t.rspec_opts = "--require spec_helper --format documentation --format html --out results/result_\#{$host}.html --format json --out results/result_\#{$host}.json"
-      t.pattern = "spec/\#{original_target}/*_spec.rb"
-    end
-  end
-end
+      require 'rake'
+      require 'rspec/core/rake_task'
+      
+      task :spec => 'spec:all'
+      task :default => :spec
+      
+      namespace :spec do
+        targets = []
+        Dir.glob('./spec/*').reject { |x| x=~ /.\\/spec\\/(?:type|config)/ }.each do |dir|
+          next unless File.directory?(dir)
+          target = File.basename(dir)
+          target = "_\#{target}" if target == 'default'
+          targets << target
+        end
+      
+        task :all     => targets
+        task :default => :all
+      
+        targets.each do |target|
+          original_target = target == '_default' ? target[1..-1] : target
+          desc "Run serverspec tests to \#{original_target}"
+          RSpec::Core::RakeTask.new(target.to_sym) do |t|
+            ENV['TARGET_HOST'] = original_target
+            t.rspec_opts = "--require spec_helper --format documentation --format html --out results/result_\#{$host}.html --format json --out results/result_\#{$host}.json"
+            t.pattern = "spec/\#{original_target}/*_spec.rb"
+          end
+        end
+      end
 EOF
     cat <<EOF>"${BASEDIR}/spec/spec_helper.rb"
-require 'serverspec'
+      require 'serverspec'
+      set :backend, :exec
+      
+      RSpec.configure do |config|
+        config.filter_gems_from_backtrace 'vagrant', 'vagrant-serverspec'
+      end
 EOF
 
    cat <<EOF>"${BASEDIR}/spec/localhost/sample_spec.rb"
-require 'spec_helper'
-
-describe 'Operating system' do
-    context 'family' do
-      subject { os[:family] }
-      # NOTE: for this expectation one needs a symbol, not a string
-      it { is_expected.to eq :alpine  }
-      it { is_expected.not_to eq 'alpine'  }
-    end
-  end
-  %w|build-base libcurl libxml2-dev libxslt-dev libffi-dev libmcrypt-dev openssl|.each do |package_name|
-    describe package package_name do
-      it { should be_installed }
-    end
-  end
-  %w|jq xmllint|.each do |tool|
-    describe command ("which \#{tool}") do
-      its(:stdout) { should_not be_empty }
-    end
-  end
-  describe command "jq '.foo' '/serverspec/tmp/data.json'" do
-    its(:stdout) { should contain 'bar' }
-  end
-  describe command "xmllint --xpath '/Server/@port' '/serverspec/tmp/data.xml'" do
-    its(:stdout) { should contain 'port="8005"' }
-  end
-
-  describe file ('/usr/local/bin/ruby') do
-    it { should be_file }
-    it { should be_executable }
-  end
-
-  [
-    'Rakefile',
-    'spec/spec_helper.rb',
-    'spec/docker_helper.rb',
-  ].each do |filename|
-    describe file "/serverspec/\#{filename}" do
-      it { should exist }
-    end
-  end
-  [
-    'docker-api',
-    'rspec',
-    'rspec_junit_formatter',
-    'serverspec',
-  ].each do | gem |
-    describe package(gem) do
-      it { should be_installed.by('gem') }
-    end
-  end
-end
+      require 'spec_helper'
+      
+      describe 'Operating system' do
+        context 'family' do
+          subject { os[:family] }
+          # NOTE: for this expectation one needs a symbol, not a string
+          it { is_expected_to eq 'alpine'  }
+        end
+        %w|build-base libcurl libxml2-dev libxslt-dev libffi-dev libmcrypt-dev openssl|.each do |package_name|
+          describe package package_name do
+            it { should be_installed }
+          end
+        end
+        %w|jq xmllint|.each do |tool|
+          describe command ("which \#{tool}") do
+            its(:stdout) { should_not be_empty }
+          end
+        end
+        # TODO: generate sample files
+        describe command "jq '.foo' '/serverspec/tmp/data.json'" do
+          its(:stdout) { should contain 'bar' }
+        end
+        describe command "xmllint --xpath '/Server/@port' '/serverspec/tmp/data.xml'" do
+          its(:stdout) { should contain 'port="8005"' }
+        end
+      
+        describe file ('/usr/local/bin/ruby') do
+          it { should be_file }
+          it { should be_executable }
+        end
+      
+        [
+          'Rakefile',
+          'spec/spec_helper.rb',
+          'spec/docker_helper.rb',
+        ].each do |filename|
+          describe file "/serverspec/\#{filename}" do
+            it { should exist }
+          end
+        end
+        [
+          'rspec',
+          'rspec_junit_formatter',
+          'serverspec',
+        ].each do | gem |
+          describe package(gem) do
+            it { should be_installed.by('gem') }
+          end
+        end
+      end
 EOF
   SHELL
 end

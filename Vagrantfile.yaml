@@ -148,7 +148,7 @@
   :config_vm_box_name: centos-6.6-x86_64.box
 
 # Openstack base test. Warning: Puppet not preinstalled
-# centos 7 with puppet 3.x 
+# centos 7 with puppet 3.x
 'centos7_x64':
   :box_name: centos7_x64
   :box_memory: 8192
@@ -182,19 +182,12 @@
   :config_vm_newbox: false
   :config_vm_default: linux
   :config_vm_box: alpine
-  :config_vm_box_name: generic_alpine38_build_206.box
+  :config_vm_box_name: alpine38.box
+  :config_vm_box_namei_orig: generic_alpine38_build_206.box
 
-# vanilla alpine x64 3.7.0
+# vanilla alpine x64 3.7.0 does not work with Vagrant 2.0.2 -  removed
 # https://app.vagrantup.com/alpine/boxes/alpine64/versions/3.7.0/providers/virtualbox.box
-'alpine37':
-  :box_name: alpine37
-  :box_memory: 512
-  :box_cpus: 1
-  :box_gui: false
-  :config_vm_newbox: false
-  :config_vm_default: linux
-  :config_vm_box: alpine
-  :config_vm_box_name: alpine_alpine64.box
+
 'windows2008_ssh':
   :box_name: windows2008_ssh
   :box_memory: 1024
