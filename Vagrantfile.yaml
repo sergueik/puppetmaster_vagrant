@@ -171,6 +171,30 @@
   :config_vm_box: ubuntu
   :config_vm_box_name: ubuntu-server-12042-x64-vbox4210.box
 
+# vanilla alpine x64 3.8.0
+# https://app.vagrantup.com/generic/boxes/alpine38/versions/2.0.6/providers/virtualbox.box
+# https://wiki.alpinelinux.org/wiki/Alpine_Linux:Releases
+'alpine38':
+  :box_name: alpine38
+  :box_memory: 512
+  :box_cpus: 1
+  :box_gui: false
+  :config_vm_newbox: false
+  :config_vm_default: linux
+  :config_vm_box: alpine
+  :config_vm_box_name: generic_alpine38_build_206.box
+
+# vanilla alpine x64 3.7.0
+# https://app.vagrantup.com/alpine/boxes/alpine64/versions/3.7.0/providers/virtualbox.box
+'alpine37':
+  :box_name: alpine37
+  :box_memory: 512
+  :box_cpus: 1
+  :box_gui: false
+  :config_vm_newbox: false
+  :config_vm_default: linux
+  :config_vm_box: alpine
+  :config_vm_box_name: alpine_alpine64.box
 'windows2008_ssh':
   :box_name: windows2008_ssh
   :box_memory: 1024
