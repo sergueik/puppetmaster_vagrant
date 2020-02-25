@@ -87,6 +87,8 @@ class urugeas(
   # ==> urugeas: Error: Evaluation Error: Error while evaluating a Function Call, Found value has wrong type, expects a String value, got Boolean
   # urugeas::setting: On
   $untyped_setting = hiera("${name}::setting",'On'),
+  String $java_options_simplest_multiline = lookup('urugeas:java_options_simplest_multiline', Sting, '', false),
+  String $java_options_simplest_multiline_embed = hiera('urugeas::java_options_simplest_multiline_embed'),
 ){
 
 
@@ -103,9 +105,13 @@ class urugeas(
   $frag2 = inline_template( "<% @deep_data['group_key2'].each do |key,value| %> key: <%=key %> value: <%=value %>\n<% end -%>")
   notify { "result (frag2): ${frag2}": }
 
-  $flat_data = $deep_data['group_key3'] 
+  $flat_data = $deep_data['group_key3']
   $frag3 = inline_template( "<% @flat_data.each do |key,value| %> key: <%=key %> value: <%=value %>\n<% end -%>")
   notify { "result (frag3): ${frag3}": }
+  $frag4 = inline_template( '<%= @java_options_simplest_multiline -%>')
+  notify { "simplest multiline - newline replaced with spaces: ${frag4}": }
+  $frag5 = inline_template( '<%= @java_options_simplest_multiline_embed -%>')
+  notify { "enclosed in quotes: ${frag5}": }
 
   notify {"begin": }
   require 'stdlib'
