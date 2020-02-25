@@ -26,18 +26,30 @@ jq --arg k1 "$KEY1"   \
    '. | .[$k1]=$v1 | .[$k2]=$v2 | .[$k3]=$v3'  \
    <<<'{}' ;
 done > $DATAFILE2
+DATA_KEY='data'
+# making the rowset keyed by $DATA_KEY
+# TODO: explore alternatives
+cat $DATAFILE2 | jq --slurp '.' | jq "{\"$DATA_KEY\": .}"
 
-cat $DATAFILE2 | jq --slurp '.'
+
+# NOTE: the following does not work
+# jq --arg data_key "$DATA_KEY" '{ .[$data_key] =. }'
 rm -f $DATAFILE1
 rm -f $DATAFILE2
 
-exit 0 
+exit 0
 # see also https://qna.habr.com/q/716813?e=8633575#clarification_833889
-
+DATA_FILE='/tmp/data.txt'
+cat<<EOF> $DATA_FILE
+rabbit1-test1
+rabbit1-test2
+rabbit1-test3
+EOF
 jq -Rs --arg a '/' --arg c 'rabbit1' '[ .[:-1] |
   split("\n")[] |
   { "{#VHOSTNAME}" : $a ,
     "{#QUEUENAME}": . ,
     "{#NODENAME}": $c } ] |
-   { "data" : . }' 'data.txt'
+   { "data" : . }' $DATA_FILE
+rm -f $DATA_FILE
 
