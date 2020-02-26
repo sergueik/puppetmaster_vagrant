@@ -225,7 +225,7 @@ urugeas::java_options:  |
 
 # NOTE: need a blank line above
 # see also: https://yaml-multiline.info/
-urugeas::java_options_simplest_multiline: >-
+urugeas::options_multiline: >-
   -Dfile.encoding=%{hiera('urugeas::source_encoding')}
   -DAPP_LOG_ROOT=/var/log
   -Dmaven.test.skip=true
@@ -233,8 +233,20 @@ urugeas::java_options_simplest_multiline: >-
 
 # NOTE: need two blank lines above to terminate.
 # This comment needs to start the line
+
+# https://lzone.de/cheat-sheet/YAML
+# another free newline conversion multiline
+urugeas::options_multiline_v2:
+  -Dfile.encoding=%{hiera('urugeas::source_encoding')}
+  -DAPP_LOG_ROOT=/var/log
+  -Dmaven.test.skip=true
+   Arbitrary free text
+   over "multiple lines" stopping
+   after indentation changes...
+
+# end of data
 urugeas::job::debug: false
-urugeas::java_options_simplest_multiline_embed: "%{hiera('urugeas::java_options_simplest_multiline')}"
+urugeas::options_multiline_embed: "%{hiera('urugeas::options_multiline')}"
 urugeas::job::logdir_glob: 'log*'
 urugeas::job::current_logdir: 'log10'
 urugeas::job::number_logdirs_to_keep: 5
@@ -263,3 +275,4 @@ deep_data:
     key5: 'value5'
   group_key3:
     key6: 'value6'
+
