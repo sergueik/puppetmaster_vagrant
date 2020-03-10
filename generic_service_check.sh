@@ -3,9 +3,9 @@
 DEBUG=1
 SELF=$(basename $0)
 PROCNAME=${1:-VBoxService}
-PROCMASK=$(echo $PROCNAME | sed 's|\([a-z0-9]\)$|\[\1\]|')
-# Should the following work?
-# PROCMASK=$(echo $PROCNAME | sed 's|\([a-z0-9]\)$|[\1]|')
+PROCMASK=$(echo $PROCNAME| sed 's|\([a-z0-9]\)$|\[\1\]|')
+# to handle special characters use
+# sed 's/[#.\[\]/\\\0/g'
 
 if [[ $DEBUG -ne 0 ]]
 then
