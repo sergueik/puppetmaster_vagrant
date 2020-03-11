@@ -38,10 +38,10 @@ until [[ "${NEXT_DATE}" > "${DATE_END}" ]]; do
   # avoid running SQL if report date interval collapses to the same start, end
   if [[ ${INTERVAL_START} < ${INTERVAL_END} ]]; then
     echo "Running the report over START=${INTERVAL_START} END=${INTERVAL_END}"
-  else  
+  else
     if [[ $DEBUG == 'true' ]] ; then
       echo 'Skipping collapsed date interval'
-    fi  
+    fi
   fi
   # echo "${NEXT_DATE}"
 done
@@ -71,7 +71,19 @@ fi
 # accidental date format change can lead to the endless loop
 
 NEXT_DATE="${DATE_START}"
+# exotic variant, bash only:
+# from https://www.cyberforum.ru/shell/thread2584778.html
+echo '----------'
+echo 'Bash array variable evaluation example:'
+TOTAL_DAYS=$(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 ))
+if [[ $DEBUG == 'true' ]] ; then
+  for DAY_COUNT in $(eval echo {0..$TOTAL_DAYS}) ; do
+    echo "DAY_COUNT=${DAY_COUNT}"
+  done
+fi
+echo '----------'
 for DAY_COUNT in $( seq 0 $DAY_INCREMENT $(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 ))) ; do
+  # TODO: suspect wrong code in the following line
   DAY_COUNT=$(expr $DAY_COUNT + $DAY_INCREMENT)
   if [[ $DEBUG == 'true' ]] ; then
     echo "DAY_COUNT=${DAY_COUNT}"
@@ -87,12 +99,12 @@ for DAY_COUNT in $( seq 0 $DAY_INCREMENT $(( ($(date -d $DATE_END +%s) - $(date 
   if [[ ${INTERVAL_START} < ${INTERVAL_END} ]]; then
     echo "Running the report over INTERVAL_START=${INTERVAL_START} INTERVAL_END=${INTERVAL_END}"
     # run the data collection over specicic date range
-    # count the aggregated data e.g. 
+    # count the aggregated data e.g.
     # jq '.results | length' $CUMULATIVE_REPORT
-  else 
+  else
     if [[ $DEBUG == 'true' ]] ; then
       echo 'Skipping collapsed date interval'
-    fi  
+    fi
   fi
 done
 
@@ -100,7 +112,7 @@ done
 NEXT_DATE="${DATE_START}"
 MAX_DAY_COUNT=$(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 ))
 MAX_DAY_COUNT=$(( ($(date -d $DATE_END +%s) - $(date -d $DATE_START +%s))/84600 ))
-for (( DAY_COUNT=0; DAY_COUNT<=$MAX_DAY_COUNT; DAY_COUNT+=$DAY_INCREMENT )) 
+for (( DAY_COUNT=0; DAY_COUNT<=$MAX_DAY_COUNT; DAY_COUNT+=$DAY_INCREMENT ))
 do
   if [[ $DEBUG == 'true' ]] ; then
     echo "DAY_COUNT=${DAY_COUNT}"
@@ -116,11 +128,11 @@ do
   if [[ ${INTERVAL_START} < ${INTERVAL_END} ]]; then
     echo "Running the report over INTERVAL_START=${INTERVAL_START} INTERVAL_END=${INTERVAL_END}"
     # run the data collection over specicic date range
-    # count the aggregated data e.g. 
+    # count the aggregated data e.g.
     # jq '.results | length' $CUMULATIVE_REPORT
-  else 
+  else
     if [[ $DEBUG == 'true' ]] ; then
       echo 'Skipping collapsed date interval'
-    fi  
+    fi
   fi
 done
