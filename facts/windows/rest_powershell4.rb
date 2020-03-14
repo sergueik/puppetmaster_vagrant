@@ -42,6 +42,9 @@ if Facter.value(:kernel) == 'windows'
                 }
             }
 "@
+        # https://www.cyberforum.ru/powershell/thread2589305.html
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         $webRequest = [System.Net.WebRequest]::Create($url)
         $webRequest.Method = 'POST'
