@@ -2,9 +2,12 @@
 # vi: set ft=puppet :
 #
 # https://blog.blakeerickson.com/masterless-puppet-on-ubuntu-16-04
-# masterless Puppet "just drop" setup stems on copying of all Puppet modules to every node via Git followed by Puppet apply the changes locally works great without having to upscale
+# The masterless Puppet "just drop" setup stems on copying of all Puppet modules to every node through git followed by 
+# `puppet apply <path to node manifest>` to bring the node into the desired state
+# locally works great without having to upscale
 # logically requires two connected nodes: the gitlab server and the puppet node
-# for initial testing may install both on one machine
+# for initial testing and smoke testing  both serviced may be installed on 
+# same  machine
 #
 # the gitlab Vagrantfile is
 # based on:
@@ -12,6 +15,7 @@
 # http://blog.bobbyallen.me/2014/01/11/setup-your-own-private-gitlab-server-using-gitlab-and-ubuntu-server-12-04-lts/
 # https://www.digitalocean.com/community/tutorials/how-to-set-up-gitlab-as-your-very-own-private-gitlab-clone
 # https://www.digitalocean.com/community/tutorials/how-to-set-up-a-masterless-puppet-environment-on-ubuntu-14-04
+# https://puppet.com/blog/introducing-masterless-puppet-bolt
 # https://docs.gitlab.com/ee/api/
 
 basedir = ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')
@@ -32,7 +36,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = 'ubuntu/trusty64'
   config.vm.hostname = box_hostname
   # Localy cached vagrant box images from http://www.vagrantbox.es/ and  http://dev.modern.ie/tools/vms/linux/
-  # with the generic base box  bionic 18.04 over 1g
+  # with the generic base box of ubuntu bionic 18.04 bigger than 1 gb
   # https://app.vagrantup.com/generic/boxes/ubuntu1804/versions/1.9.40/providers/virtualbox.box
   config_vm_box_name = 'trusty-server-amd64-vagrant-selenium.box'
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
@@ -170,44 +174,78 @@ EOF
     sudo mkdir -p cron-puppet/manifests cron-puppet/files
     sudo cat<<EOF>'/etc/puppet/modules/cron-puppet/manifests/init.pp'
 class cron-puppet {
-    file { 'post-hook':
-        ensure  => file,
-        path    => '/etc/puppet/.git/hooks/post-merge',
-        source  => 'puppet:///modules/cron-puppet/post-merge',
-        mode    => 0755,
-        owner   => root,
-        group   => root,
-    }
-    cron { 'puppet-apply':
-        ensure  => present,
-        command => "cd /etc/puppet ; /usr/bin/git pull",
-        user    => root,
-        minute  => '*/30',
-        require => File['post-hook'],
-    }
+  file { 'post-hook':
+    ensure  => file,
+    path    => '/etc/puppet/.git/hooks/post-merge',
+    source  => 'puppet:///modules/cron-puppet/post-merge',
+    mode    => 0755,
+    owner   => root,
+    group   => root,
+  }
+  cron { 'puppet-apply':
+    ensure  => present,
+    command => "cd /etc/puppet ; /usr/bin/git pull",
+    user    => root,
+    minute  => '*/30',
+    require => File['post-hook'],
+  }
 }
 EOF
     sudo cat<<EOF>'/etc/puppet/modules/cron-puppet/files/post-merge'
 #!/bin/bash -e
-## Run Puppet locally using puppet apply
-/usr/bin/puppet apply /etc/puppet/manifests/site.pp
+
+# NOTE: this is a post-merge script. it is not going to be executed immediately
+#
+# Run Puppet locally using puppet apply
+# Pass additional facts via command line
+# see also: https://stackoverflow.com/questions/15901850/pass-variable-to-puppet-on-commandline
+
+export FACTER_DC='TEST'
+echo "Exporting environment FACTER_DC=\${FACTER_DC}"
+export FACTER_dc='test'
+echo "Exporting environment FACTER_dc=\${FACTER_dc}"
+# will be observed as fact $::dc
+# when the number of custom facts is big, a custom facts file
+# https://puppet.com/docs/facter/3.9/custom_facts.html
+# is a better alternative
+FACTER_DC='dev' /usr/bin/puppet apply /etc/puppet/manifests/site.pp
 
 ## Log status of the Puppet run
 if [ $? -eq 0 ]
 then
-    /usr/bin/logger -i "Puppet has run successfully" -t "puppet-run"
-    exit 0
+  /usr/bin/logger -i 'Puppet has run successfully' -t 'puppet-run'
+  exit 0
 else
-    /usr/bin/logger -i "Puppet has ran into an error, please run Puppet manually" -t "puppet-run"
-    exit 1
+  /usr/bin/logger -i 'Puppet has ran into an error, please run Puppet manually' -t 'puppet-run'
+  exit 1
 fi
 EOF
     sudo cat<<EOF>'/etc/puppet/manifests/site.pp'
 node default {
-    include cron-puppet
+  notify {"Custom fact dc=\\${::dc}":}
+  notify {"Custom fact xyz=\\${::xyz}":}
+  notify {"Custom fact DC=\\${::DC}":}
+  notify { "Operating System \\${::operatingsystem}": }
+  include cron-puppet
 }
 EOF
-  sudo puppet apply '/etc/puppet/manifests/site.pp'
+  # Pass additional facts via command line
+  # see also: https://stackoverflow.com/questions/15901850/pass-variable-to-puppet-on-commandline
+  # when the number of custom facts is big, a custom facts file
+  # https://puppet.com/docs/facter/3.9/custom_facts.html
+  # is a better alternative
+
+  export FACTER_DC='DEV1'
+  echo "Exporting environment FACTER_DC=${FACTER_DC}"
+  export FACTER_dc='dev1'
+  echo "Exporting environment FACTER_dc=${FACTER_dc}"
+  export FACTER_xyz='xyz1'
+  echo "Exporting environment FACTER_xyz=${FACTER_xyz}"
+  # These variables will become Puppet facts $::dc, $::DC
+  # NOTE: because of the sudo this will not work - the explicit setting would
+  # NOTE: upper-case facts will be ignored
+  # sudo FACTER_dc='dev2' FACTER_DC='DEV2' puppet apply '/etc/puppet/manifests/site.pp'
+  sudo FACTER_xyz='xyz2' FACTER_dc='dev2' FACTER_DC='DEV2' puppet apply '/etc/puppet/manifests/site.pp'
 END_OF_PROVISION
   # first time login credentials: root / 5iveL!fe
   config.vm.provider :virtualbox do |v|
