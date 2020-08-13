@@ -5,6 +5,7 @@ node 'default' {
 
   include urugeas
   include urugeas::jetty_mod 
+  include urugeas::python_inline 
 
   # urugeas::chown {'dummy': }
   # include urugeas
