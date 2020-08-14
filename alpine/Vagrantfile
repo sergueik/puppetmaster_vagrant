@@ -187,6 +187,24 @@ EOF
             it { should be_installed.by('gem') }
           end
         end
+        context 'Python'do
+          describe file ('/usr/bin/python3') do
+            it { should be_file }
+            it { should be_executable }
+          end
+          describe command( <<-EOF
+            python3 -c "exec(\\\\\\"\\\\\\"\\\\\\"\\\\\\\\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\\\\\\\\nfor k,v in zip(data[0::2], data[1::2]):\\\\\\\\n  print( '{}={}'.format(k,v))\\\\\\\\n\\\\\\"\\\\\\"\\\\\\")"
+          EOF
+          ) do
+            {
+              'a1' => 'b1',
+              'a2' => 'b2',
+              'a3' => 'b3',
+            }.each do |k,v|
+              its(:stdout) { should contain "\#{k}=\#{v}" }
+            end  
+          end
+        end
       end
 EOF
   SHELL
