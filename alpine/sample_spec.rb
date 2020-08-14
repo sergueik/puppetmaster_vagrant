@@ -1,5 +1,4 @@
 require 'spec_helper'
-
 describe 'Operating system' do
   context 'family' do
     subject { os[:family] }
@@ -11,7 +10,7 @@ describe 'Operating system' do
       it { should be_installed }
     end
   end
-  %w|jq xmllint|.each do |tool|
+  %w|jq xmllint python3|.each do |tool|
     describe command ("which #{tool}") do
       its(:stdout) { should_not be_empty }
     end
@@ -23,12 +22,10 @@ describe 'Operating system' do
   describe command "xmllint --xpath '/Server/@port' '/serverspec/tmp/data.xml'" do
     its(:stdout) { should contain 'port="8005"' }
   end
-
   describe file ('/usr/local/bin/ruby') do
     it { should be_file }
     it { should be_executable }
   end
-
   [
     'Rakefile',
     'spec/spec_helper.rb',
@@ -47,5 +44,28 @@ describe 'Operating system' do
       it { should be_installed.by('gem') }
     end
   end
+  context 'Python'do
+    describe file ('/usr/bin/python3') do
+      it { should be_file }
+      it { should be_executable }
+    end
+    # origin: https://stackoverflow.com/questions/5389507/iterating-over-every-two-elements-in-a-list
+    # see also https://www.geeksforgeeks.org/python-pair-iteration-in-list/
+    # text = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'
+    # data = text.split(',')
+    # for k,v in zip(data[0::2], data[1::2]):
+    #   print( '{} {}'.format(k,v))
+    describe command( <<-EOF
+      python3 -c "exec(\\\"\\\"\\\"\\\\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\\\\nfor k,v in zip(data[0::2], data[1::2]):\\\\n  print( '{}={}'.format(k,v))\\\\n\\\"\\\"\\\")"
+    EOF
+    ) do
+      {
+        'a1' => 'b1',
+        'a2' => 'b2',
+        'a3' => 'b3',
+      }.each do |k,v|
+        its(:stdout) { should contain "#{k}=#{v}" }
+      end  
+    end
+  end
 end
-
