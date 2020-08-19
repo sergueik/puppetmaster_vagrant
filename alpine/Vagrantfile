@@ -71,27 +71,28 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     vb.customize ['modifyvm', :id, '--usb', 'off']
   end
 
-  if ! Vagrant.has_plugin?('vagrant-alpine')
-    # TODO: raise an error
-  end
-
   config.vm.provision 'shell', inline: <<-SHELL
     PACKAGES='build-base libcurl libxml2-dev libxslt-dev libffi-dev libmcrypt-dev openssl jq libxml2-utils'
 
     GEMS='docker-api ffi inifile psych rake rspec rspec-core rspec_junit_formatter rspec-mocks rspec-support serverspec specinfra json'
 
-
     OPTONAL_GEMS='nokogiri yamllint'
     OPTONAL_GEMS=
 
-    sudo  apk update
+    sudo apk update
     sudo apk add --update --no-cache $PACKAGES virtualbox-guest-additions ruby-dev ruby-etc ruby-io-console 
-    # does not work on alpine 9 as intended
-    # sudo apk del python3
-    # sudo apk add python3=3.7.3
-    sudo apk add python3=3.6.9-r1
+    sudo apk del python3
+    # NOTE: avoid specifying release too strict
+    apk add --no-cache ca-certificates git~=2.20 python3-dev~=3.6 gcc vim libstdc++ g++ libffi-dev openssl-dev tmux~=2.8 sshpass rsync htop jq docker~=18.09.8 bash curl libffi-dev build-base 
     sudo rm -rf /var/cache/apk/*
     sudo apk add
+    sudo rc-update add docker boot
+    sudo adduser vagrant docker
+    sudo service docker start
+    # TODO: port check ? 
+    sleep 20
+    sudo pip3 install --upgrade pip cffi
+    sudo pip3 install docker ansible 
     sudo sh -c "echo vboxguest >> /etc/modules"
     sudo sed -i '/ipv6/d' /etc/modules
     sudo gem install --no-rdoc --no-ri $GEMS $OPTIONAL_GEMS
@@ -208,5 +209,22 @@ EOF
       end
 EOF
   SHELL
+  # NOTE: apparently misbalanced
+  if ! Vagrant.has_plugin?('vagrant-alpine')
+    raise 'Need Vagrant plugin "vagrant-alpine"'   
+  end
+
+  # Run Ansible from the Vagrant Host
+  # NOTE: would fail in the absence of Python:
+  # tried ['/usr/bin/python', 'python3.7', 'python3.6', 'python3.5', 'python2.7', 'python2.6', '/usr/libexec/platform-python', '/usr/bin/python3', 'python']
+  config.vm.provision 'ansible' do |ansible|
+    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
+    # https://github.com/ansible/ansible-examples
+    # https://github.com/salecharohit/vagrant-ansible-alpine-docker
+    # see also: https://github.com/fulgorek/vagrant-ansible-docker-alpine
+    ansible.playbook = 'playbook.yml'
+    ansible.verbose = true
+  end
 end
+
 
