@@ -1,26 +1,44 @@
 ---
-- name: Install Docker for Alpine
-  hosts: all
+- name: Playbook for Alpine
+  hosts:
+    - all
+    - localhost
+# NOTE: add 'localhost' implicitly to prevent the command ansible-playbook playbook.yml
+# from failing to apply with the warning
+# [WARNING]: No inventory was parsed, only implicit localhost is available
+# [WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
 #  hosts: alpine
+# NOTE: remove to prevent failures running as vagrant user against localhost
 # NOTE: does not work:
 # [WARNING]: Could not match supplied host pattern, ignoring: alpine
 # BOX_HOSTNAME
   become: yes
 
-# https://github.com/freedomofpress/ansible-role-docker-registry
   vars:
-    docker_registry_data_directory: /var/www/docker-registry
-    docker_registry_expose_port: 5000
-    
+    service_name: 'virtualbox-guest-additions'
   tasks:
     - name: Install wheel module
       pip:
         name: "{{item}}"
         state: present
       with_items:
-       - wheel  
-    - name: Start service docker, if not started
-      service:
-        name: docker
-        state: started
+       - wheel
+    # https://pkgs.alpinelinux.org/contents?branch=edge&name=libxml2-utils&arch=x86_64&repo=main
+    - name: Install xmllint tool
+      apk:
+        name: "{{item}}"
+        state: present
+      with_items:
+       - libxml2-utils
+    # ansible localhost -m command -a 'xmllint --version'
+    # https://docs.ansible.com/ansible/latest/modules/command_module.html
+    - name: Run xmllint command
+      command:
+        # non-zero exit code
+        cmd: xmllint --version || echo Done | tee /tmp/xmllint_version.log
+        creates: /tmp/xmllint_version.log
+    # https://www.cyberciti.biz/faq/how-to-enable-and-start-services-on-alpine-linux/
+    - name: "Start service {{service_name}}, if not started"
+      # NOTE: this is still a valid YAML
+      service: name="{{service_name}}" state=started enabled=yes
 
