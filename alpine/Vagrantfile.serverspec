@@ -1,0 +1,230 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'yaml'
+require 'pp'
+
+debug = ENV.fetch('DEBUG', false)
+debug =  true if debug =~ /^(?:true|yes|1)$/i
+# with pre-2.2.6 Vagrant (e.g. with Vagrant 2.0.2) this requires vagrant-alpine plugin to be present
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'alpine')
+
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+# overrides the setting in Vagrantfile.yaml
+box_name = 'alpine39'
+vagrantfile_yaml = "#{dir}/Vagrantfile.yaml"
+if File.exists?(vagrantfile_yaml)
+  if debug
+    puts "Loading '#{vagrantfile_yaml}'"
+  end
+  config_yaml = YAML::load_file( vagrantfile_yaml )
+  if box_name !~ /\S/
+    box_config = config_yaml[config_yaml[:boot]]
+    box_name = box_config[:box_name]
+  else
+    box_config = config_yaml[box_name]
+  end
+  box_cpus = box_config[:box_cpus].to_i
+  box_memory = box_config[:box_memory].to_i
+  if debug
+    pp box_config
+  end
+end
+
+VAGRANTFILE_API_VERSION = '2'
+
+# BOX_URL = 'https://app.vagrantup.com/alpine/boxes/alpine64/versions/3.7.0/providers/virtualbox.box'
+BOX_URL = 'https://app.vagrantup.com/generic/boxes/alpine39/versions/3.0.10/providers/virtualbox.box'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.box = box_hostname
+#  config.vm.hostname = box_hostname
+# Vagrant attempted to execute the capability 'change_host_name' on the detect guest OS 'linux', but the guest doesn't support that capability.
+  config_vm_default = box_config[:config_vm_default]
+  config_vm_box_name = box_config[:config_vm_box_name]
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+  if debug
+    puts "Configuring '#{config.vm.box}'"
+  end
+
+  config.vm.network :forwarded_port, host: 3000, guest: 3000
+  config.ssh.forward_agent = true
+  config.vm.boot_timeout = 600
+  config.vm.synced_folder './', '/vagrant'
+  config.vm.synced_folder './data', '/var/www/html', owner: 'vagrant', group: 'vagrant'
+  config.vm.network :private_network, ip: '192.168.33.40'
+  # if the shared folder do not work use scp 
+  config.vm.provider 'virtualbox' do |vb|
+    vb.customize ['modifyvm', :id, '--cpus', box_cpus ]
+    vb.customize ['modifyvm', :id, '--memory', box_memory ]
+    vb.customize ['modifyvm', :id, '--hwvirtex', 'on']
+    vb.customize ['modifyvm', :id, '--pae', 'on']
+    vb.customize ['modifyvm', :id, '--ioapic', 'on']
+    vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
+    vb.customize ['modifyvm', :id, '--audio', 'none']
+    vb.customize ['modifyvm', :id, '--usb', 'off']
+  end
+
+  config.vm.provision 'shell', inline: <<-SHELL
+    PACKAGES='build-base libcurl libxml2-dev libxslt-dev libffi-dev libmcrypt-dev openssl jq libxml2-utils'
+
+    GEMS='docker-api ffi inifile psych rake rspec rspec-core rspec_junit_formatter rspec-mocks rspec-support serverspec specinfra json'
+
+    OPTONAL_GEMS='nokogiri yamllint'
+    OPTONAL_GEMS=
+
+    sudo apk update
+    sudo apk add --update --no-cache $PACKAGES virtualbox-guest-additions ruby-dev ruby-etc ruby-io-console 
+    sudo apk del python3
+    # NOTE: avoid specifying release too strict
+    apk add --no-cache ca-certificates git~=2.20 python3-dev~=3.6 gcc vim libstdc++ g++ libffi-dev openssl-dev tmux~=2.8 sshpass rsync htop jq docker~=18.09.8 bash curl libffi-dev build-base 
+    sudo rm -rf /var/cache/apk/*
+    sudo apk add
+    sudo rc-update add docker boot
+    sudo adduser vagrant docker
+    sudo service docker start
+    # TODO: port check ? 
+    sleep 20
+    sudo pip3 install --upgrade pip cffi
+    sudo pip3 install docker ansible 
+    sudo sh -c "echo vboxguest >> /etc/modules"
+    sudo sed -i '/ipv6/d' /etc/modules
+    sudo gem install --no-rdoc --no-ri $GEMS $OPTIONAL_GEMS
+    BASEDIR='/uru/serverspec'
+    sudo mkdir -p "${BASEDIR}/spec/localhost"
+
+    cat <<EOF>"${BASEDIR}/Rakefile"
+      require 'rake'
+      require 'rspec/core/rake_task'
+      
+      task :spec => 'spec:all'
+      task :default => :spec
+      
+      namespace :spec do
+        targets = []
+        Dir.glob('./spec/*').reject { |x| x=~ /.\\/spec\\/(?:type|config)/ }.each do |dir|
+          next unless File.directory?(dir)
+          target = File.basename(dir)
+          target = "_\#{target}" if target == 'default'
+          targets << target
+        end
+      
+        task :all     => targets
+        task :default => :all
+      
+        targets.each do |target|
+          original_target = target == '_default' ? target[1..-1] : target
+          desc "Run serverspec tests to \#{original_target}"
+          RSpec::Core::RakeTask.new(target.to_sym) do |t|
+            ENV['TARGET_HOST'] = original_target
+            t.rspec_opts = "--require spec_helper --format documentation --format html --out results/result_\#{$host}.html --format json --out results/result_\#{$host}.json"
+            t.pattern = "spec/\#{original_target}/*_spec.rb"
+          end
+        end
+      end
+EOF
+    cat <<EOF>"${BASEDIR}/spec/spec_helper.rb"
+      require 'serverspec'
+      set :backend, :exec
+      
+      RSpec.configure do |config|
+        config.filter_gems_from_backtrace 'vagrant', 'vagrant-serverspec'
+      end
+EOF
+
+   cat <<EOF>"${BASEDIR}/spec/localhost/sample_spec.rb"
+      require 'spec_helper'
+      
+      describe 'Operating system' do
+        context 'family' do
+          subject { os[:family] }
+          # NOTE: for this expectation one needs a symbol, not a string
+          it { is_expected_to eq 'alpine'  }
+        end
+        %w|build-base libcurl libxml2-dev libxslt-dev libffi-dev libmcrypt-dev openssl|.each do |package_name|
+          describe package package_name do
+            it { should be_installed }
+          end
+        end
+        %w|jq xmllint|.each do |tool|
+          describe command ("which \#{tool}") do
+            its(:stdout) { should_not be_empty }
+          end
+        end
+        # TODO: generate sample files
+        describe command "jq '.foo' '/serverspec/tmp/data.json'" do
+          its(:stdout) { should contain 'bar' }
+        end
+        describe command "xmllint --xpath '/Server/@port' '/serverspec/tmp/data.xml'" do
+          its(:stdout) { should contain 'port="8005"' }
+        end
+      
+        describe file ('/usr/local/bin/ruby') do
+          it { should be_file }
+          it { should be_executable }
+        end
+      
+        [
+          'Rakefile',
+          'spec/spec_helper.rb',
+          'spec/docker_helper.rb',
+        ].each do |filename|
+          describe file "/serverspec/\#{filename}" do
+            it { should exist }
+          end
+        end
+        [
+          'rspec',
+          'rspec_junit_formatter',
+          'serverspec',
+        ].each do | gem |
+          describe package(gem) do
+            it { should be_installed.by('gem') }
+          end
+        end
+        context 'Python'do
+          describe file ('/usr/bin/python3') do
+            it { should be_file }
+            it { should be_executable }
+          end
+          describe command( <<-EOF
+            python3 -c "exec(\\\\\\"\\\\\\"\\\\\\"\\\\\\\\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\\\\\\\\nfor k,v in zip(data[0::2], data[1::2]):\\\\\\\\n  print( '{}={}'.format(k,v))\\\\\\\\n\\\\\\"\\\\\\"\\\\\\")"
+          EOF
+          ) do
+            {
+              'a1' => 'b1',
+              'a2' => 'b2',
+              'a3' => 'b3',
+            }.each do |k,v|
+              its(:stdout) { should contain "\#{k}=\#{v}" }
+            end  
+          end
+        end
+      end
+EOF
+  SHELL
+  # NOTE: apparently misbalanced
+  if ! Vagrant.has_plugin?('vagrant-alpine')
+    raise 'Need Vagrant plugin "vagrant-alpine"'   
+  end
+
+  # Run Ansible from the Vagrant Host
+  # NOTE: would fail in the absence of Python:
+  # tried ['/usr/bin/python', 'python3.7', 'python3.6', 'python3.5', 'python2.7', 'python2.6', '/usr/libexec/platform-python', '/usr/bin/python3', 'python']
+  config.vm.provision 'ansible' do |ansible|
+    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
+    # https://github.com/ansible/ansible-examples
+    # https://github.com/salecharohit/vagrant-ansible-alpine-docker
+    # see also: https://github.com/fulgorek/vagrant-ansible-docker-alpine
+    ansible.playbook = 'playbook.yml'
+    ansible.verbose = true
+  end
+end
+
+

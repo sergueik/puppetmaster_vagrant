@@ -1,0 +1,7 @@
+.settings/
+.vagrant/
+*~
+.*.sw?
+modules/
+environments/*/modules/
+playbook.retry

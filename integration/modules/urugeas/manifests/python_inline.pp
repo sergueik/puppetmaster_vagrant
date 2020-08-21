@@ -24,9 +24,11 @@ class urugeas::python_inline (
     # for k,v in zip(data[0::2], data[1::2]):
     #   print( '{} {}'.format(k,v))
     #
-    # exec("""\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\nfor i,k in zip(data[0::2], data[1::2]):\n  print( '{k} {v}')\n""")
+    # exec("""\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\nfor k,v in zip(data[0::2], data[1::2]):\n  print( '{} {}'.format(k,v))""")
+    # python3 -c "exec(\"\"\"\\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\\nfor k,v in zip(data[0::2], data[1::2]):\\n  print( '{} {}'.format(k,v))\\n\"\"\")"
+
     exec { "Passing argument lists":
-      command   => "python -c \"exec(\\\"\\\"\\\"\\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\nfor k,v in zip(data[0::2], data[1::2]):\\n  print( '{} {}'.format(k,v))\\\"\\\"\\\")\"",
+      command   => "python -c \"exec(\\\"\\\"\\\"\\\\ndata = 'a1,b1,a2,b2,a3,b3,a4,b4,a5,b5'.split(',')\nfor k,v in zip(data[0::2], data[1::2]):\\\\n  print( '{} {}'.format(k,v))\\\\n\\\"\\\"\\\")\"",
       path      => '/bin:/usr/bin',
       returns   => [0,1],
       logoutput => true,
