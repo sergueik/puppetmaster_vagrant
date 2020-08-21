@@ -197,7 +197,7 @@
   :config_vm_default: linux
   :config_vm_box: alpine
   :config_vm_box_name: alpine39.box
-  :config_vm_box_namei_orig: generic_alpine39_build_310.box
+  :config_vm_box_name_orig: generic_alpine39_build_310.box
 
 # vanilla alpine x64 3.7.0 does not work with Vagrant 2.0.2 -  removed
 # vanilla alpine x64 3.7.0 does not work with Vagrant 2.0.2 -  removed

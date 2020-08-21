@@ -57,6 +57,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
   instance_name_prefix = 'node'
   instance_ip_common = '192.168.51'
+  hosts_data = []
+  1.upto(node_count) do |n|
+    node_hostname = '%s%d' % [instance_name_prefix, n]
+    node_ip = '%s.%02d' % [instance_ip_common, n + 9 ]
+    hosts_data.push "#{node_ip} #{node_hostname}"
+  end
+  # https://www.vagrantup.com/docs/multi-machine
   1.upto(node_count) do |n|
     # node_hostname = "node#{n}"
     # node_ip = "192.168.51.#{9+n}"
@@ -84,6 +91,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         sudo apk add
         sudo sh -c "echo vboxguest >> /etc/modules"
         sudo sed -i '/ipv6/d' /etc/modules
+        sudo echo "#{hosts_data.join("\n")}" | tee -a '/etc/hosts'
       SHELL
       box.vm.provision 'shell',
         env: { 'NODE_IP' => node_ip  },
