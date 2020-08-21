@@ -8,11 +8,21 @@ debug = ENV.fetch('DEBUG', false)
 debug =  true if debug =~ /^(?:true|yes|1)$/i
 # with pre-2.2.6 Vagrant (e.g. with Vagrant 2.0.2) this requires vagrant-alpine plugin to be present
 box_hostname = ENV.fetch('BOX_HOSTNAME', 'alpine')
-
-basedir = ENV.fetch('USERPROFILE', '')
-basedir = ENV.fetch('HOME', '') if basedir == ''
-basedir = basedir.gsub('\\', '/')
-
+node_count = ENV.fetch('NODE_COUNT', 2).to_i
+basedir = (ENV.fetch('HOME','') || ENV.fetch('USERPROFILE', '')).gsub('\\', '/')
+box_memory = ENV.fetch('BOX_MEMORY', '512').to_i
+# NOTE: the order of provision chunks can be wrong:
+# 'shell' after 'ansible'
+# https://github.com/hashicorp/vagrant/issues/4877
+# workaround: provision twice,
+# first without setting DO_ANSIBLE,
+# second round with export DO_ANSIBLE=trueexport DO_ANSIBLE=true
+do_ansible = ENV.fetch('DO_ANSIBLE', false)
+do_ansible = if do_ansible =~ /^(?:true|yes|1)$/i
+  true
+else
+  false
+end
 dir = File.expand_path(File.dirname(__FILE__))
 
 # overrides the setting in Vagrantfile.yaml
@@ -36,67 +46,78 @@ if File.exists?(vagrantfile_yaml)
   end
 end
 
-VAGRANTFILE_API_VERSION = '2'
-
-# BOX_URL = 'https://app.vagrantup.com/alpine/boxes/alpine64/versions/3.7.0/providers/virtualbox.box'
 BOX_URL = 'https://app.vagrantup.com/generic/boxes/alpine39/versions/3.0.10/providers/virtualbox.box'
 
+VAGRANTFILE_API_VERSION = '2'
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box =  box_name
+  config_vm_box_name =  'alpine39.box'
 
-  config.vm.box = box_hostname
-#  config.vm.hostname = box_hostname
-# Vagrant attempted to execute the capability 'change_host_name' on the detect guest OS 'linux', but the guest doesn't support that capability.
-  config_vm_default = box_config[:config_vm_default]
-  config_vm_box_name = box_config[:config_vm_box_name]
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
-  if debug
-    puts "Configuring '#{config.vm.box}'"
-  end
+  instance_name_prefix = 'node'
+  instance_ip_common = '192.168.51'
+  1.upto(node_count) do |n|
+    # node_hostname = "node#{n}"
+    # node_ip = "192.168.51.#{9+n}"
+    node_hostname = '%s%d' % [instance_name_prefix, n]
+    node_ip = '%s.%02d' % [instance_ip_common, n + 9 ]
+    config.vm.define node_hostname do |box|
+      # only required for
+      config.vm.boot_timeout = 600
+      config.vm.provider :virtualbox do |v|
+        v.customize ['modifyvm', :id, '--cableconnected1', 'on']
+        v.customize ['modifyvm', :id, '--memory', box_memory ]
+      end
 
-  config.vm.network :forwarded_port, host: 3000, guest: 3000
-  config.ssh.forward_agent = true
-  config.vm.boot_timeout = 600
-  config.vm.synced_folder './', '/vagrant'
-  config.vm.synced_folder './data', '/var/www/html', owner: 'vagrant', group: 'vagrant'
-  config.vm.network :private_network, ip: '192.168.33.40'
-  # if the shared folder do not work use scp 
-  config.vm.provider 'virtualbox' do |vb|
-    vb.customize ['modifyvm', :id, '--cpus', box_cpus ]
-    vb.customize ['modifyvm', :id, '--memory', box_memory ]
-    vb.customize ['modifyvm', :id, '--hwvirtex', 'on']
-    vb.customize ['modifyvm', :id, '--pae', 'on']
-    vb.customize ['modifyvm', :id, '--ioapic', 'on']
-    vb.customize ['modifyvm', :id, '--accelerate3d', 'off']
-    vb.customize ['modifyvm', :id, '--audio', 'none']
-    vb.customize ['modifyvm', :id, '--usb', 'off']
-  end
+      config.vm.synced_folder './' , '/vagrant'
+      config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+      box.vm.hostname = node_hostname
+      box.vm.network "private_network", ip: node_ip
+      shell_script = <<-SHELL
+        # NOTE: avoid specifying release too strict
+        PACKAGES='python3~=3.6 rsync jq xmlstarlet~=1.6.1 bash curl ansible~=2.7.17'
+        sudo apk update
+        sudo apk del python3
+        apk add --update --no-cache $PACKAGES virtualbox-guest-additions
+        sudo rm -rf /var/cache/apk/*
+        sudo apk add
+        sudo sh -c "echo vboxguest >> /etc/modules"
+        sudo sed -i '/ipv6/d' /etc/modules
+      SHELL
+      box.vm.provision 'shell',
+        env: { 'NODE_IP' => node_ip  },
+        # NOTE: the EOF marker is already in use in the embedded shell script
+        inline: shell_script
 
-  config.vm.provision 'shell', inline: <<-SHELL
+      if ! Vagrant.has_plugin?('vagrant-alpine')
+        raise 'Need Vagrant plugin "vagrant-alpine"'
+      end
 
-    # NOTE: avoid specifying release too strict
-    PACKAGES='python3~=3.6 rsync jq xmlstarlet~=1.6.1 bash curl ansible~=2.7.17'
-    sudo apk update
-    sudo apk del python3
-    apk add --update --no-cache $PACKAGES virtualbox-guest-additions
-    sudo rm -rf /var/cache/apk/*
-    sudo apk add
-    sudo sh -c "echo vboxguest >> /etc/modules"
-    sudo sed -i '/ipv6/d' /etc/modules
-  SHELL
-  if ! Vagrant.has_plugin?('vagrant-alpine')
-    raise 'Need Vagrant plugin "vagrant-alpine"'   
+      if do_ansible
+        # https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
+        # https://github.com/ansible/ansible-examples
+        # https://github.com/salecharohit/vagrant-ansible-alpine-docker
+        # see also: https://github.com/fulgorek/vagrant-ansible-docker-alpine
+        config.vm.provision 'ansible' do |ansible|
+          ansible.playbook = 'playbook.yml'
+          ansible.verbose = true
+          ansible.limit = 'all'
+          # ERROR! Specified hosts and/or --limit does not match any hosts
+          # Ansible failed to complete successfully. Any error output should be
+          # visible above. Please fix these errors and try again:
+          # ansible.inventory_path = 'inventory'
+          ansible.raw_arguments = ['--flush-cache']
+          # ansible.verbose = "-vvvv"
+          # ansible.verbose = "-vvv"
+          ansible.verbose = "-vv"
+          # the default
+          # ansible.verbose = "-v"
+        end
+        # NOTE: try
+        # https://github.com/jaimegildesagredo/server-expects
+      end
+    end
   end
-
-  # https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
-  # https://github.com/ansible/ansible-examples
-  # https://github.com/salecharohit/vagrant-ansible-alpine-docker
-  # see also: https://github.com/fulgorek/vagrant-ansible-docker-alpine
-  config.vm.provision 'ansible' do |ansible|
-    ansible.playbook = 'playbook.yml'
-    ansible.verbose = true
-  end
-  # NOTE: try
-  # https://github.com/jaimegildesagredo/server-expects
 end
-
 
