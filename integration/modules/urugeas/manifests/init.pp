@@ -161,6 +161,10 @@ class urugeas(
     message  => template("${name}/setting_conf.erb"),
   }
 
+  $tokens = ['red','green','blue']
+  notify {"${name} Parameter loading a potentially bad Syntax with ${tokens}":
+    message  => template("${name}/bad_syntax.erb"),
+  }
   $param1 = hiera('urugeas::param1')
   $param2 = hiera('urugeas::param2')
   $param3 = hiera('urugeas::param3')
