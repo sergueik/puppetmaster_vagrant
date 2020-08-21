@@ -32,12 +32,21 @@
        - libxml2-utils
     # ansible localhost -m command -a 'xmllint --version'
     # https://docs.ansible.com/ansible/latest/modules/command_module.html
-    - name: Run xmllint command
+    - name: Run xmllint command (try 1)
       command:
         # non-zero exit code
-        cmd: xmllint --version || echo Done | tee /tmp/xmllint_version.log
+        cmd: xmllint --version 2>&1 || echo Done | tee /tmp/xmllint_version.log
         creates: /tmp/xmllint_version.log
+        _uses_shell: yes
+        # ignore_errors: yes
+        # Unsupported parameters for (command) module: ignore_error
     # https://www.cyberciti.biz/faq/how-to-enable-and-start-services-on-alpine-linux/
+    - name: Run xmllint command (try 2)
+      command:
+        # non-zero exit code
+        cmd: sh -c "xmllint --version 2>&1 | tee /tmp/xmllint_version.log; echo 'Done'"
+        creates: /tmp/xmllint_version.log
+        _uses_shell: yes
     - name: "Start service {{service_name}}, if not started"
       # NOTE: this is still a valid YAML
       service: name="{{service_name}}" state=started enabled=yes
