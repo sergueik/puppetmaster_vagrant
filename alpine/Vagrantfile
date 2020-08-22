@@ -50,19 +50,61 @@ BOX_URL = 'https://app.vagrantup.com/generic/boxes/alpine39/versions/3.0.10/prov
 
 VAGRANTFILE_API_VERSION = '2'
 
+instance_name_prefix = 'node'
+instance_ip_common = '192.168.51'
+hosts_data = []
+inventory_data = []
+1.upto(node_count) do |n|
+  node_hostname = '%s%d' % [instance_name_prefix, n]
+  node_ip = '%s.%02d' % [instance_ip_common, n + 9 ]
+  hosts_data.push "#{node_ip} #{node_hostname}"
+  inventory_data.push "#{node_hostname} ansible_ssh_host=#{node_ip} ansible_python_interpreter=/usr/bin/python3"
+end
+# controller: install ansible
+shell_script1 = <<-SHELL
+  # NOTE: avoid specifying release too strict
+  PACKAGES='python3~=3.6 rsync jq xmlstarlet~=1.6.1 bash curl ansible~=2.7.17'
+  sudo apk update
+  sudo apk del python3
+  apk add --update --no-cache $PACKAGES virtualbox-guest-additions
+  # may need:
+  # sudo pip install pyyaml jinja2
+  sudo rm -rf /var/cache/apk/*
+  sudo apk add
+  sudo sh -c "echo vboxguest >> /etc/modules"
+  sudo sed -i '/ipv6/d' /etc/modules
+  sudo echo "#{hosts_data.join("\n")}" | tee -a '/etc/hosts'
+SHELL
+# controller: get ready to run ansible
+# based on: https://gist.github.com/tknerr/291b765df23845e56a29
+# set up SSH public-key authentication to mutually connect from node to node
+shell_script2 = <<-SHELL
+  if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
+    wget --no-check-certificate https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant -O /home/vagrant/.ssh/id_rsa
+    wget --no-check-certificate https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub -O /home/vagrant/.ssh/id_rsa.pub
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+    chmod 600 /home/vagrant/.ssh/id_*
+  fi
+  rm -rf /tmp/provisioning
+  mkdir /tmp/provisioning
+  cp /vagrant/playbook.yml /tmp/provisioning
+  cd /tmp/provisioning
+  touch inventory
+  cat #{inventory_data} | tee -a inventory
+  chmod -x inventory
+SHELL
+# conroller: run ansible
+shell_script3 = <<-SHELL
+  cd /tmp/provisioning
+  export ANSIBLE_HOST_KEY_CHECKING=False
+  ansible -m ping all  -i inventory
+  ansible-playbook playbook.yml --inventory-file=inventory
+SHELL
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box =  box_name
   config_vm_box_name =  'alpine39.box'
 
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
-  instance_name_prefix = 'node'
-  instance_ip_common = '192.168.51'
-  hosts_data = []
-  1.upto(node_count) do |n|
-    node_hostname = '%s%d' % [instance_name_prefix, n]
-    node_ip = '%s.%02d' % [instance_ip_common, n + 9 ]
-    hosts_data.push "#{node_ip} #{node_hostname}"
-  end
   # https://www.vagrantup.com/docs/multi-machine
   1.upto(node_count) do |n|
     # node_hostname = "node#{n}"
@@ -81,32 +123,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
       box.vm.hostname = node_hostname
       box.vm.network "private_network", ip: node_ip
-      shell_script = <<-SHELL
-        # NOTE: avoid specifying release too strict
-        PACKAGES='python3~=3.6 rsync jq xmlstarlet~=1.6.1 bash curl ansible~=2.7.17'
-        sudo apk update
-        sudo apk del python3
-        apk add --update --no-cache $PACKAGES virtualbox-guest-additions
-        sudo rm -rf /var/cache/apk/*
-        sudo apk add
-        sudo sh -c "echo vboxguest >> /etc/modules"
-        sudo sed -i '/ipv6/d' /etc/modules
-        sudo echo "#{hosts_data.join("\n")}" | tee -a '/etc/hosts'
-      SHELL
-      box.vm.provision 'shell',
-        env: { 'NODE_IP' => node_ip  },
-        # NOTE: the EOF marker is already in use in the embedded shell script
-        inline: shell_script
+      box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script1
 
-      if ! Vagrant.has_plugin?('vagrant-alpine')
-        raise 'Need Vagrant plugin "vagrant-alpine"'
-      end
 
       if do_ansible
+        if ! Vagrant.has_plugin?('vagrant-alpine')
+          raise 'Need Vagrant plugin "vagrant-alpine"'
+        end
         # https://docs.ansible.com/ansible/latest/user_guide/playbooks_intro.html
         # https://github.com/ansible/ansible-examples
         # https://github.com/salecharohit/vagrant-ansible-alpine-docker
         # see also: https://github.com/fulgorek/vagrant-ansible-docker-alpine
+        # https://habr.com/ru/company/selectel/blog/196620/ (in Russian)
         config.vm.provision 'ansible' do |ansible|
           ansible.playbook = 'playbook.yml'
           ansible.verbose = true
@@ -122,7 +150,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           # the default
           # ansible.verbose = "-v"
         end
-        # NOTE: try
+        box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script1
+        # controller: get ready to run ansible
+        box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_scriptr2
+        # conroller: run ansible
+        box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script3
         # https://github.com/jaimegildesagredo/server-expects
       end
     end
