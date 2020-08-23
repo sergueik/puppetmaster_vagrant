@@ -9,6 +9,8 @@ require 'pp'
 # https://github.com/geerlingguy - numerous ansible roles
 # https://github.com/dl528888/ansible-examples
 # https://github.com/cmprescott/ansible-xml
+# https://habr.com/ru/post/305400/ (in Russian)
+# https://habr.com/ru/post/304732/ (in Russian)
 debug = ENV.fetch('DEBUG', false)
 debug =  true if debug =~ /^(?:true|yes|1)$/i
 # with pre-2.2.6 Vagrant (e.g. with Vagrant 2.0.2) this requires vagrant-alpine plugin to be present
@@ -68,6 +70,7 @@ end
 # controller: install ansible
 shell_script1 = <<-SHELL
   # NOTE: avoid specifying release too strict
+  echo 'controller: install ansible'
   PACKAGES='python3~=3.6 rsync jq xmlstarlet~=1.6.1 bash curl ansible~=2.7.17'
   sudo apk update
   sudo apk del python3
@@ -85,22 +88,26 @@ SHELL
 # set up SSH public-key authentication to mutually connect from node to node
 # NOTE: .vagrant/machines/$target_node/virtualbox/private_key is a PEM RSA private key for that node
 shell_script2 = <<-SHELL
+  echo 'controller: get ready to run ansible'
   if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
+    echo 'controller: create ssh keys'
     wget --no-check-certificate https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant -O /home/vagrant/.ssh/id_rsa
     wget --no-check-certificate https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub -O /home/vagrant/.ssh/id_rsa.pub
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
     chmod 600 /home/vagrant/.ssh/id_*
   fi
+  echo 'controller: create inventory'
   rm -rf /tmp/provisioning
   mkdir /tmp/provisioning
   cp /vagrant/playbook.yml /tmp/provisioning
   cd /tmp/provisioning
   touch inventory
-  cat #{inventory_data} | tee -a inventory
+  echo "#{inventory_data.join("\n")}" | tee -a inventory
   chmod -x inventory
 SHELL
 # conroller: run ansible
 shell_script3 = <<-SHELL
+  echo 'conroller: run ansible'
   cd /tmp/provisioning
   export ANSIBLE_HOST_KEY_CHECKING=False
   ansible -m ping all  -i inventory
@@ -156,13 +163,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           # the default
           # ansible.verbose = "-v"
         end
-        box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script1
-        # controller: get ready to run ansible
-        box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_scriptr2
-        # conroller: run ansible
-        box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script3
-        # https://github.com/jaimegildesagredo/server-expects
       end
+      puts 'run shell script 1'
+      box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script1
+      # controller: get ready to run ansible
+      puts 'run shell script 2'
+      box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script2
+      # controller: run ansible
+      puts 'run shell script 3'
+      box.vm.provision 'shell', env: { 'NODE_IP' => node_ip  }, inline: shell_script3
+      puts 'all done'
+      # https://github.com/jaimegildesagredo/server-expects
     end
   end
 end

@@ -51,3 +51,12 @@
       # NOTE: this is still a valid YAML
       service: name="{{service_name}}" state=started enabled=yes
 
+    - name: examine xml file
+      command: xmllint --xpath '//*[local-name()=="Server"][@port == "-1"]' '/vagrant/test.xml'
+      register: result
+      ignore_errors: True
+
+    - name: 'configure shutdown port'
+      shell: 'echo "ABC"'
+      when: result|failed
+
