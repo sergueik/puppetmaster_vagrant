@@ -4,6 +4,11 @@
 require 'yaml'
 require 'pp'
 
+# see also: 
+# https://github.com/leucos/ansible-tuto
+# https://github.com/geerlingguy - numerous ansible roles
+# https://github.com/dl528888/ansible-examples
+# https://github.com/cmprescott/ansible-xml
 debug = ENV.fetch('DEBUG', false)
 debug =  true if debug =~ /^(?:true|yes|1)$/i
 # with pre-2.2.6 Vagrant (e.g. with Vagrant 2.0.2) this requires vagrant-alpine plugin to be present
@@ -78,6 +83,7 @@ SHELL
 # controller: get ready to run ansible
 # based on: https://gist.github.com/tknerr/291b765df23845e56a29
 # set up SSH public-key authentication to mutually connect from node to node
+# NOTE: .vagrant/machines/$target_node/virtualbox/private_key is a PEM RSA private key for that node
 shell_script2 = <<-SHELL
   if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
     wget --no-check-certificate https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant -O /home/vagrant/.ssh/id_rsa
