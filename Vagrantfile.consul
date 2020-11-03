@@ -8,6 +8,12 @@
 # https://www.consul.io/api/catalog.html
 # https://www.consul.io/docs/agent/options.html
 # Override consul version
+# See also:
+# https://github.com/pavel-klimiankou/vagrant-consul
+# https://dotsandbrackets.com/vagrant-create-consul-cluster-ru (in Russian)
+# https://dotsandbrackets.com/consul-health-check-ru/
+# https://dotsandbrackets.com/using-consul-service-discovery-ru/
+# https://dotsandbrackets.com/multi-host-docker-network-without-swarm-ru/
 
 consul_version = ENV.fetch('CONSUL_VERSION', '1.4.0') # nil
 # NOTE: 0.8.0 was the last consul version when exec was enabled by default
