@@ -1,6 +1,9 @@
 #!/bin/bash
+
+# converts the cutom JSON rowset keys into bash array variable by chopping the  string and element delimeters and enclosing parenthecis
+#
 INPUT_FILE='data_rowset.json'
-NAMES=($( jq -r '.versions|flatten' $INPUT_FILE | jq -r '[.[]|keys]' | jq 'flatten' | sed 's|\[||;s|\]||;s|,||;s|"||g'))
+NAMES=($( jq -r '.versions|flatten' $INPUT_FILE | jq -r '[.[]|keys]' | jq -cr 'flatten|.[]'))
 
 printf "%s\n" "${NAMES[0]}"
 printf "%s\n" "${NAMES[1]}"
