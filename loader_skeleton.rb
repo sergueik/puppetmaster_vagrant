@@ -8,6 +8,7 @@ require 'optparse'
 
 @options = {
   :debug => false,
+  :validate => false,
   :role  => 'app-worker',
   :env   => 'test',
   :dc    => 'west',
@@ -57,6 +58,18 @@ unless options_defined
 
   o.on('--debug', 'Debug') do |val|
     @options[:debug] = val
+  end
+  # https://stackoverflow.com/questions/54576873/ruby-optionparser-short-code-for-boolean-option
+  # -validate no
+  # -validate false
+  # --no-validate
+  # => @options[:validate] is false
+  # --validate yes
+  # --validate true
+  # --validate
+  # => @options[:validate] is true
+  o.on('-v', '--[no-]validate [FLAG]', TrueClass, 'Run validations') do |val|
+    @options[:validate] = val.nil? ? true : val
   end
 
   o.parse!
