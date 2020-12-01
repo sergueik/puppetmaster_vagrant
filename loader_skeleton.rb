@@ -50,13 +50,20 @@ unless options_defined
       # ruby loader_skeleton.rb -d --role @ms.txt
       # { :debug => true,
       #   :role => 'bill,steve,satya'
-      #   n...
+      #   ...
+      # e.g. echo -e "bill\n   steve\n\n#satya" > ms.txt
+      # ruby loader_skeleton.rb -d --role @ms.txt
+      # { :debug => true,
+      #   :role => 'bill,steve'
+      #   ...
       begin
         # NOTE: dot count sensitive
         arg_file = val[1..-1]
         file = File.open(arg_file)
         # blank lines, leading and railing whitespace
-        data = file.readlines.map(&:chomp).reject { |row| row.empty? }.map(&:strip)
+        data = file.readlines.map(&:chomp).reject { |row| row.empty? }.map(&:strip).reject do
+			|row| row =~ /^#/
+        end
         # NOTE: cannot reject  do ... end and then map
         # will later @options[:role].split( /,/)
   	    @options[:role] = data.join(',')
