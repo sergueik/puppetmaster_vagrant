@@ -50,13 +50,16 @@ unless options_defined
       # ruby loader_skeleton.rb -d --role @ms.txt
       # { :debug => true,
       #   :role => 'bill,steve,satya'
-      #   ...
+      #   n...
       begin
-        arg_file = val[1...-1]
-        f = File.open(arg_file)
-        d = f.readlines.map(&:chomp)
+        # NOTE: dot count sensitive
+        arg_file = val[1..-1]
+        file = File.open(arg_file)
+        # blank lines, leading and railing whitespace
+        data = file.readlines.map(&:chomp).reject { |row| row.empty? }.map(&:strip)
+        # NOTE: cannot reject  do ... end and then map
         # will later @options[:role].split( /,/)
-  	    @options[:role] = d.join(',')        
+  	    @options[:role] = data.join(',')
       rescue => e
         puts ('Exception: ' + e.to_s)
       end  
@@ -74,7 +77,7 @@ unless options_defined
     @options[:env] = val
   end
 
-  o.on('--debug', 'Debug') do |val|
+  o.on('-d', '--debug', 'Debug') do |val|
     @options[:debug] = val
   end
   # https://stackoverflow.com/questions/54576873/ruby-optionparser-short-code-for-boolean-option
