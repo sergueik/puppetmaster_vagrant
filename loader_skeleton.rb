@@ -44,7 +44,25 @@ unless options_defined
   # {:debug=>false, :role=>"application-server", :env=>"uat", :dc=>"east"}
 
   o.on('--role [NODE ROLE]', 'role of the node') do |val|
-    @options[:role] = val
+    if  val =~ /^@/
+      # e.g. echo bill > ms.txt
+      # e.g. echo steve,satya >> ms.txt
+      # ruby loader_skeleton.rb -d --role @ms.txt
+      # { :debug => true,
+      #   :role => 'bill,steve,satya'
+      #   ...
+      begin
+        arg_file = val[1...-1]
+        f = File.open(arg_file)
+        d = f.readlines.map(&:chomp)
+        # will later @options[:role].split( /,/)
+  	    @options[:role] = d.join(',')        
+      rescue => e
+        puts ('Exception: ' + e.to_s)
+      end  
+    else
+	  @options[:role] = val
+    end
   end
 
   o.on('--dc [DC]', 'cluster data center') do |val|
