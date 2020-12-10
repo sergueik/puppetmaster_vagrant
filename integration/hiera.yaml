@@ -4,8 +4,8 @@ defaults:
 hierarchy:
   - name: "Per-node data (yaml version)"
     path: "node/%{::trusted.certname}.yaml"
-  - name: "Per-role data (yaml version)"
-    path: "role/%{trusted.extensions.pp_role}.yaml"
+  - name: "Role data (yaml version)"
+    path: "roles/%{role}.yaml"
   - name: "Shared data"
     path: "common.yaml"
 defaults:

@@ -8,6 +8,13 @@ node 'default' {
   include urugeas::python_inline 
 
   # urugeas::chown {'dummy': }
+  # Undefined variable 'role'
+  $sample_deep_data = hiera('sample_deep_data',{ })
+  $sample_data = hiera('sample_data','unknown')
+  notify{"facts: ${::role}": 
+    message => "sample_data = ${sample_data}, sample_deep_data = ${sample_deep_data}"
+  }
+
   # include urugeas
   # include urugeas::cron_command
   urugeas::hieradata_check::worker{ 'called (1) from "default.pp"':

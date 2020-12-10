@@ -173,7 +173,13 @@ EOF
         puppet.manifest_file     = manifest
         puppet.options           = "--verbose --modulepath #{modulepath}:/vagrant/modules "
         puppet.working_directory = '/tmp/vagrant-puppet'
-        #
+	# https://ma.ttias.be/setting-custom-puppet-facts-from-within-your-vagrantfile/
+	# puppet.facter            = {'role': 'test'}
+        # Both the Ruby notation:
+	puppet.facter = {'role' => 'test' }
+	# and JDON notation:
+	# puppet.facter = {'role': 'test'}
+	# works
         config.vm.synced_folder 'hieradata/', '/tmp/vagrant-puppet/hieradata'
       end
       # based on: https://github.com/andrewwardrobe/PuppetIntegration/blob/master/Vagrantfile

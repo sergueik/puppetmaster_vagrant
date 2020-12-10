@@ -1,4 +1,13 @@
 ---
+# https://puppet.com/docs/puppet/5.5/configure_merge_behavior_hiera.html
+# NOTE: does not appear to work
+lookup_options:
+  sample_deep_data:
+    merge:
+      strategy: deep
+      merge_hash_arrays: true
+
+
 urugeas::version: '0.2.3'
 urugeas::undef_value: ~
 urugeas::empty_value: ''
@@ -103,6 +112,7 @@ uruseas::apache_log:  |
   }
 
 urugeas::dbuser: 'dbuser'
+
 urugeas::command_template: "mysql -H ${HOST} -u %{hiera('urugeas::dbuser')} -D database -e \"query\""
 urugeas::error_patterns:
   - 'end of file reached'
@@ -264,7 +274,21 @@ urugeas::hieradata_check::search: '^(\d+)(?:\-.*)$'
 urugeas::hieradata_check::replace: '\1'
 
 artifact_filename: 'dummy.file'
-
+sample_data: 'common'
+# NOTE: with default merge strategy, 
+# seem to break the code if subkeys are not set at every level of hierarchy
+# to expose the problem, use 'deep_data' instead of 'sample_deep_data'
+  
+sample_deep_data:
+  group_key1:
+    key1: 'value1'
+    key2: 'value2'
+  group_key2:
+    key3: 'value3'
+    key4: 'value4'
+    key5: 'value5'
+  group_key3:
+    key6: 'value6'
 deep_data:
   group_key1:
     key1: 'value1'
