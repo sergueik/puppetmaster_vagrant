@@ -1,0 +1,5 @@
+---
+sample_data: 'test_data'
+sample_deep_data:
+  group_key1:
+    key1: 'test_value1'
