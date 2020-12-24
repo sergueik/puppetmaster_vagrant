@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # packs loose JSON into key:value JSON and CSV
-
-
+# e.g. from GET /rest/resource/resource/${COMPONENT_ID}/propertiesForRole/${ROLE_ID}
+# NOTE: /cli/resource/getRolesForResource?resource=${COMPONENT_ID} 
 DATA_JSON=$(cat <<DATA
 [
   {
@@ -73,7 +73,7 @@ echo 'JSON'
 
 ARGLINE=''
 QUERY='.'
-for CNT in $(seq 0 $MAX_INDEX) ; do
+for((CNT=0;CNT<$MAX_INDEX;CNT++)) ; do
   NAME=$(echo ${NAMES[$CNT]} | cut -d '=' -f 2)
   VALUE=$(echo ${VALUES[$CNT]} | cut -d '=' -f 2)
   if [[ -z $VALUE ]]  ; then
@@ -85,3 +85,7 @@ done
 
 # echo jq $ARGLINE "'$QUERY'" <<<'{}'
 jq $ARGLINE "$QUERY" <<<'{}'
+
+# PUT /rest/resource/resource/{parentid,name,description}
+# POST /rest/resource/resource/${COMPONENT_ID}/role/${ROLE_ID}
+# POST /rest/resource/resourceRole{name,descrption}
