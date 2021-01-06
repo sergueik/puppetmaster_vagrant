@@ -1,0 +1,49 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# See also: 
+# https://stackoverflow.com/questions/28399324/download-vagrant-box-file-locally-from-atlas-and-configuring-it
+require 'yaml'
+require 'pp'
+
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+basedir = basedir.gsub('\\', '/')
+
+dir = File.expand_path(File.dirname(__FILE__))
+
+box_hostname = ENV.fetch('BOX_HOSTNAME', 'alpine')
+box_name = ENV.fetch('BOX_NAME', 'generic/alpine38')
+box_version = ENV.fetch('BOX_VERSION', '3.1.20' ) # 3.1.22
+
+# specify a non-existing version to make vagrant list the available versions
+# see the box url in the console log of vagrant run:
+# export BOX_VERSION=3.1.18; vagrant stop ; vagrant destroy -f ; vagrant up
+# default: Downloading: https://vagrantcloud.com/generic/boxes/alpine38/versions/3.1.18/providers/virtualbox.box
+# vagrant box remove generic/alpine38 --box-version $BOX_VERSION
+
+VAGRANTFILE_API_VERSION = '2'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.box = box_name # box_hostname
+  config.vm.hostname = box_hostname
+  config.vm.box_version = box_version
+
+  config.ssh.forward_agent = true
+  config.vm.boot_timeout = 600
+  config.vm.synced_folder './', '/vagrant'
+
+  if ! Vagrant.has_plugin?('vagrant-alpine')
+	# TODO: raise an error
+  end
+  if Vagrant.has_plugin?('vagrant-vbguest')
+	config.vbguest.auto_update = false
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    apk update && apk upgrade
+  SHELL
+end
+
+
