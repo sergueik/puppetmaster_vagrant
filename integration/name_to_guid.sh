@@ -27,6 +27,7 @@ if [[ $DEBUG == 'true' ]] ; then
   echo "UCD_ENV=${UCD_ENV}"
 fi
 
+# for use with lookup. NOTE: bash arrays are not really necessary here
 GUID_LOOKUP=( 'TST-EAST:01-01-01'
   'TST-EA:01-01-01'
   'TST-WEST:02-02-02'
@@ -36,10 +37,13 @@ GUID_LOOKUP=( 'TST-EAST:01-01-01'
   'UAT-EAST:03-03-03'
   'UAT-WEST:04-04-04'
   )
+
+# for use with lookup, plain shell
+GUID_LOOKUP2="TST-EAST:01-01-01 TST-EA:01-01-01 TST-WEST:02-02-02 TST-WE:02-02-02 DEV-EAST:03-03-03 DEV-WEST:04-04-04 UAT-EAST:03-03-03 UAT-WEST:04-04-04"
+
 if [[ $ALL == 'true' ]] ; then
-  for ENTRY in "${GUID_LOOKUP[@]}" ; do
-    VALUE="${ENTRY##*:}"
-    UCD_GUIDS=$(echo $UCD_GUIDS $VALUE)
+  for ENTRY in $GUID_LOOKUP2 ; do
+    UCD_GUIDS="${UCD_GUIDS} ${ENTRY##*:}"
   done
 else
   for ENTRY in "${GUID_LOOKUP[@]}" ; do
