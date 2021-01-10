@@ -28,13 +28,13 @@ do
       echo 'Enter password: '
       read -s PASSWORD
       ;;
+    "Quit")
+      break
+      ;;
     "Run")
       echo "Running process"
       DUMMY=''
       RESULT=$(runprocess $DUMMY)
-      ;;
-    "Quit")
-      break
       ;;
     *) echo "invalid option $REPLY";;
   esac
