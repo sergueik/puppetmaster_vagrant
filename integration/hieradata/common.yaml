@@ -8,6 +8,10 @@ lookup_options:
       merge_hash_arrays: true
 
 
+poorly_formatted_data:
+  'a'  : 'b'
+  'c': 'd'
+
 urugeas::version: '0.2.3'
 urugeas::undef_value: ~
 urugeas::empty_value: ''

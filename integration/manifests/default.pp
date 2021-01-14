@@ -7,6 +7,11 @@ node 'default' {
   include urugeas::jetty_mod 
   include urugeas::python_inline 
 
+  $poorly_formatted_data = hiera('poorly_formatted_data', {})
+  notify{'check poorly_formatted_data:' : 
+    message => "poorly_formatted_data = ${poorly_formatted_data}"
+  }
+
   # urugeas::chown {'dummy': }
   # Undefined variable 'role'
   $sample_deep_data = hiera('sample_deep_data',{ })
