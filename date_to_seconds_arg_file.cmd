@@ -1,28 +1,23 @@
 @echo OFF
-@SETLOCAL ENABLEDELAYEDEXPANSION
-set FROM_DATE=%~1
+SETLOCAL ENABLEDELAYEDEXPANSION
 REM https://stackoverflow.com/questions/4192971/in-powershell-how-do-i-convert-datetime-to-unix-time
-set F1=%temp%\a.txt
+
+set F=%temp%\a.txt
+
+set FROM_DATE=%~1
 if "%FROM_DATE%"=="" GOTO :NOARG
-echo FROM_DATE=%FROM_DATE%
-powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date = Get-Date($input); $seconds = [Math]::Floor([decimal](Get-Date($date).AddDays(1) -uformat '%%s')); write-output $seconds} " "'%From_date%'" > %F1%
-GOTO :RESULT
+GOTO :START
 :NOARG
-set F2=%temp%\a.txt
-date /t > %F2%
-for /F "tokens=*" %%. in ('type %F2%') do (
-REM inline
-REM  powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = '%%.' ; $date =  Get-Date($input); write-output ($date);} "
-REM argument check
-REM  powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date =  Get-Date($input); write-output ($date);} "  "'%%.'"
-powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date = Get-Date($input); $seconds = [Math]::Floor([decimal](Get-Date($date).AddDays(1) -uformat '%%s')); write-output $seconds} " "'%%.'" > %F1%
-)
-rem del /q %F2%
-:RESULT
-
-REM echo F1=%F1%
-
-for /F "tokens=*" %%. in ('type "%F1%"') do set RESULT=%%.
-rem del /q %F1%
+date /t > %F%
+for /F "tokens=*" %%. in ('type %F%') do set FROM_DATE=%%.
+del /q %F%
+set FROM_DATE=!FROM_DATE:~0,14!
+:START
+REM echo FROM_DATE="!FROM_DATE!"
+REM powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date =  Get-Date($input); write-output ($date);} " "'!FROM_DATE!'"
+powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date = Get-Date($input); $seconds = [Math]::Floor([decimal](Get-Date($date).AddDays(1) -uformat '%%s')); write-output $seconds} " "'!FROM_DATE!'" > %F%
+for /F "tokens=*" %%. in ('type "%F%"') do set RESULT=%%.
+REM type %F%
+del /q %F%
 echo %RESULT%
 GOTO :EOF

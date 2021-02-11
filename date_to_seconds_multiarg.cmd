@@ -27,4 +27,3 @@ REM type %F%
 del /q %F%
 echo %RESULT%
 GOTO :EOF
-				
