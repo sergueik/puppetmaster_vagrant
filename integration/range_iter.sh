@@ -3,11 +3,43 @@
 # enable DEBUG for testing
 DEBUG=false
 
+OPTS=$(getopt -o hdym:w: --long help,debug,year,months:,weeks: -n 'parse-options' -- "$@")
+if [ $? != 0 ] ; then echo 'Failed parsing options' >&2 ; exit 1 ; fi
+MONTHS=1
+WEEKS=1
+RANGE='month'
+while true; do
+  case "$1" in
+    -h | --help ) HELP=true; shift ;;
+    -d | --debug ) DEBUG=true; shift ;;
+    -y | --year ) RANGE='year'; shift ;;
+    -m | --months ) MONTHS="$2"; shift; shift ;;
+    -w | --weeks ) WEEKS="$2"; RANGE='week';shift; shift ;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
+done
 TILL_DATE_DEFAULT=$(date +'%d %b %Y')
+DAYS=$(expr $WEEKS \* 7)
 BEGIN_YEAR_DATE=$(date +'1 Jan %Y')
-PAST_MONTH_DATE=$(date -d "-1 month" +%Y%m%d)
+PAST_MONTH_DATE=$(date -d "-$MONTHS month" +%Y%m%d)
+PAST_WEEK_DATE=$(date -d "-$DAYS day" +%Y%m%d)
+
+if [[ $DEBUG == 'true' ]] ; then
+  echo "Range selection: ${RANGE}"
+  echo "Past month date: ${PAST_MONTH_DATE}"
+  echo "Past week date: ${PAST_WEEK_DATE}"
+  echo "Begin year date: ${BEGIN_YEAR_DATE}"
+  # exit
+fi
 TILL_DATE=${1:-$TILL_DATE_DEFAULT}
-FROM_DATE=${1:-$PAST_MONTH_DATE}
+if [[ $RANGE == 'month' ]]; then 
+  FROM_DATE=${1:-$PAST_MONTH_DATE}
+elif [[ $RANGE == 'year' ]]; then 
+  FROM_DATE=${1:-$BEGIN_YEAR_DATE}
+else
+  FROM_DATE=${1:-$PAST_WEEK_DATE}
+fi
 if [[ $DEBUG == 'true' ]] ; then
   echo "From calendar date: ${FROM_DATE}"
   echo "Till calendar date: ${TILL_DATE}"
@@ -20,9 +52,9 @@ FROM_SECONDS=$(date -d "${FROM_DATE}" +'%s')
 if [[ $DEBUG == 'true' ]] ; then
   # bash variable expression extension
   NUM_DAYS=$(( (TILL_SECONDS - FROM_SECONDS) / 86400 ))
-  echo "${NUM_DAYS} since the past month"
+  echo "${NUM_DAYS} days date range"
   NUM_DAYS=$(expr \( $TILL_SECONDS - $FROM_SECONDS \) / 86400 )
-  echo "${NUM_DAYS} since the start of the year"
+  echo "${NUM_DAYS} days date range"
 fi
 
 if [[ $DEBUG == 'true' ]] ; then
