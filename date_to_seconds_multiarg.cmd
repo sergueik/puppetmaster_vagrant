@@ -21,7 +21,7 @@ set FROM_DATE=!FROM_DATE:~0,14!
 :START
 echo FROM_DATE="!FROM_DATE!"
 REM powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date =  Get-Date($input); write-output ($date);} " "'!FROM_DATE!'"
-powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date = Get-Date($input); $seconds = [Math]::Floor([decimal](Get-Date($date).AddDays(1) -uformat '%%s')); write-output $seconds} " "'!FROM_DATE!'" > %F%
+powershell.exe -executionpolicy remotesighed -noprofile -command " & { $input = $args[0] ; $date = Get-Date($input); $seconds = [Math]::Floor([decimal](Get-Date($date) -uformat '%%s')); write-output $seconds} " "'!FROM_DATE!'" > %F%
 for /F "tokens=*" %%. in ('type "%F%"') do set RESULT=%%.
 REM type %F%
 del /q %F%
