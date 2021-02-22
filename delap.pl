@@ -68,7 +68,14 @@ $NLS= '#';
 $NONLS = '[^#]';
 $data =~  s|\n|$NLS|mg;
 
-print "Regexp:\n^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NONLS+$NLS?)*)$NLS$NLS(.*$))\n" if $DEBUG;
+print "Regexp:\n" , '^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NONLS+$NLS?)*)$NLS$NLS(.*$)' , "\n" if $DEBUG;
+# NOTE: $) is a special Perl variable
+# e.g. perl -e 'print $)'
+# will print
+# 1000 4 24 27 30 46 118 126 128 1000
+# addind a space beween the $ and the ) does not help
+
+print "Regexp:\n" , "^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NONLS+$NLS?)*)$NLS$NLS(.*$)" , "\n" if $DEBUG;
 
 # prevent runaway scans
 my $cnt = 0;
