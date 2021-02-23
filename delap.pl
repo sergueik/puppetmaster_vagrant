@@ -12,9 +12,11 @@ GetOptions( 'input=s' => \$inputfile,
   'debug' => \$debug
 );
 # alternatively, ($inputfile,$outputfile,) = @ARGV;
-print "input = $inputfile\n";
-print "output =$outputfile\n";
-print "debug = $debug\n";
+if ( $debug ){
+  print "inputfile = $inputfile\n";
+  print "outputfile =$outputfile\n";
+  print "debug = $debug\n";
+}
 my $CONFIG = <<EOF;
 x: |
 a
@@ -43,6 +45,7 @@ my $NLS= '#';
 my $data = $CONFIG;
 $data =~  s|\n|$NLS|mg;
 if ($inputfile) {	
+  $data = '';
   open(FH, '<', $inputfile) or die $!;
   while(<FH>){
     chomp;
@@ -51,7 +54,9 @@ if ($inputfile) {
   }
   close(FH);
 }
-
+if ($debug) { 
+  print "Data: $data\n";
+}
 my $NONLS = '[^#]';
 my $DELIMITER = '\|';
 my $NODELIMITER = '[^\|]';
@@ -62,7 +67,6 @@ print "Regexp:\n" , '^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NON
 # will print
 # 1000 4 24 27 30 46 118 126 128 1000
 # addind a space beween the $ and the ) does not help
-
 print "Regexp:\n" , "^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NONLS+$NLS?)*)$NLS$NLS(.*$)" , "\n" if $debug;
 
 # counter to prevent runaway scans
