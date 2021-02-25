@@ -5,6 +5,7 @@ import re
 import time
 from os import getenv, path
 import sys
+import json
 import argparse
 
 
@@ -15,6 +16,7 @@ parser.add_argument('--inputfile', '-i', help = 'input file')
 parser.add_argument('--outputfile', '-o', help = 'output file', type = str, action = 'store')
 parser.add_argument('--action', '-a', help = 'action to take', type = str, action = 'store')
 parser.add_argument('--debug', '-d', help = 'debug', action = 'store_const', const = True)
+parser.add_argument('--jsondump', '-j', help = 'jsondump', action = 'store_const', const = True)
 #
 # TODO: load filter param via argument parse somehow
 
@@ -38,7 +40,7 @@ nodelimiter = '[^\|]';
 grammar = '^(?:(' + nodelimiter + '+)' + nls + ')*(' + nonls + '+)' + ': *' + delimiter + nls + '((?:' + nonls + '+' + nls + '?)*)' + nls + nls + '(.*$)'
 
 with open(args.inputfile, 'r') as file:
-  data = file.read().replace(real_nls, nls)
+  data = file.read().replace('\r', '').replace(real_nls, nls)
 if args.debug:
   print( data)
 # TODO:  pass compile options for performance (optional)
@@ -72,7 +74,4 @@ if re.match(r'\S',data):
   s = '\n'
   print( s.join(regular_config.split( nls)))
 
-# file = open(args.outputfile,'w')
-# file.writelines(L) for L = [str1, str2, str3]
-# file.close()
-
+# export PATH=$PATH:/C/Program\ Files/LibreOffice/program:/c/Program\ Files/LibreOffice/program/python-core-3.7.7/bin
