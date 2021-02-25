@@ -2,21 +2,28 @@
 
 use strict;
 use Getopt::Long;
+use JSON;
+# Data::Dump is not available in git bash Perl install
+# use Data::Dump;
 
 my $inputfile = undef;
 my $outputfile = undef;
 my $debug = 0;
+my $jsondump = 0;
 
 GetOptions( 'input=s' => \$inputfile,	
   'output=s' => \$outputfile,
-  'debug' => \$debug
+  'debug' => \$debug,
+  'jsondump' => \$jsondump
 );
 # alternatively, ($inputfile,$outputfile,) = @ARGV;
 if ( $debug ){
   print "inputfile = $inputfile\n";
-  print "outputfile =$outputfile\n";
+  print "outputfile = $outputfile\n";
   print "debug = $debug\n";
 }
+# Usage:
+# perl delap.pl -input custom-format.properties [-debug] [-jsondump]
 my $CONFIG = <<EOF;
 x: |
 a
@@ -43,18 +50,19 @@ w:c,d,e
 EOF
 my $NLS= '#';
 my $data = $CONFIG;
-$data =~  s|\n|$NLS|mg;
 if ($inputfile) {	
   $data = '';
   open(FH, '<', $inputfile) or die $!;
   while(<FH>){
-    chomp;
+    # chomp;
+    # TODO: chomp does not handle CRLF properly
     $data .= $_ ;
-    $data .= $NLS;
+    # $data .= $NLS;
   }
   close(FH);
 }
-if ($debug) { 
+$data =~  s|\r?\n|$NLS|mg;
+if ($debug) {
   print "Data: $data\n";
 }
 my $NONLS = '[^#]';
@@ -71,6 +79,7 @@ print "Regexp:\n" , "^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NON
 
 # counter to prevent runaway scans
 my $cnt = 0;
+my $result = {};
 
 while (($data =~ /^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NONLS+$NLS?)*)$NLS$NLS(.*$)/mo) ) {
   if ($cnt++ > 20) {
@@ -89,13 +98,38 @@ while (($data =~ /^(?:($NODELIMITER+)$NLS)*($NONLS+): *$DELIMITER$NLS((?:$NONLS+
     print "\$3 => ",$3,"\n";
     print "\$4 => ",$4,"\n";
   }
+  my @target = ();
+
+  my @prep_values = split( /$NLS/, $property_values);
+  #
+  my @values = ();
+  map {push @values , split(/,/, $_) } @prep_values;
+  map { push @target, $_} @values;
+  $result->{$property_name} = \@target;
   print "\n${property_name}:". join(',',split( /$NLS/, $property_values)),"\n\n" ;
   print join ("\n", split( /$NLS/, $regular_config)), "\n";
+
+  map { my ($key,$data) = split(/:/, $_);
+	  my @values = split(/,/,$data);
+	  $result->{$key} = \@values;
+  } split( /$NLS/, $regular_config);
 
 }
 print "After the loop\nData: \"${data}\"\n" if $debug;
 if ($data =~ /\S/) {
   my $regular_config = $data;
   print join ("\n", split( /$NLS/, $regular_config)), "\n";
+  map { my ($key,$data) = split(/:/, $_);
+	  my @values = split(/,/,$data);
+	  $result->{$key} = \@values;
+  } split( /$NLS/, $regular_config);
 
+}
+# remove bad key entry
+delete $result->{''};
+# print "Result:\n";
+# dd $result;
+#
+if ($jsondump){
+  print "Result:\n", to_json($result, {pretty=>1});
 }
