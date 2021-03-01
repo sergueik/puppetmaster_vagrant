@@ -1,0 +1,45 @@
+<# 
+$hive = '<%= @hive %>'
+$registry_path = '<%= @registry_path %>'
+$name = '<%= @name %>'
+$value = '<%= @value %>'
+$propertyType = ''
+#>
+
+$hive = 'HKLM:'
+$registry_path = 'SOFTWARE\Symantec\Symantec Endpoint Protection\Content'
+$name = 'SEPDCLoc'
+$value = 'U'
+$exitcode = 0 
+$propertyType = 'String'
+
+pushd $hive
+$status = Test-Path $registry_path
+if ( -not $status ) {
+  write-output "Registry path not found: '${registry_path}'"
+ } else {
+    write-output "Registry path found: '${registry_path}'"
+    $currentValue = Get-ItemProperty -path $registry_path -name $name -errorAction SilentlyContinue
+    $status = $currentValue -ne $null
+    if ( -not $status ) {
+      write-output ("Creating property '{0}' = '{1}" -f $name, $value)
+      try { 
+        $status = $true 
+        New-ItemProperty -Path ('{0}\{1}' -f $hive, $registry_path) -Name $name -Value $value -PropertyType $propertyType -errorAction Stop
+      } catch [Exception]{
+         write-output ( "Exception:{0}" -f $Error[0].Exception )
+         write-output ("Unable to create property '{0}' = '{1}" -f $name, $value)
+         $status = $false 
+      }
+    } else {
+      write-output "Value exists: '${name}'"
+      $status = $false 
+    }
+  }
+
+popd
+
+# convert status to exitcode
+$exitcode  =  [int]( -not ($status))
+write-output "will exit with ${exitcode}"
+exit $exitcode
