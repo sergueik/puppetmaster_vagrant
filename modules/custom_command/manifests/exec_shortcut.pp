@@ -33,6 +33,11 @@ define custom_command::exec_shortcut  (
   } else {
     $template = 'create_simple_shortcut_ps1.erb'
   }
+  # NOTE: for creating shortcuts to powershell scripts
+  # one need to set TargetPath to simply
+  # 'c:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
+  # and have Arguments set to
+  # '-executionpolicy remotesigned -noprofile ' + $target_script_path
   exec { "${title_tag}_create_shortcut":
     command   => template("custom_command/${template}"),
     cwd       => 'c:\windows\temp',
@@ -65,3 +70,4 @@ define custom_command::exec_shortcut  (
     }
   }
 }
+
