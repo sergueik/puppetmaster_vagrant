@@ -1,0 +1,48 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = '2'
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  # set to false, if you do NOT want to check the correct VirtualBox Guest Additions version when booting this box
+  if defined?(VagrantVbguest::Middleware)
+    config.vbguest.auto_update = false
+  end
+  config.vm.box = "demonium/u18-elk"
+  # invoke-webrequest -uri 'https://app.vagrantup.com/demonium/boxes/u18-elk/versions/20191110/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\u18-elk-puppet.box"
+
+  # https://app.vagrantup.com/demonium/boxes/u18-elk/versions/20191110/providers/virtualbox.box
+  config_vm_box_name =  'u18-elk-puppet.box'
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+
+  # version only relevant for cloud images
+  # config.vm.box_version = "20191110"
+  # Elasticsearch, Kibana, Logstash,  Filebeat, Nginx
+  config.vm.network :forwarded_port, guest: 5601, host: 5601
+  config.vm.network :forwarded_port, guest: 9200, host: 9200
+  config.vm.network :forwarded_port, guest: 9300, host: 9300
+
+  config.vm.network 'private_network', ip: '172.17.8.103'
+  config.vm.provider :virtualbox do |vb|
+    vb.name = 'ELK Vagrant Box'
+    vb.customize ['modifyvm', :id, '--cpus', '2', '--memory', '4096']
+    # vb.customize ['modifyvm', :id, '--uart1', 'off']
+    vb.customize ['modifyvm', :id, '--uart2', 'off']
+    vb.customize ['modifyvm', :id, '--uart3', 'off']
+    vb.customize ['modifyvm', :id, '--uart4', 'off']
+    # vb.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
+    vb.customize ["modifyvm", :id, "--uart1", "0x3f8", "4"]
+    vb.customize ["modifyvm", :id, "--uartmode1", "file", "C:\\Users\\Serguei\\VirtualBox VMs\\ELK Vagrant Box\\a.log"]
+    #   Stderr: VBoxManage.exe: error: NamedPipe#0 failed to create named pipe C:\Users\Serguei\VirtualBox VMs\ELK Vagrant Box\a.log (VERR_INVALID_NAME)
+  end
+  # Stderr: VBoxManage.exe: error: RawFile#0 failed to create the raw output file /home/demonium/vagrant/u18-elk/ubuntu-bionic-18.04-cloudimg-console.log (VERR_PATH_NOT_FOUND)
+  # Workaround: find the MachineEntry for 'ELK Vagrant Box.vbox' in ~/.VirtualBox/VirtualBox.xml
+  # update the path attribute of serial port UART 
+  # path="C:\Users\Serguei\VirtualBox VMs\ELK Vagrant Box\a.log"
+  # <Port slot="0" enabled="true" IOBase="0x3f8" IRQ="4" path="/home/demonium/vagrant/u18-elk/ubuntu-bionic-18.04-cloudimg-console.log" hostMode="RawFile"/>
+  # It seems thay commenting or disabling the Serial Port via Virtual Box "Settings" "Serial Ports" configuration dialog leads to hanging VM
+  # https://stackoverflow.com/questions/58011088/kibana-server-is-not-ready-yet
+end
