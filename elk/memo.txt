@@ -1,0 +1,17 @@
+  default: Error: 308 unknown for http://packages.elastic.co/GPG-KEY-elasticsearch
+    default: Error: /Stage[main]/Elasticsearch::Repo/Apt::Source[elasticsearch]/Apt::Key[Add key: 46095ACC8548582C1A2699A9D27D666CD88E42B4 from Apt::Source elasticsearch]/Apt_key[Add key: 46095ACC8548582C1A2699A9D27D666CD88E42B4 from Apt::Source elasticsearch]/ensure: change from absent to present failed: 308 unknown for http://packages.elastic.co/GPG-KEY-elasticsearch
+    
+    Change /lib/systemd/system/elasticsearch-es-01.service to point to config file /etc/elasticsearch/es-01/elasticsearch.yml
+    to cure  Exception in thread "main" java.nio.file.NoSuchFileException: /etc/elasticsearch/elasticsearch.yml
+    fix is to bemade in /etc/default/elasticsearch-es-01
+    #  https://github.com/elastic/elasticsearch/blob/master/distribution/src/config/elasticsearch.yml
+    # does not help
+    
+    link one to the other
+    ln -s /etc/elasticsearch/es-01/elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
+    cp -R /etc/elasticsearch/es-01/* /etc/elasticsearch/
+    create plugins dir
+    mkdir /usr/share/elasticsearch/plugins
+   
+   fix options in systemcl file /lib/systemd/system/elasticsearch-es-01.service
+   remove -D and -c

@@ -11,38 +11,72 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   if defined?(VagrantVbguest::Middleware)
     config.vbguest.auto_update = false
   end
-  config.vm.box = "demonium/u18-elk"
-  # invoke-webrequest -uri 'https://app.vagrantup.com/demonium/boxes/u18-elk/versions/20191110/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\u18-elk-puppet.box"
-
+  config.vm.box = "apolloclark/ubuntu16.04-elk"
+  # invoke-webrequest -uri 'https://app.vagrantup.com/apolloclark/boxes/ubuntu16.04-elk/versions/20190426/providers/virtualbox.box' -outfile "${env:USERPROFILE}\Downloads\u16.04-elk.box"
+  # See Also:
+  # http://blog.patrikstas.com/2017/01/12/run-elasticsearch-and-kibana-in-vagrant-box/
+  # https://www.jobacle.nl/?p=2743
+  # https://thomasardal.com/running-elasticsearch-on-linux-using-vagrant/
+  # https://dzone.com/articles/elasticsearch-cluster-with-vagrant-amp-virtualbox
+  #
+  # next try to use official latest elastic images from
+  # https://app.vagrantup.com/elastic/boxes/ubuntu-16.04-x86_64-test/versions/20210314.0.0
+  # (there is also available for centosor debian)
+  # the following has few problems with configuration
   # https://app.vagrantup.com/demonium/boxes/u18-elk/versions/20191110/providers/virtualbox.box
-  config_vm_box_name =  'u18-elk-puppet.box'
+
+  config_vm_box_name =  'u16.04-elk.box'
   config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
 
   # version only relevant for cloud images
-  # config.vm.box_version = "20191110"
-  # Elasticsearch, Kibana, Logstash,  Filebeat, Nginx
+  # config.vm.box_version = "20190426"
+  # Elasticsearch, Kibana, Logstash, Filebeat, Nginx
   config.vm.network :forwarded_port, guest: 5601, host: 5601
   config.vm.network :forwarded_port, guest: 9200, host: 9200
   config.vm.network :forwarded_port, guest: 9300, host: 9300
 
-  config.vm.network 'private_network', ip: '172.17.8.103'
+  # config.vm.network 'private_network', ip: '172.17.8.103'
   config.vm.provider :virtualbox do |vb|
     vb.name = 'ELK Vagrant Box'
     vb.customize ['modifyvm', :id, '--cpus', '2', '--memory', '4096']
-    # vb.customize ['modifyvm', :id, '--uart1', 'off']
+    vb.customize ['modifyvm', :id, '--uart1', 'off']
     vb.customize ['modifyvm', :id, '--uart2', 'off']
     vb.customize ['modifyvm', :id, '--uart3', 'off']
     vb.customize ['modifyvm', :id, '--uart4', 'off']
-    # vb.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
-    vb.customize ["modifyvm", :id, "--uart1", "0x3f8", "4"]
-    vb.customize ["modifyvm", :id, "--uartmode1", "file", "C:\\Users\\Serguei\\VirtualBox VMs\\ELK Vagrant Box\\a.log"]
-    #   Stderr: VBoxManage.exe: error: NamedPipe#0 failed to create named pipe C:\Users\Serguei\VirtualBox VMs\ELK Vagrant Box\a.log (VERR_INVALID_NAME)
+    vb.customize ['modifyvm', :id, '--uartmode1', 'disconnected']
   end
-  # Stderr: VBoxManage.exe: error: RawFile#0 failed to create the raw output file /home/demonium/vagrant/u18-elk/ubuntu-bionic-18.04-cloudimg-console.log (VERR_PATH_NOT_FOUND)
-  # Workaround: find the MachineEntry for 'ELK Vagrant Box.vbox' in ~/.VirtualBox/VirtualBox.xml
-  # update the path attribute of serial port UART 
-  # path="C:\Users\Serguei\VirtualBox VMs\ELK Vagrant Box\a.log"
-  # <Port slot="0" enabled="true" IOBase="0x3f8" IRQ="4" path="/home/demonium/vagrant/u18-elk/ubuntu-bionic-18.04-cloudimg-console.log" hostMode="RawFile"/>
-  # It seems thay commenting or disabling the Serial Port via Virtual Box "Settings" "Serial Ports" configuration dialog leads to hanging VM
-  # https://stackoverflow.com/questions/58011088/kibana-server-is-not-ready-yet
+   # wait for completion of Kibana initilization
+   # KIBANA_LOG='/var/log/kibana/kibana.log'
+   # tail -10 $KIBANA_LOG | while read LINE ; do echo $LINE | jq '.' - ; done
+   # grep 'state' $KIBANA_LOG | tail -1 | jq '.state' -
+   # STATE=$(grep 'state' $KIBANA_LOG | tail -1 | jq -cr '.state' -)
+   # if [ "$STATE" = 'green' ] ; then echo Done; fi
+   # https://stackoverflow.com/questions/58011088/kibana-server-is-not-ready-yet
+   # NOTE: old version
+   # /usr/share/kibana/bin/kibana --version 2>/dev/null
+   # 6.6.2
+   # sudo /usr/share/elasticsearch/bin/elasticsearch --version
+   # Version: 6.6.2
+
+  # Upgrade to 7.x
+  # https://computingforgeeks.com/install-elasticsearch-on-ubuntu/
+  #
+  config.vm.provision 'shell', inline: <<-END
+    #!/usr/bin/env bash
+
+    apt-get -y install gnupg
+    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+    apt-get -q -y install apt-transport-https
+    # NOTE: not yet ready to migrate to 7.x because breaking changes between 6 and 7
+    # echo 'deb https://artifacts.elastic.co/packages/oss-7.x/apt stable main' |tee  /etc/apt/sources.list.d/elastic-7.x.list
+    echo 'deb https://artifacts.elastic.co/packages/oss-6.x/apt stable main' | sudo tee  /etc/apt/sources.list.d/elastic-6.x.list
+    apt-get update
+    # apt-get -q -y install elasticsearch-oss
+    # TODO: adjust -Xms -Xmx values in
+    # /etc/elasticsearch/jvm.options
+    # systemctl enable elasticsearch.service
+    # systemctl restart elasticsearch.service
+  END
+  # http://localhost:5601/app/kibana#/home?_g=()
+  # filebeat needs to be started again
 end

@@ -21,7 +21,9 @@ package { 'curl':
 
 class { 'elasticsearch':
   manage_repo  => true,
-  repo_version => '1.7',
+  # java_install => true,
+  # Duplicate declaration: Class[Java] is already declared; cannot redeclare at /etc/puppetlabs/code/environments/production/modules/elasticsearch/manifests/init.pp:558 
+  repo_version => '7.x',
 }
 
 elasticsearch::instance { 'es-01':
@@ -49,7 +51,7 @@ class { 'logstash':
   # autoupgrade  => true,
   ensure       => 'present',
   manage_repo  => true,
-  repo_version => '1.5',
+  repo_version => '7.x',
   require      => [ Class['java'], Class['elasticsearch'] ],
 }
 
@@ -83,4 +85,20 @@ package {['pm2','timings']:
   ensure   => present,
   provider => 'npm',
   # require  => Class['::nodejs'],
+}
+
+# https://github.com/pcfens/puppet-filebeat
+class { 'filebeat':
+  major_version => '7',
+  outputs => {
+    'elasticsearch' => {
+     'hosts' => [
+       'http://localhost:9200',
+     ],
+     'loadbalance' => true,
+     'cas'         => [
+        '/etc/pki/root/ca.pem',
+     ],
+    },
+  },
 }
