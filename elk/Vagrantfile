@@ -32,7 +32,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 #!/usr/bin/env bash
 
 # Install wget
-sudo apt-get install -qqy curl wget git;
+sudo apt-get install -qqy curl wget git
 if [[ -f '/etc/puppet/puppet.conf' ]] ; then
   sed -i.back  -e '/templatedir/s/^#*/#/' /etc/puppet/puppet.conf
 fi
@@ -52,38 +52,44 @@ EOF
 sudo apt-get -qqy update
 
 ## set local timezone
-# sed: -e expression #1, char 33: unknown option to `s'
-export tz=`wget -qO - http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\\(.*\\)<\\/TimeZone>.*/\\1/p'` &&  sudo timedatectl set-timezone $tz
+export TZ=$(wget -qO - http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\\(.*\\)<\\/TimeZone>.*/\\1/p') &&  sudo timedatectl set-timezone $TZ
 
 MODULE_PATH='/etc/puppetlabs/code/environments/production/modules'
+# failure during provison:
+# default: Error: /Stage[main]/Elasticsearch::Repo/Apt::Source[elasticsearch]/Apt::Key[Add key: 46095ACC8548582C1A2699A9D27D666CD88E42B4 from Apt::Source elasticsearch]/Apt_key[Add key: 46095ACC8548582C1A2699A9D27D666CD88E42B4 from Apt::Source elasticsearch]/ensure: change from absent to present failed: 308 unknown for http://packages.elastic.co/GPG-KEY-elasticsearch
+# default: Error: /Stage[main]/Elasticsearch::Repo/Apt::Source[elasticsearch]/Apt::Key[Add key: 46095ACC8548582C1A2699A9D27D666CD88E42B4 from Apt::Source elasticsearch]/Apt_key[Add key: 46095ACC8548582C1A2699A9D27D666CD88E42B4 from Apt::Source elasticsearch]/ensure: change from absent to present failed: 308 unknown for http://packages.elastic.co/GPG-KEY-elasticsearch
 
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
 mkdir -p $MODULE_PATH
 if [ ! -d ${MODULE_PATH}/file_concat ]; then
- # puppet module install ispavailability/file_concat
- puppet module install 'electrical-file_concat'
+  # puppet module install ispavailability/file_concat
+  puppet module install 'electrical-file_concat'
 fi
 if [ ! -d ${MODULE_PATH}/apt ]; then
- # need recent version
- puppet module install 'puppetlabs-apt' --version '2.4.0'
+  # need recent version
+  puppet module install 'puppetlabs-apt' --version '2.4.0'
 fi
 if [ ! -d ${MODULE_PATH}/java ]; then
- puppet module install 'puppetlabs-java'
+  puppet module install 'puppetlabs-java'
 fi
 if [ ! -d ${MODULE_PATH}/elasticsearch ]; then
- puppet module install 'elasticsearch-elasticsearch'
+  puppet module install 'elasticsearch-elasticsearch'
 fi
 if [ ! -d ${MODULE_PATH}/logstash ]; then
- puppet module install 'elasticsearch-logstash'
+  puppet module install 'elasticsearch-logstash'
+fi
+if [ ! -d ${MODULE_PATH}/filebeat ]; then
+  puppet module install 'pcfens-filebeat'
 fi
 if [ ! -d ${MODULE_PATH}/nodejs ]; then
- puppet module install 'puppetlabs-nodejs'
+  puppet module install 'puppetlabs-nodejs'
 fi
 if [ ! -f /etc/init.d/kibana ]; then
- sudo cp /vagrant/kibana4_init /etc/init.d/kibana
- sudo sed -i 's/\\r//' /etc/init.d/kibana
- sudo chmod +x /etc/init.d/kibana
- sudo update-rc.d kibana defaults
- wget -q http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+  sudo cp /vagrant/kibana4_init /etc/init.d/kibana
+  sudo sed -i 's/\\r//g' /etc/init.d/kibana
+  sudo chmod +x /etc/init.d/kibana
+  sudo update-rc.d kibana defaults
+  wget -q http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoIPv6.dat.gz http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
 fi
 
 # http://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/#

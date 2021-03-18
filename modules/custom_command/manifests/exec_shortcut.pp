@@ -38,6 +38,16 @@ define custom_command::exec_shortcut  (
   # 'c:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'
   # and have Arguments set to
   # '-executionpolicy remotesigned -noprofile ' + $target_script_path
+  # When the $target_script_path contains space(s) the following trick does the job:
+  # Argment should be set to
+  # "-noprofile -executionpolicy remotesigned "&{ . '" + $target_script_path'+ "}"
+  # simply enclosing the $target_path_script in quotes does not work,
+  # Powershell attempt so load part of the argument
+  # When double quotes are tripled the scrpt path is simply echoed back
+  # alternatiely Argument can be set to
+  #
+  # '-executionpolicy remotesigned -noprofile -file ' + '"' + $target_script_path + '"'
+
   exec { "${title_tag}_create_shortcut":
     command   => template("custom_command/${template}"),
     cwd       => 'c:\windows\temp',

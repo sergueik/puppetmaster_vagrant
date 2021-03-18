@@ -1,0 +1,114 @@
+# origin: https://www.jobacle.nl/?p=2743
+Vagrantfile
+
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Variables
+var_box            = ‘bento/oracle-7.7’
+var_vm_name        = ‘OL7_ELK’
+var_mem_size       = 4096  # More would be better.
+var_cpus           = 2
+var_non_rotational = ‘off’ # HDD
+var_disk_name      = ‘./ol7_ELK_u01.vdi’
+var_disk_size      = 20
+var_public_ip      = ‘192.168.56.140’
+
+Vagrant.configure(“2”) do |config|
+config.vm.box = var_box
+config.vm.network “forwarded_port”, guest: 9200, host: 9201 # ES
+config.vm.network “forwarded_port”, guest: 5601, host: 5602 # Kibana
+config.vm.network “forwarded_port”, guest: 8111, host: 8112 # HTTP server for test
+config.vm.network “private_network”, ip: var_public_ip
+config.vm.provider “virtualbox” do |vb|
+vb.memory = var_mem_size
+vb.cpus   = var_cpus
+vb.name   = var_vm_name
+vb.customize [‘storageattach’, :id, ‘–storagectl’, ‘SATA Controller’, ‘–port’, ‘0’, ‘–nonrotational’, var_non_rotational]
+
+unless File.exist?(var_disk_name)
+vb.customize [‘createhd’, ‘–filename’, var_disk_name, ‘–size’, var_disk_size * 1024]
+end
+vb.customize [‘storageattach’, :id, ‘–storagectl’, ‘SATA Controller’, ‘–port’, 1, ‘–device’, 0, ‘–type’, ‘hdd’, ‘–nonrotational’, var_non_rotational, ‘–medium’, var_disk_name]
+end
+
+config.vm.provision “shell”, inline: <<-SHELL
+#  sh /vagrant/setup.sh
+sudo bash -c ‘sh /vagrant/install_elk.sh’
+SHELL
+end
+
+
+#———————————————————————————-
+# Install Elasticsearch, kibana, customize kibana.yml, stop and start all.
+# First Elasticsearch
+# ———————————————————————————
+# Had to define the ip-address for the second time, should be possible to do this  globally
+#
+var_public_ip=’192.168.56.140′
+var_local_es_url=’http://localhost:9200′
+#
+rpm –import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+echo “Adding Elasticsearch repository elastic.repo.”
+cat > /etc/yum.repos.d/elastic.repo <<EOF
+[elasticsearch]
+name=Elasticsearch repository for 7.x packages
+baseurl=https://artifacts.elastic.co/packages/7.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+EOF
+yum install –enablerepo=elasticsearch elasticsearch -y
+
+chkconfig –add elasticsearch
+service elasticsearch start
+
+#———————————————————————————-
+# Installing Kibana
+# ———————————————————————————
+rpm –import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+echo “Adding Kibana repository kibana.repo.”
+cat > /etc/yum.repos.d/kibana.repo <<EOF
+[kibana-7.x]
+name=Kibana repository for 7.x packages
+baseurl=https://artifacts.elastic.co/packages/7.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+EOF
+
+yum install kibana -y
+chkconfig –add kibana
+service kibana start
+
+#———————————————————————————-
+# Changes in Kibana-yml file
+# ———————————————————————————
+
+echo “Replace yml-file by only the necessities”
+mv /etc/kibana/kibana.yml /etc/kibana/kibana_orig.yml
+cat > /etc/kibana/kibana.yml <<EOF
+# Kibana is served by a back end server. This setting specifies the port to use.
+server.port: 5601
+# Specifies the address to which the Kibana server will bind. IP addresses and host names are both valid values.
+# The default is ‘localhost’, which usually means remote machines will not be able to connect.
+# To allow connections from remote users, set this parameter to a non-loopback address.
+server.host: “${var_public_ip}”
+# The Kibana server’s name.  This is used for display purposes.
+server.name: “Testserver”
+# The URLs of the Elasticsearch instances to use for all your queries.
+elasticsearch.hosts: “${var_local_es_url}”
+EOF
+
+service kibana stop
+service elasticsearch stop
+
+service elasticsearch start
+service kibana start
+

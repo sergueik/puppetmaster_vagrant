@@ -1,0 +1,88 @@
+$level = 'HIGHEST'
+$schedule = 'ONCE'
+$time = '00:00' # required, irrrevant
+$program = "<%= @program %>"
+$taskname = '<%= @taskname %>'
+if ($program -eq ''){
+  $program = 'notepad.exe'
+}
+$delete_existing_schedules = $true
+
+function log{
+param(
+  [string]$message,
+  [string]$log_file  = '<%=@log%>'
+ )
+    write-host $message
+    write-output $message | out-file $log_file -append -encoding ascii
+}
+
+log -message ('Launching task for "{0}"' -f $program)
+$env:PATH = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+
+if ($delete_existing_schedules) {
+  $status = schtasks /query /TN $taskname| select-string -pattern "${taskname}" 
+  log $status
+  if ($status -ne $null){
+   log -message "${taskname} is present, deleting..."
+   & schtasks /Delete /TN $taskname /F
+  } else { 
+    write-host "No ${taskname} is present...ignoring"
+    log -message "No ${taskname} is present...ignoring"
+  }
+}
+log ('Creating "{0}"' -f $taskname )
+& schtasks /Create  /TN $taskname /RL $level /TR $program /SC $schedule /ST $time
+log ('Starting "{0}"' -f $taskname )
+& schtasks /Run /TN $taskname
+$count = 1
+$max_count = 100
+$running = $false
+$finished = $false
+while($count -le $max_count ){
+  $count ++
+  $status = & schtasks /query /TN $taskname| select-string -pattern "${taskname}"
+  log $status
+  if ($status.tostring() -match '(Could not)'){
+    log "WARNING: ${taskname} has failed..."
+    break 
+  } elseif ($status.tostring() -match '(Ready)'){
+    log "NOTICE: ${taskname} is ready..."
+    $running = $true
+  } elseif ($status.tostring() -match '(Running)'){
+    log "SUCCESS: ${taskname} is running..."
+    $running = $true
+    break 
+  } else { 
+    log "WARNING: ${taskname} is not yet running..."
+  }
+  start-sleep -milliseconds 1000
+}
+# TODO : time management
+if ($running){
+  log "NOTICE: waiting for running ${taskname} to complete..."
+  $count = 1
+  $max_count = 10
+  while($count -le $max_count ){
+    $count ++
+    $status = & schtasks /query /TN $taskname| select-string -pattern "${taskname}"
+    log $status
+    if ($status.tostring() -match '(Could not|Failed)'){
+      log "WARNING: ${taskname} has failed..."
+      break 
+    } elseif ($status.tostring() -match '(Running)'){
+      log "NOTICE: ${taskname} is running..."
+    } else { 
+      log "SUCCESS: ${taskname} is finished..."
+      $finished = $true
+      break 
+    }
+    start-sleep -milliseconds 60000
+ }
+}
+log 'Complete'
+<#
+NOTE:
+Task Scheduler did not launch task "..."  because computer is running on batteries. 
+User Action: If launching the task on batteries is required, change the respective flag in the task configuration.
+#>
