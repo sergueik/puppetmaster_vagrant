@@ -2,7 +2,7 @@
 DEBUG=false
 NAMES=869
 VALUES=869
-OPTS=$(getopt -o hdn:v: --long help,debug,names:values: -n 'tarse-options' -- "$@")
+OPTS=$(getopt -o hdn:v: --long help,debug,names:,values: -n 'tarse-options' -- "$@")
 if [ $? != 0 ] ; then echo 'Failed parsing options' >&2 ; exit 1 ; fi
 NAMES=1
 VALUES=1
@@ -27,6 +27,36 @@ if [  $(echo $NAMES| sed 's|,|\n|g'|wc -l) != $(echo $VALUES| sed 's|,|\n|g'|wc 
   echo -e "Between\n$NAMES\nand\n$VALUES"
   exit 0
 fi
+# option 1
+for ARG in $(echo $NAMES | sed 's|,| |g'); do
+  # store number of lines in an array
+  _NAMES[$CNT]=$ARG
+  # increase counter
+  CNT=$[ $CNT + 1 ]
+done
+CNT=0
+for ARG in $(echo $VALUES | sed  's|,| |g') ; do
+  # store number of lines in an array
+  _VALUES[$CNT]=$ARG
+  # increase counter
+  CNT=$[ $CNT + 1 ]
+done
+MAXCNT=$CNT
+echo MAXCNT=$MAXCNT
+for ((CNT=0;CNT<MAXCNT;CNT++)); do
+  echo CNT=$CNT
+  # NOTE need '{','}'
+  echo "NAME=${_NAMES[$CNT]}"
+  echo 'VALUE=' ${_VALUES[$CNT]}
+done
+MAXCNT=$[ $MAXCNT - 1 ]
+for CNT in $(seq 0 1 $MAXCNT); do
+  echo CNT=$CNT
+  # NOTE need '{','}'
+  echo "NAME=${_NAMES[$CNT]}"
+  echo 'VALUE=' ${_VALUES[$CNT]}
+done
+# option 2
 # NOTE: redefining the variables
 VALUES=($(echo $VALUES| sed 's|,| |g'))
 NAMES=($(echo $NAMES| sed 's|,| |g'))
@@ -43,5 +73,5 @@ for((CNT=0;CNT<$MAX_INDEX;CNT++)) ; do
   if [[ -z $VALUE ]]  ; then
     continue
   fi
- echo -e "pair $CNT:\nname=$NAME\nvalue=$VALUE"
+ echo -e "pair $CNT:\nNAME=$NAME\nVALUE=$VALUE"
 done
