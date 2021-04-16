@@ -1,0 +1,41 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# based on: https://gist.github.com/bartfastiel/ad1f2bc3ffd08d3d02ac71a9c8ae785do
+# NOTE: sonarqube quits shortly after the launch
+#
+
+basedir = ENV.fetch('USERPROFILE', '')
+basedir = ENV.fetch('HOME', '') if basedir == ''
+Vagrant.configure("2") do |config|
+  # config.vm.box = "ubuntu/xenial64"
+  config.vm.box = 'ubuntu/xenial64-puppet'
+  # https://atlas.hashicorp.com/puppetlabs/boxes/ubuntu-16.04-64-puppet
+  # config.vm.box = 'puppetlabs/ubuntu-16.04-64-puppet'
+  config_vm_box_name = 'ubuntu-16.04-64-puppet.box'
+  config.vm.box_url = "file://#{basedir}/Downloads/#{config_vm_box_name}"
+
+  # config.vm.box_check_update = false
+
+  config.vm.network "forwarded_port", guest: 9000, host: 9000, id: "SonarQube-Web"
+
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+apt-get -qqy install openjdk-8-jdk unzip vim default-jre rungetty wget libxml2-utils jq
+    update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+    echo Downloading SonarQube...
+    LTS_VERSION=7.9.6
+    # NOTE: SonarQube 7.9.x  LTS requires Java 11 to run
+    LTS_VERSION=6.7.7
+
+    wget --no-verbose https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-$LTS_VERSION.zip
+    sudo apt-get -y install unzip
+    # rm -rf sonarqube-$LTS_VERSION
+    unzip -q -o sonarqube-$LTS_VERSION.zip
+
+    echo Starting SonarQube...
+    cp sonarqube-$LTS_VERSION/conf/wrapper.conf sonarqube-$LTS_VERSION/conf/wrapper.conf.original
+   sed -i 's|wrapper.java.command=.*|wrapper.java.command=/usr/bin/java|' sonarqube-$LTS_VERSION/conf/wrapper.conf
+    sonarqube-$LTS_VERSION/bin/linux-x86-64/sonar.sh start
+  SHELL
+end
