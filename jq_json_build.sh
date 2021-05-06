@@ -17,18 +17,35 @@ DATAFILE2="/tmp/data2.$$"
 DATAFILE2="/tmp/data.tmp.json"
 
 IFS=':'; cat $DATAFILE1| while read KEY1 VALUE1 KEY2 VALUE2 KEY3 VALUE3; do
+if [ ! -z $DEBUG ] ; then
+  1>&2 echo 'Command:'
+  1>&2 cat <<EOF
+  jq --arg key "$KEY1" --arg value "$VALUE1" '.|.[\$key]=\$value'  \
+  <<<'{}' ;
+EOF
+fi
 jq --arg k1 "$KEY1"   \
    --arg v1 "$VALUE1" \
    --arg k2 "$KEY2"   \
    --arg v2 "$VALUE2" \
    --arg k3 "$KEY3"   \
    --arg v3 "$VALUE3" \
-   '. | .[$k1]=$v1 | .[$k2]=$v2 | .[$k3]=$v3'  \
+   '. | .[$k1]=$v1 | .[$k2]=$v2 | .[$k3]=$v3' \
    <<<'{}' ;
 done > $DATAFILE2
+if [ ! -z $DEBUG ] ; then
+  1>&2 echo 'Result:'
+  1>&2 cat $DATAFILE2
+fi
 DATA_KEY='data'
 # making the rowset keyed by $DATA_KEY
 # TODO: explore alternatives
+if [ ! -z $DEBUG ] ; then
+  1>&2  echo 'Command:'
+  1>&2 cat <<EOF
+  cat $DATAFILE2 | jq --slurp '.' | jq  --arg key "$DATA_KEY" "{\"\$key\": .}"
+EOF
+fi
 cat $DATAFILE2 | jq --slurp '.' | jq "{\"$DATA_KEY\": .}"
 
 
