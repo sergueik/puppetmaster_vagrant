@@ -8,7 +8,6 @@ use Getopt::Long;
 # for pure Perl JSON  use JSON::Tiny
 # or JSON:PP
 # https://metacpan.org/release/JSON-PP/source/lib/JSON/PP.pm
-use JSON;
 BEGIN {
   use constant RELEASE => 0;
   use constant HOME => ( do { $_ = $ENV{HOME}; /\/([^\/]+)$/ });
@@ -19,10 +18,8 @@ BEGIN {
     unshift( @INC, '.' );
   }
 }
-# ./parse_via_tiny_yaml.pl -dump -input example.yaml
 # alternatively execute with I option
-# perl -I . parse_via_tiny_yaml.pl -input data.yml -output result.yaml -dump
-
+# perl -I . parse_via_tiny_yaml_and_json_pp.pl -dump -input example.yaml
 use YAML::Tiny;
 use JSON::PP;
 
@@ -65,11 +62,7 @@ my $real_data = $data->[0];
 # etc. etc.
 
 if ($dump){
-  our $json = JSON->new->allow_blessed;
-  # see https://metacpan.org/pod/JSON#allow_blessed
-  print "Result:\n", $json->pretty->encode($data->[0]);
   our $json_pp = JSON::PP->new->ascii->pretty->allow_nonref;
- 
   print "Result:\n",  $json_pp->encode( $data->[0] );
 }
 if ($outputfile ){

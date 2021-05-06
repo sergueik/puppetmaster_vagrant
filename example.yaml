@@ -1,0 +1,61 @@
+---
+example::param1:
+  - 'one'
+  - 'two'
+  - 'three'
+example::command_template: "mysql -H ${HOST} -u %{hiera('example::dbuser')} -D database -e \"query\""
+
+example_deep_data:
+  group_key1:
+    key1: 'value1'
+    key2: 'value2'
+  group_key2:
+    key3: 'value3'
+    key4: 'value4'
+    key5: 'value5'
+  group_key3:
+    key6:
+      key7:
+        key8: 'value6'
+
+example::cron_command:  |
+  QUERY=$1
+  if [ -z "${QUERY}" ]
+  then
+    echo 'query is not defined'
+    exit 1
+  fi
+
+# NOTE: need a blank line above
+
+# NOTE: YAML::Tiny will intepret line endings verbatim e.g. \\\n
+example::java_options:  |
+  -Dfile.encoding=%{hiera('example::source_encoding')} \
+  -DAPP_LOG_ROOT=/var/log \
+
+# NOTE: keep a blank line above
+
+example::options_multiline: >-
+  -Dfile.encoding=%{hiera('example::source_encoding')}
+  -DAPP_LOG_ROOT=/var/log
+  -Dmaven.test.skip=true
+
+
+# NOTE: keep *two* blank lines above to terminate.
+          
+# NOTE: YAML::Tiny will convert multi-line to to an array
+# example::options_multiline:
+#  -Dfile.encoding=%{hiera('example::source_encoding')}
+#  -DAPP_LOG_ROOT=/var/log
+#  -Dmaven.test.skip=true
+#
+# NOTE: keep a blank line above
+#
+# NOTE: YAML:Tiny will fail with "failed to classify line" error
+#example::options_multiline2:
+#   Arbitrary free text
+#   over "multiple lines" stopping
+#   after indentation changes...
+#
+# NOTE: keep a blank line above
+## end of data
