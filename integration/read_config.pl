@@ -6,25 +6,24 @@ use Getopt::Long;
 
 use vars qw( @data $DEBUG);
 
-my $inputfile  = undef;
-my $DEBUG = 0;
+my $inputfile = undef;
+my $DEBUG     = 0;
 
 GetOptions(
-    'input=s'  => \$inputfile,
-    'debug'    => \$DEBUG
+    'input=s' => \$inputfile,
+    'debug'   => \$DEBUG
 );
 
-
-@data  = ();
+@data = ();
 
 sub read_config {
-    my ($config_path) = @_;
+    my ($config_file) = @_;
     my $last_line = undef;
     my $line_number;
 
     # slurp
-    open( FILE, $config_path )
-      || die "cannot read ${config_path}: $!";
+    open( FILE, $config_file )
+      || die "cannot read ${config_file}: $!";
     my @lines = <FILE>;
     close(FILE);
 
@@ -38,19 +37,22 @@ sub read_config {
                 print STDERR "examine $line" if $DEBUG;
 
                 if ( $line =~ /^\s*!include\b\s+(\S+)/i ) {
-                    print STDERR "process include after $last_line" if $DEBUG;
                     my $included_file = $1;
+
+                    print STDERR "process include $included_file "
+                      . ( $last_line ? "after $last_line\n" : "\n" )
+                      if $DEBUG;
 
                     # Read the included file
                     &read_config($included_file);
-                    print STDERR
-                      "resume processing of $included_file after $last_line"
+                    print STDERR "resume processing of $config_file "
+                      . ( $last_line ? "after $last_line\n" : "\n" )
                       if $DEBUG;
                     next;
                 }
                 push( @data, $line );
-                print STDERR "collected $last_line" if $DEBUG;
                 $last_line = $line;
+                print STDERR "collected $last_line" if $DEBUG;
             }
         }
     }
@@ -60,3 +62,24 @@ sub read_config {
 print @data;
 1;
 __END__
+
+#Copyright (c) 2021 Serguei Kouzmine
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in
+#all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#THE SOFTWARE.
+
