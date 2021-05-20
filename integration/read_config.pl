@@ -4,58 +4,67 @@ use Getopt::Long;
 
 # the data collected indo @data
 
-use vars qw( @data $DEBUG);
+use vars qw( @data %files $DEBUG);
 
 my $inputfile = undef;
-my $DEBUG     = 0;
+my $DEBUG   = 0;
 
 GetOptions(
-    'input=s' => \$inputfile,
-    'debug'   => \$DEBUG
+  'input=s' => \$inputfile,
+  'debug'   => \$DEBUG
 );
 
-@data = ();
+@data  = ();
+%files = ();
 
 sub read_config {
-    my ($config_file) = @_;
-    my $last_line = undef;
-    my $line_number;
+  my ($config_file) = @_;
+  $files{$config_file} = 1;
 
-    # slurp
-    open( FILE, $config_file )
-      || die "cannot read ${config_file}: $!";
-    my @lines = <FILE>;
-    close(FILE);
+  my $last_line = undef;
+  my $line_number;
 
-    for ( $line_number = 0 ; $line_number < @lines ; $line_number++ ) {
-        for ( my $line = $lines[$line_number] ) {
+  # slurp
+  open( FILE, $config_file )
+    || die "cannot read ${config_file}: $!";
+  my @lines = <FILE>;
+  close(FILE);
 
-          SWITCH: {
-                if ( $line !~ /\S/ || $line =~ /^\s*#/ ) {
-                    next;
-                }
-                print STDERR "examine $line" if $DEBUG;
+  for ( $line_number = 0 ; $line_number < @lines ; $line_number++ ) {
+    for ( my $line = $lines[$line_number] ) {
 
-                if ( $line =~ /^\s*!include\b\s+(\S+)/i ) {
-                    my $included_file = $1;
-
-                    print STDERR "process include $included_file "
-                      . ( $last_line ? "after $last_line\n" : "\n" )
-                      if $DEBUG;
-
-                    # Read the included file
-                    &read_config($included_file);
-                    print STDERR "resume processing of $config_file "
-                      . ( $last_line ? "after $last_line\n" : "\n" )
-                      if $DEBUG;
-                    next;
-                }
-                push( @data, $line );
-                $last_line = $line;
-                print STDERR "collected $last_line" if $DEBUG;
-            }
+      SWITCH: {
+        if ( $line !~ /\S/ || $line =~ /^\s*#/ ) {
+          next;
         }
+        print STDERR "examine $line" if $DEBUG;
+
+        if ( $line =~ /^\s*!include\b\s+(\S+)/i ) {
+          my $included_file = $1;
+
+          print STDERR "process include $included_file "
+            . ( $last_line ? "after $last_line\n" : "\n" )
+            if $DEBUG;
+          if ( $files{$included_file} ) {
+            die(
+              'inclusion loop detected. The ', $included_file,
+              ' that was already loaded, is referenced again from ',  $config_file
+            );
+          }
+
+          # Read the included file
+          &read_config($included_file);
+          print STDERR "resume processing of $config_file "
+            . ( $last_line ? "after $last_line\n" : "\n" )
+            if $DEBUG;
+          next;
+        }
+        push( @data, $line );
+        $last_line = $line;
+        print STDERR "collected $last_line" if $DEBUG;
+      }
     }
+  }
 }
 
 &read_config($inputfile);
