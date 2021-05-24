@@ -37,7 +37,7 @@ if Facter.value(:kernel) == 'windows'
           [string]$proxyUser = '#{proxy_user}',
           [string]$proxyPassword = '#{proxy_password}',
           [bool]$is_password_secure = is_password_secure,
-          [string]$cookie_string = #{cookie_string},
+          [string]$cookie_string = '#{cookie_string}',
           [string]$url = '#{url}'
         )
 
@@ -94,7 +94,7 @@ if Facter.value(:kernel) == 'windows'
         $webRequestStream.Write($postArray, 0, $postArray.Length)
         $webRequestStream.Close()
         try {
-          [System.Net.WebResponse] $response =  $req.GetResponse()
+          [System.Net.WebResponse] $response =  $webRequest.GetResponse()
           # NOTE: no HTTP status code in this snippet
           [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($response.GetResponseStream())
           [string]$Result = $sr.ReadToEnd()
