@@ -3,21 +3,28 @@
 use strict;
 
 use Getopt::Long;
-# NOTE: JSON is available in git bash Perl but not on 
-# # a generic stripped Linux vanilla box (solvable though cpan) 
+
+# NOTE: JSON is available in git bash Perl but not on
+# # a generic stripped Linux vanilla box (solvable though cpan)
 # for pure Perl JSON  use JSON::Tiny
 # or JSON:PP
 # https://metacpan.org/release/JSON-PP/source/lib/JSON/PP.pm
 BEGIN {
-  use constant RELEASE => 0;
-  use constant HOME => ( do { $_ = $ENV{HOME}; /\/([^\/]+)$/ });
-  if (RELEASE) {
-  # TODO: set extra lib path in RELEASE
-  } else {
-    unshift( @INC, `pwd` );
-    unshift( @INC, '.' );
-  }
+    use constant RELEASE    => 0;
+    use constant HOME       => ( do { $_ = $ENV{HOME}; /\/([^\/]+)$/ } );
+    use constant SCRIPT_DIR => (
+        do { my $s = `dirname $0`; chomp $s; $s }
+    );
+    if (RELEASE) {
+
+        # TODO: set extra lib path in RELEASE
+    }
+    else {
+        unshift( @INC, `pwd` );
+        unshift( @INC, SCRIPT_DIR );
+    }
 }
+
 # alternatively execute with I option
 # perl -I . parse_via_tiny_yaml_and_json_pp.pl -dump -input example.yaml
 use YAML::Tiny;
@@ -27,26 +34,27 @@ use JSON::PP;
 # e.g. in git bash Perl install
 # use Data::Dump;
 
-my $inputfile = undef;
+my $inputfile  = undef;
 my $outputfile = undef;
-my $debug = 0;
-my $dump = 0;
+my $debug      = 0;
+my $dump       = 0;
 
-GetOptions( 'input=s' => \$inputfile,	
-  'output=s' => \$outputfile,
-  'debug' => \$debug,
-  'dump' => \$dump
+GetOptions(
+    'input=s'  => \$inputfile,
+    'output=s' => \$outputfile,
+    'debug'    => \$debug,
+    'dump'     => \$dump
 );
 
 # NOTE: alternatively, ($inputfile,$outputfile,) = @ARGV;
-if ( $debug ){
-  print "inputfile = $inputfile\n";
-  print "outputfile = $outputfile\n";
-  print "debug = $debug\n";
+if ($debug) {
+    print "inputfile = $inputfile\n";
+    print "outputfile = $outputfile\n";
+    print "debug = $debug\n";
 }
 
 # see https://metacpan.org/pod/YAML::Tiny
-my $data = YAML::Tiny->read( $inputfile );
+my $data = YAML::Tiny->read($inputfile);
 
 # NOTE: YAML::Tiny side effect: everything is wrapped in an array
 my $real_data = $data->[0];
@@ -61,13 +69,14 @@ my $real_data = $data->[0];
 # ARRAY(0x5559f7543a28)
 # etc. etc.
 
-if ($dump){
-  our $json_pp = JSON::PP->new->ascii->pretty->allow_nonref;
-  print "Result:\n",  $json_pp->encode( $data->[0] );
+if ($dump) {
+    our $json_pp = JSON::PP->new->ascii->pretty->allow_nonref;
+    print "Result:\n", $json_pp->encode( $data->[0] );
 }
-if ($outputfile ){
-  # Save the document back to the file
-  $data->write( $outputfile );
+if ($outputfile) {
+
+    # Save the document back to the file
+    $data->write($outputfile);
 }
 1;
 __END__
