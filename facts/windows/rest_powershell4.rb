@@ -45,7 +45,6 @@ if Facter.value(:kernel) == 'windows'
         # https://www.cyberforum.ru/powershell/thread2589305.html
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
         [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
         $webRequest = [System.Net.WebRequest]::Create($url)
         $webRequest.Method = 'POST'
         $webRequest.ContentType = 'application/json'
@@ -66,10 +65,10 @@ if Facter.value(:kernel) == 'windows'
         $webRequestStream.Write($postArray, 0, $postArray.Length)
         $webRequestStream.Close()
         try {
-          [System.Net.WebResponse] $response =  $req.GetResponse()
+          [System.Net.WebResponse] $response =  $webRequest.GetResponse()
           # NOTE: no HTTP status code in this snippet
-          [System.IO.StreamReader] $sr = new-object System.IO.StreamReader($response.GetResponseStream())
-          [string]$Result = $sr.ReadToEnd()
+          [System.IO.StreamReader] $streamReader = new-object System.IO.StreamReader($response.GetResponseStream())
+          [string]$Result = $streamReader.ReadToEnd()
           write-output ('Content: {0}' -f  $Result )
         } catch [Exception] {
 	        # System.Management.Automation.ErrorRecord -> System.Net.WebException
