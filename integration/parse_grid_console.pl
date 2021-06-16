@@ -27,50 +27,57 @@ use JSON::PP;
 # https://github.com/kawanet/HTML-TagParser
 use HTML::TagParser;
 
-my $debug_html = undef;
-my $remove_port = undef;
-my $url      = undef;
-my $filename = 'grid_console.html';
+my $debug_html   = undef;
+my $remove_port  = undef;
+my $url          = 'http://localhost:4444/grid/console/';
+my $filename     = 'grid_console.html';
+my $tmp_filename = undef;
 
-my $html = HTML::TagParser->new( $url ? $url : $filename );
-our $json_pp = JSON::PP->new->ascii->pretty->allow_nonref->allow_blessed;
+GetOptions(
+    'url=s'   => \$url,
+    'input=s' => \$filename,
+    'debug'   => \$debug_html
+);
 
-my $id    = 'helplink';
-my @texts = ();
-my @htmls = ();
+if ($url) {
+    if ( !defined $URI::Fetch::VERSION ) {
 
-=pod
-my $element = $html->getElementById($id);
-if ($element) {
-    print "Result (1):\n", $json_pp->encode( $element->getAttribute('id') );
+        # git bash Perl maybe
+        $tmp_filename = "/tmp/a.$$.html";
+        system( 'curl', '-o', $tmp_filename, $url );
+    }
 }
-else {
-    print "Failed to find column by id ${id}\n";
-}
-=cut
+
+my $html = HTML::TagParser->new(
+    $url ? $tmp_filename ? $tmp_filename : $url : $filename );
+my $json_pp        = JSON::PP->new->ascii->pretty->allow_nonref->allow_blessed;
+my $subhtml        = undef;
+my $text           = undef;
+my @elements       = ();
+my $element        = undef;
+my $element2       = undef;
+my @node_hostnames = ();
+my @htmls          = ();
 
 foreach my $column_id ( 'leftColumn', 'rightColumn' ) {
     my $column = $html->getElementById($column_id);
     if ($column) {
-        my $text     = $column->innerText();
-        my $subhtml  = $column->subTree();
-        my @elements = $subhtml->getElementsByClassName('proxyname');
-        if ($debug_html) {
-            print "Result (2): ", $#elements, " elements\n";
-        }
+        $text     = $column->innerText();
+        $subhtml  = $column->subTree();
+        @elements = $subhtml->getElementsByClassName('proxyname');
 
-        # my @elements = $html->getElementsByClassName('proxyname');
         for my $element (@elements) {
 
-            my $subhtml  = $element->subTree();
-            my $element2 = ( $subhtml->getElementsByClassName('proxyid') )[0];
-            my $text     = $element2->innerText();
-            if ($remove_port){
-            $text =~ s|.*http:\/\/\b(\w+):\d+s\b.*$|\1|o;
-		} else { 
-			$text =~ s|.*http:\/\/\b(\w+:\d+)\b.*$|\1|o;
-			}
-            push @texts, $text;
+            $subhtml  = $element->subTree();
+            $element2 = ( $subhtml->getElementsByClassName('proxyid') )[0];
+            $text     = $element2->innerText();
+            if ($remove_port) {
+                $text =~ s|.*http:\/\/\b(\w+):\d+s\b.*$|\1|o;
+            }
+            else {
+                $text =~ s|.*http:\/\/\b(\w+:\d+)\b.*$|\1|o;
+            }
+            push @node_hostnames, $text;
         }
     }
     else {
@@ -79,6 +86,6 @@ foreach my $column_id ( 'leftColumn', 'rightColumn' ) {
         }
     }
 }
-print $json_pp->encode( \@texts );
+print $json_pp->encode( \@node_hostnames );
 1;
 __END__
