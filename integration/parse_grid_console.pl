@@ -36,15 +36,20 @@ my $tmp_filename = undef;
 GetOptions(
     'url=s'   => \$url,
     'input=s' => \$filename,
+    'remove_port' => \$remove_port,
     'debug'   => \$debug_html
 );
 
 if ($url) {
     if ( !defined $URI::Fetch::VERSION ) {
-
-        # git bash Perl maybe
-        $tmp_filename = "/tmp/a.$$.html";
-        system( 'curl', '-o', $tmp_filename, $url );
+        local $@;
+        # https://metacpan.org/pod/URI::Fetch
+        eval { require URI::Fetch; };
+        if ($@) {
+            #  git bash Perl maybe
+            $tmp_filename = "/tmp/a.$$.html";
+            system( 'curl', '-o', $tmp_filename, $url );
+        }
     }
 }
 
@@ -72,10 +77,10 @@ foreach my $column_id ( 'leftColumn', 'rightColumn' ) {
             $element2 = ( $subhtml->getElementsByClassName('proxyid') )[0];
             $text     = $element2->innerText();
             if ($remove_port) {
-                $text =~ s|.*http:\/\/\b(\w+):\d+s\b.*$|\1|o;
+                $text =~ s|.*http:\/\/\b([0-9a-z.-]+):\d+\b.*$|\1|o;
             }
             else {
-                $text =~ s|.*http:\/\/\b(\w+:\d+)\b.*$|\1|o;
+                $text =~ s|.*http:\/\/\b([0-9a-z.-]+:\d+)\b.*$|\1|o;
             }
             push @node_hostnames, $text;
         }
