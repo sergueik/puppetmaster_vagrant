@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
+use warnings;
 
 BEGIN {
     use constant RELEASE    => 0;
@@ -34,25 +35,42 @@ my $filename     = 'grid_console.html';
 my $tmp_filename = undef;
 
 GetOptions(
-    'url=s'   => \$url,
-    'input=s' => \$filename,
+    'url=s'       => \$url,
+    'input=s'     => \$filename,
     'remove_port' => \$remove_port,
-    'debug'   => \$debug_html
+    'debug'       => \$debug_html
 );
-
+my $hub_status = undef;
 if ($url) {
     if ( !defined $URI::Fetch::VERSION ) {
         local $@;
+
         # https://metacpan.org/pod/URI::Fetch
         eval { require URI::Fetch; };
         if ($@) {
-            #  git bash Perl maybe
+            # no URI::Fetch available
+            # git bash Perl maybe
             $tmp_filename = "/tmp/a.$$.html";
             system( 'curl', '-o', $tmp_filename, $url );
+            my $size = -s $tmp_filename;
+            if ( $size == 0 ) {
+                print STDERR "${url} is not responding\n";
+                exit 1;
+            }
+        }
+        else {
+            eval {
+                my $ff    = URI::Fetch->new( uri => $url );
+                my $data  = $ff->fetch( to => '/tmp' ) or die $ff->error;
+                my $error = $ff->error;
+            };
+            if ($@) {
+                print STDERR "${url} is not responding\n";
+                exit 1;
+            }
         }
     }
 }
-
 my $html = HTML::TagParser->new(
     $url ? $tmp_filename ? $tmp_filename : $url : $filename );
 my $json_pp        = JSON::PP->new->ascii->pretty->allow_nonref->allow_blessed;
@@ -77,10 +95,10 @@ foreach my $column_id ( 'leftColumn', 'rightColumn' ) {
             $element2 = ( $subhtml->getElementsByClassName('proxyid') )[0];
             $text     = $element2->innerText();
             if ($remove_port) {
-                $text =~ s|.*http:\/\/\b([0-9a-z.-]+):\d+\b.*$|\1|o;
+                $text =~ s|.*http:\/\/\b([0-9a-z.-]+):\d+\b.*$|$1|o;
             }
             else {
-                $text =~ s|.*http:\/\/\b([0-9a-z.-]+:\d+)\b.*$|\1|o;
+                $text =~ s|.*http:\/\/\b([0-9a-z.-]+:\d+)\b.*$|$1|o;
             }
             push @node_hostnames, $text;
         }
